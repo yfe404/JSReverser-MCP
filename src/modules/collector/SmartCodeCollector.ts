@@ -1,11 +1,11 @@
 /**
- * 智能代码收集器 - 解决token溢出问题
- * 
- * 核心策略：
- * 1. 分批收集 - 按优先级分批返回代码
- * 2. 智能过滤 - 只收集关键代码（加密、API调用等）
- * 3. 摘要模式 - 返回代码摘要而非完整内容
- * 4. 增量收集 - 支持按需获取特定文件
+ * Smart code collector - solves the token overflow problem
+ *
+ * Core strategies:
+ * 1. Batch collection - returns code in batches by priority
+ * 2. Smart filtering - only collects key code (encryption, API calls, etc.)
+ * 3. Summary mode - returns code summaries instead of full content
+ * 4. Incremental collection - supports fetching specific files on demand
  */
 
 import type { Page } from 'puppeteer';
@@ -14,37 +14,37 @@ import type { CodeFile } from '../../types/index.js';
 
 export interface SmartCollectOptions {
   mode: 'summary' | 'priority' | 'incremental' | 'full';
-  maxTotalSize?: number; // 最大总大小（字节）
-  maxFileSize?: number; // 单个文件最大大小
-  priorities?: string[]; // 优先级URL模式（正则）
-  includePatterns?: string[]; // 包含模式
-  excludePatterns?: string[]; // 排除模式
+  maxTotalSize?: number; // Maximum total size (bytes)
+  maxFileSize?: number; // Maximum size per file
+  priorities?: string[]; // Priority URL patterns (regex)
+  includePatterns?: string[]; // Include patterns
+  excludePatterns?: string[]; // Exclude patterns
 }
 
 export interface CodeSummary {
   url: string;
   size: number;
   type: string;
-  hasEncryption: boolean; // 是否包含加密相关代码
-  hasAPI: boolean; // 是否包含API调用
-  hasObfuscation: boolean; // 是否混淆
-  functions: string[]; // 主要函数列表
-  imports: string[]; // 导入的模块
-  preview: string; // 前100行预览
+  hasEncryption: boolean; // Whether it contains encryption-related code
+  hasAPI: boolean; // Whether it contains API calls
+  hasObfuscation: boolean; // Whether it is obfuscated
+  functions: string[]; // Main function list
+  imports: string[]; // Imported modules
+  preview: string; // First 100 lines preview
 }
 
 export class SmartCodeCollector {
-  // 🔧 修复：降低默认限制，防止 MCP token 溢出
-  // MCP 通常限制在 200K tokens ≈ 800KB-1MB 文本
-  private readonly DEFAULT_MAX_TOTAL_SIZE = 512 * 1024;  // 512KB (原2MB)
-  private readonly DEFAULT_MAX_FILE_SIZE = 100 * 1024;   // 100KB (原500KB)
-  private readonly PREVIEW_LINES = 50;  // 50行 (原100行)
+  // Fix: lowered default limits to prevent MCP token overflow
+  // MCP typically limits to 200K tokens ~ 800KB-1MB text
+  private readonly DEFAULT_MAX_TOTAL_SIZE = 512 * 1024;  // 512KB (was 2MB)
+  private readonly DEFAULT_MAX_FILE_SIZE = 100 * 1024;   // 100KB (was 500KB)
+  private readonly PREVIEW_LINES = 50;  // 50 lines (was 100 lines)
 
   /**
-   * 智能收集代码
+   * Smart code collection
    */
   async smartCollect(
-    _page: Page, // 预留，未来可用于动态分析
+    _page: Page, // Reserved for future dynamic analysis
     files: CodeFile[],
     options: SmartCollectOptions
   ): Promise<CodeFile[] | CodeSummary[]> {
@@ -67,7 +67,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 模式1: 摘要模式 - 只返回代码摘要，不返回完整内容
+   * Mode 1: Summary mode - returns only code summaries, not full content
    */
   private async collectSummaries(files: CodeFile[]): Promise<CodeSummary[]> {
     logger.info('Generating code summaries...');
@@ -91,7 +91,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 模式2: 优先级模式 - 按优先级收集，优先返回关键代码
+   * Mode 2: Priority mode - collects by priority, returns key code first
    */
   private collectByPriority(
     files: CodeFile[],
@@ -100,16 +100,16 @@ export class SmartCodeCollector {
     const maxTotalSize = options.maxTotalSize || this.DEFAULT_MAX_TOTAL_SIZE;
     const maxFileSize = options.maxFileSize || this.DEFAULT_MAX_FILE_SIZE;
 
-    // 计算每个文件的优先级分数
+    // Calculate priority score for each file
     const scoredFiles = files.map(file => ({
       file,
       score: this.calculatePriority(file, options.priorities || []),
     }));
 
-    // 按分数排序
+    // Sort by score
     scoredFiles.sort((a, b) => b.score - a.score);
 
-    // 收集文件直到达到大小限制
+    // Collect files until size limit is reached
     const result: CodeFile[] = [];
     let currentSize = 0;
 
@@ -117,13 +117,13 @@ export class SmartCodeCollector {
       let content = file.content;
       let truncated = false;
 
-      // 截断超大文件
+      // Truncate oversized files
       if (file.size > maxFileSize) {
         content = content.substring(0, maxFileSize);
         truncated = true;
       }
 
-      // 检查是否超过总大小限制
+      // Check if total size limit is exceeded
       if (currentSize + content.length > maxTotalSize) {
         logger.warn(`Reached max total size limit (${maxTotalSize} bytes), stopping collection`);
         break;
@@ -149,7 +149,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 模式3: 增量模式 - 只收集匹配模式的文件
+   * Mode 3: Incremental mode - only collects files matching patterns
    */
   private collectIncremental(
     files: CodeFile[],
@@ -159,12 +159,12 @@ export class SmartCodeCollector {
     const excludePatterns = options.excludePatterns || [];
 
     const filtered = files.filter(file => {
-      // 检查排除模式
+      // Check exclude patterns
       if (excludePatterns.some(pattern => new RegExp(pattern).test(file.url))) {
         return false;
       }
 
-      // 检查包含模式
+      // Check include patterns
       if (includePatterns.length === 0) {
         return true;
       }
@@ -177,7 +177,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 模式4: 限制模式 - 应用大小限制
+   * Mode 4: Limited mode - applies size limits
    */
   private collectWithLimit(
     files: CodeFile[],
@@ -193,13 +193,13 @@ export class SmartCodeCollector {
       let content = file.content;
       let truncated = false;
 
-      // 截断超大文件
+      // Truncate oversized files
       if (file.size > maxFileSize) {
         content = content.substring(0, maxFileSize);
         truncated = true;
       }
 
-      // 检查总大小限制
+      // Check total size limit
       if (currentSize + content.length > maxTotalSize) {
         logger.warn(`Reached max total size limit, collected ${result.length}/${files.length} files`);
         break;
@@ -223,29 +223,29 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 计算文件优先级分数
+   * Calculate file priority score
    */
   private calculatePriority(file: CodeFile, priorities: string[]): number {
     let score = 0;
 
-    // 基础分数：文件类型
+    // Base score: file type
     if (file.type === 'inline') score += 10;
     if (file.type === 'external') score += 5;
 
-    // URL匹配优先级模式
+    // URL matching priority patterns
     for (let i = 0; i < priorities.length; i++) {
       const pattern = priorities[i];
       if (pattern && new RegExp(pattern).test(file.url)) {
-        score += (priorities.length - i) * 20; // 越靠前优先级越高
+        score += (priorities.length - i) * 20; // Earlier patterns have higher priority
       }
     }
 
-    // 内容特征加分
+    // Content feature bonus
     if (this.detectEncryption(file.content)) score += 50;
     if (this.detectAPI(file.content)) score += 30;
     if (this.detectObfuscation(file.content)) score += 20;
 
-    // 文件大小惩罚（小文件优先）
+    // File size penalty (smaller files preferred)
     if (file.size < 10 * 1024) score += 10; // < 10KB
     else if (file.size > 500 * 1024) score -= 20; // > 500KB
 
@@ -253,7 +253,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 检测是否包含加密相关代码
+   * Detect if content contains encryption-related code
    */
   private detectEncryption(content: string): boolean {
     const patterns = [
@@ -266,7 +266,7 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 检测是否包含API调用
+   * Detect if content contains API calls
    */
   private detectAPI(content: string): boolean {
     const patterns = [
@@ -280,26 +280,26 @@ export class SmartCodeCollector {
   }
 
   /**
-   * 检测是否混淆
+   * Detect if content is obfuscated
    */
   private detectObfuscation(content: string): boolean {
-    // 简单的混淆检测
+    // Simple obfuscation detection
     const lines = content.split('\n');
     const avgLineLength = content.length / lines.length;
 
-    // 平均行长度过长可能是混淆
+    // Excessively long average line length may indicate obfuscation
     if (avgLineLength > 200) return true;
 
-    // 检查常见混淆特征
-    if (/\\x[0-9a-f]{2}/i.test(content)) return true; // 十六进制编码
-    if (/\\u[0-9a-f]{4}/i.test(content)) return true; // Unicode编码
-    if (/eval\s*\(/i.test(content)) return true; // eval调用
+    // Check common obfuscation characteristics
+    if (/\\x[0-9a-f]{2}/i.test(content)) return true; // Hex encoding
+    if (/\\u[0-9a-f]{4}/i.test(content)) return true; // Unicode encoding
+    if (/eval\s*\(/i.test(content)) return true; // eval calls
 
     return false;
   }
 
   /**
-   * 提取函数名列表
+   * Extract function name list
    */
   private extractFunctions(content: string): string[] {
     const functions: string[] = [];
@@ -318,11 +318,11 @@ export class SmartCodeCollector {
       }
     }
 
-    return functions.slice(0, 20); // 最多返回20个
+    return functions.slice(0, 20); // Return at most 20
   }
 
   /**
-   * 提取导入模块列表
+   * Extract imported module list
    */
   private extractImports(content: string): string[] {
     const imports: string[] = [];

@@ -48,7 +48,7 @@ export class BrowserModeManager {
   }
 
   /**
-   * 启动浏览器进程（带远程调试）
+   * Launch browser process (with remote debugging)
    */
   private async launchBrowserProcess(): Promise<void> {
     const browsers = this.detectAllBrowsers();
@@ -60,7 +60,7 @@ export class BrowserModeManager {
       );
     }
 
-    // 如果发现多个浏览器，使用第一个并记录
+    // If multiple browsers found, use the first one and log
     if (browsers.length > 1) {
       logger.info(`🔍 Found ${browsers.length} browsers:`);
       browsers.forEach((b, i) => {
@@ -88,13 +88,13 @@ export class BrowserModeManager {
     this.browserProcess.unref();
     this.autoLaunched = true;
 
-    // 等待浏览器启动
+    // Wait for the browser to start
     await this.waitForBrowser(this.config.waitForBrowserTimeoutMs);
     logger.info('✅ Browser launched successfully');
   }
 
   /**
-   * 等待浏览器就绪
+   * Wait for the browser to be ready
    */
   private async waitForBrowser(timeout: number): Promise<void> {
     const startTime = Date.now();
@@ -112,12 +112,12 @@ export class BrowserModeManager {
   }
 
   /**
-   * 检测所有可用浏览器（支持任意盘符）
+   * Detect all available browsers (supports any drive letter)
    */
   private detectAllBrowsers(): Array<{ name: string; path: string }> {
     const foundBrowsers: Array<{ name: string; path: string }> = [];
 
-    // 如果配置中指定了路径，优先使用
+    // If a path is specified in the config, use it first
     if (this.config.browserPath && existsSync(this.config.browserPath)) {
       foundBrowsers.push({
         name: 'Custom Browser',
@@ -136,7 +136,7 @@ export class BrowserModeManager {
       }
     };
 
-    // 非 Windows 平台直接检测常见路径，避免无意义盘符扫描
+    // On non-Windows platforms, check common paths directly to avoid unnecessary drive letter scanning
     if (process.platform !== 'win32') {
       const unixCandidates = process.platform === 'darwin'
         ? [
@@ -162,7 +162,7 @@ export class BrowserModeManager {
       return foundBrowsers;
     }
 
-    // 常见的浏览器安装路径模板
+    // Common browser installation path templates
     const browserTemplates = [
       { name: 'Chrome', paths: [
         'Google\\Chrome\\Application\\chrome.exe',
@@ -176,7 +176,7 @@ export class BrowserModeManager {
       ]},
     ];
 
-    // 检测所有可能的盘符（A-Z）
+    // Check all possible drive letters (A-Z)
     const driveLetters = 'CDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     for (const drive of driveLetters) {
@@ -259,7 +259,7 @@ export class BrowserModeManager {
     await page.setJavaScriptEnabled(true);
 
     if (this.config.useStealthScripts) {
-      // 使用平台预设注入反检测脚本（默认 windows-chrome）
+      // Inject anti-detection scripts using platform preset (default: windows-chrome)
       const preset = this.config.stealthPreset ?? 'windows-chrome';
       await StealthScripts2025.injectAll(page, { preset });
     }
@@ -341,7 +341,7 @@ export class BrowserModeManager {
       this.currentPage = null;
     }
 
-    // 如果是自动启动的浏览器，终止进程
+    // If the browser was auto-launched, terminate the process
     if (this.autoLaunched && this.browserProcess && !this.browserProcess.killed) {
       try {
         this.browserProcess.kill('SIGTERM');

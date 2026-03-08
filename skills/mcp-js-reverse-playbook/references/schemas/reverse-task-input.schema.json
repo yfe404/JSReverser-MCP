@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://js-reverse-mcp.local/schemas/reverse-task-input.schema.json",
   "title": "Reverse Task Input Contract",
-  "description": "站点无关的逆向任务输入契约。仅允许脱敏种子，不包含真实敏感值。",
+  "description": "Site-agnostic reverse task input contract. Only desensitized seeds are allowed; no real sensitive values.",
   "type": "object",
   "required": [
     "target",
@@ -24,12 +24,12 @@
         "site": {
           "type": "string",
           "minLength": 1,
-          "description": "站点标识，例如 jd / tiktok / xhs"
+          "description": "Site identifier, e.g. jd / tiktok / xhs"
         },
         "scriptUrl": {
           "type": "string",
           "format": "uri",
-          "description": "签名脚本 URL（可选，动态抓取时可为空）"
+          "description": "Signing script URL (optional, may be empty during dynamic capture)"
         },
         "entryType": {
           "type": "string",
@@ -38,16 +38,16 @@
             "class-method",
             "expression"
           ],
-          "description": "签名入口类型"
+          "description": "Signing entry type"
         },
         "entryName": {
           "type": "string",
           "minLength": 1,
-          "description": "签名入口名称，例如 sign / ParamsSignMain.sign"
+          "description": "Signing entry name, e.g. sign / ParamsSignMain.sign"
         },
         "signatureField": {
           "type": "string",
-          "description": "输出签名字段名，例如 h5st / x-bogus / msToken"
+          "description": "Output signature field name, e.g. h5st / x-bogus / msToken"
         },
         "targetUrlPatterns": {
           "type": "array",
@@ -90,15 +90,15 @@
         },
         "paramsTemplate": {
           "type": "object",
-          "description": "签名前请求模板（可脱敏），仅保留结构和必要占位符"
+          "description": "Pre-signing request template (can be desensitized), retaining only structure and necessary placeholders"
         },
         "headersTemplate": {
           "type": "object",
           "default": {},
-          "description": "请求头模板，禁止真实 token/cookie"
+          "description": "Request headers template, real tokens/cookies are forbidden"
         },
         "bodyTemplate": {
-          "description": "请求体模板（可选）"
+          "description": "Request body template (optional)"
         }
       }
     },
@@ -116,7 +116,7 @@
             "keys-only",
             "masked-values"
           ],
-          "description": "运行种子模式"
+          "description": "Runtime seed mode"
         },
         "seedKeys": {
           "type": "object",
@@ -126,7 +126,7 @@
               "type": "string"
             }
           },
-          "description": "仅键名集合。建议包含 cookies/localStorage/sessionStorage 三类键名"
+          "description": "Key names only. Recommended to include key names from three categories: cookies/localStorage/sessionStorage"
         },
         "clock": {
           "type": "object",
@@ -152,7 +152,7 @@
             "type": "string"
           },
           "default": [],
-          "description": "环境提示，例如 requires-canvas / requires-webgl"
+          "description": "Environment hints, e.g. requires-canvas / requires-webgl"
         }
       }
     },

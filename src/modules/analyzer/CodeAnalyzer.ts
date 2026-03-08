@@ -1,5 +1,5 @@
  /**
- * 代码理解模块 - AI辅助代码语义理解
+ * Code understanding module - AI-assisted code semantic analysis
  */
 
 import * as parser from '@babel/parser';
@@ -29,7 +29,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 理解代码
+   * Understand code
    */
   async understand(options: UnderstandCodeOptions): Promise<UnderstandCodeResult> {
     logger.info('Starting code understanding...');
@@ -38,39 +38,39 @@ export class CodeAnalyzer {
     try {
       const { code, context, focus = 'all' } = options;
 
-      // 1. 静态分析 - 提取代码结构
+      // 1. Static analysis - extract code structure
       const structure = await this.analyzeStructure(code);
       logger.debug('Code structure analyzed');
 
-      // 2. AI分析 - 深度理解
+      // 2. AI analysis - deep understanding
       const aiAnalysis = await this.aiAnalyze(code, focus);
       logger.debug('AI analysis completed');
 
-      // 3. 技术栈识别
+      // 3. Tech stack detection
       const techStack = this.detectTechStack(code, aiAnalysis);
       logger.debug('Tech stack detected');
 
-      // 4. 业务逻辑理解
+      // 4. Business logic understanding
       const businessLogic = this.extractBusinessLogic(aiAnalysis, context);
       logger.debug('Business logic extracted');
 
-      // 5. 数据流分析
+      // 5. Data flow analysis
       const dataFlow = await this.analyzeDataFlow(code);
       logger.debug('Data flow analyzed');
 
-      // 6. 安全风险识别
+      // 6. Security risk identification
       const securityRisks = this.identifySecurityRisks(code, aiAnalysis);
       logger.debug('Security risks identified');
 
-      // 7. 代码模式和反模式检测
+      // 7. Code pattern and anti-pattern detection
       const { patterns, antiPatterns } = this.detectCodePatterns(code);
       logger.debug(`Detected ${patterns.length} patterns and ${antiPatterns.length} anti-patterns`);
 
-      // 8. 复杂度指标分析
+      // 8. Complexity metrics analysis
       const complexityMetrics = this.analyzeComplexityMetrics(code);
       logger.debug('Complexity metrics calculated');
 
-      // 9. 代码质量评分（整合新指标）
+      // 9. Code quality scoring (integrating new metrics)
       const qualityScore = this.calculateQualityScore(
         structure,
         securityRisks,
@@ -89,7 +89,7 @@ export class CodeAnalyzer {
         dataFlow,
         securityRisks,
         qualityScore,
-        // 添加新的分析结果
+        // Add new analysis results
         codePatterns: patterns,
         antiPatterns,
         complexityMetrics,
@@ -101,7 +101,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 分析代码结构
+   * Analyze code structure
    */
   private async analyzeStructure(code: string): Promise<CodeStructure> {
     const functions: FunctionInfo[] = [];
@@ -113,7 +113,7 @@ export class CodeAnalyzer {
         plugins: ['jsx', 'typescript'],
       });
 
-      // 保存this引用以在traverse回调中使用
+      // Save this reference for use in traverse callbacks
       const self = this;
 
       traverse(ast, {
@@ -222,10 +222,10 @@ export class CodeAnalyzer {
       logger.warn('Failed to parse code structure', error);
     }
 
-    // 分析模块导入导出
+    // Analyze module imports and exports
     const modules = this.analyzeModules(code);
 
-    // 构建调用图
+    // Build call graph
     const callGraph = this.buildCallGraph(functions, code);
 
     return {
@@ -237,14 +237,14 @@ export class CodeAnalyzer {
   }
 
   /**
-   * AI深度分析
+   * AI deep analysis
    */
   private async aiAnalyze(code: string, focus: string): Promise<Record<string, unknown>> {
     try {
       const messages = this.llm.generateCodeAnalysisPrompt(code, focus);
       const response = await this.llm.chat(messages, { temperature: 0.3, maxTokens: 2000 });
 
-      // 尝试解析JSON响应
+      // Try to parse JSON response
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]) as Record<string, unknown>;
@@ -258,14 +258,14 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 检测技术栈
+   * Detect tech stack
    */
   private detectTechStack(code: string, aiAnalysis: Record<string, unknown>): TechStack {
     const techStack: TechStack = {
       other: [],
     };
 
-    // 从AI分析结果中提取
+    // Extract from AI analysis results
     if (aiAnalysis.techStack && typeof aiAnalysis.techStack === 'object') {
       const ts = aiAnalysis.techStack as Record<string, unknown>;
       techStack.framework = ts.framework as string | undefined;
@@ -275,7 +275,7 @@ export class CodeAnalyzer {
       }
     }
 
-    // 基于代码特征检测
+    // Detect based on code characteristics
     if (code.includes('React.') || code.includes('useState') || code.includes('useEffect')) {
       techStack.framework = 'React';
     } else if (code.includes('Vue.') || code.includes('createApp')) {
@@ -288,7 +288,7 @@ export class CodeAnalyzer {
       techStack.bundler = 'Webpack';
     }
 
-    // 检测加密库
+    // Detect crypto libraries
     const cryptoLibs: string[] = [];
     if (code.includes('CryptoJS')) cryptoLibs.push('CryptoJS');
     if (code.includes('JSEncrypt')) cryptoLibs.push('JSEncrypt');
@@ -301,7 +301,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 提取业务逻辑
+   * Extract business logic
    */
   private extractBusinessLogic(aiAnalysis: Record<string, unknown>, context?: Record<string, unknown>): BusinessLogic {
     const businessLogic: BusinessLogic = {
@@ -321,7 +321,7 @@ export class CodeAnalyzer {
       }
     }
 
-    // 合并上下文信息
+    // Merge context information
     if (context) {
       businessLogic.dataModel = { ...businessLogic.dataModel, ...context };
     }
@@ -330,7 +330,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 分析模块导入导出
+   * Analyze module imports and exports
    */
   private analyzeModules(code: string): CodeStructure['modules'] {
     const modules: CodeStructure['modules'] = [];
@@ -373,7 +373,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 构建调用图
+   * Build call graph
    */
   private buildCallGraph(functions: FunctionInfo[], code: string): CallGraph {
     const nodes: CallGraph['nodes'] = functions.map((fn) => ({
@@ -430,12 +430,12 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 计算圈复杂度
+   * Calculate cyclomatic complexity
    */
   private calculateComplexity(path: unknown): number {
     let complexity = 1;
 
-    // 使用any类型绕过类型检查
+    // Use any type to bypass type checking
     const anyPath = path as any;
 
     if (anyPath.traverse) {
@@ -473,13 +473,13 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 分析数据流 - 完整污点分析实现
+   * Analyze data flow - complete taint analysis implementation
    *
-   * 基于三元组 <sources, sinks, sanitizers> 模型
-   * 1. 识别污点源（Source）：用户输入、网络请求、localStorage等
-   * 2. 识别污点汇聚点（Sink）：eval、innerHTML、document.write等危险操作
-   * 3. 污点传播分析：追踪数据从源到汇的流动路径
-   * 4. 无害处理（Sanitizer）：加密、验证等安全处理
+   * Based on the <sources, sinks, sanitizers> triple model
+   * 1. Identify taint sources (Source): user input, network requests, localStorage, etc.
+   * 2. Identify taint sinks (Sink): eval, innerHTML, document.write and other dangerous operations
+   * 3. Taint propagation analysis: track data flow paths from source to sink
+   * 4. Sanitization (Sanitizer): encryption, validation and other security processing
    */
   private async analyzeDataFlow(code: string): Promise<DataFlow> {
     const graph: DataFlow['graph'] = { nodes: [], edges: [] };
@@ -487,36 +487,36 @@ export class CodeAnalyzer {
     const sinks: DataFlow['sinks'] = [];
     const taintPaths: DataFlow['taintPaths'] = [];
 
-    // 污点标记映射：变量名 -> 污点源信息
+    // Taint marker mapping: variable name -> taint source info
     const taintMap = new Map<string, { sourceType: string; sourceLine: number }>();
 
-    // 无害处理函数（Sanitizers）- 检测安全的数据处理
-    // 基于OWASP和业界最佳实践扩展
+    // Sanitizer functions (Sanitizers) - detect safe data processing
+    // Extended based on OWASP and industry best practices
     const sanitizers = new Set([
-      // URL编码
+      // URL encoding
       'encodeURIComponent', 'encodeURI', 'escape', 'decodeURIComponent', 'decodeURI',
-      // HTML转义
+      // HTML escaping
       'htmlentities', 'htmlspecialchars', 'escapeHtml', 'escapeHTML',
       'he.encode', 'he.escape',
-      // 验证器库
+      // Validator library
       'validator.escape', 'validator.unescape', 'validator.stripLow',
       'validator.blacklist', 'validator.whitelist', 'validator.trim',
       'validator.isEmail', 'validator.isURL', 'validator.isInt',
       // DOMPurify
       'DOMPurify.sanitize', 'DOMPurify.addHook',
-      // 加密/哈希
+      // Encryption/Hashing
       'crypto.encrypt', 'crypto.hash', 'crypto.createHash', 'crypto.createHmac',
       'CryptoJS.AES.encrypt', 'CryptoJS.SHA256', 'CryptoJS.MD5',
       'bcrypt.hash', 'bcrypt.compare',
-      // Base64编码
+      // Base64 encoding
       'btoa', 'atob', 'Buffer.from',
-      // SQL参数化
+      // SQL parameterization
       'db.prepare', 'db.query', 'mysql.escape', 'pg.query',
-      // XSS防护
+      // XSS protection
       'xss', 'sanitizeHtml',
-      // 输入验证
+      // Input validation
       'parseInt', 'parseFloat', 'Number', 'String',
-      // 其他
+      // Other
       'JSON.stringify', 'JSON.parse',
       'String.prototype.replace', 'String.prototype.trim',
       'Array.prototype.filter', 'Array.prototype.map',
@@ -530,18 +530,18 @@ export class CodeAnalyzer {
 
       const self = this;
 
-      // 第一遍遍历：识别污点源和污点汇聚点
+      // First pass: identify taint sources and taint sinks
       traverse(ast, {
-        // 识别污点源
+        // Identify taint sources
         CallExpression(path) {
           const callee = path.node.callee;
           const line = path.node.loc?.start.line || 0;
 
-          // 网络请求（污点源）
+          // Network requests (taint source)
           if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
             const methodName = callee.property.name;
 
-            // 网络请求
+            // Network requests
             if (['fetch', 'ajax', 'get', 'post', 'request', 'axios'].includes(methodName)) {
               const sourceId = `source-network-${line}`;
               sources.push({ type: 'network', location: { file: 'current', line } });
@@ -552,14 +552,14 @@ export class CodeAnalyzer {
                 location: { file: 'current', line },
               });
 
-              // 标记返回值为污点
+              // Mark return value as tainted
               const parent = path.parent;
               if (t.isVariableDeclarator(parent) && t.isIdentifier(parent.id)) {
                 taintMap.set(parent.id.name, { sourceType: 'network', sourceLine: line });
               }
             }
 
-            // DOM查询（用户输入）
+            // DOM queries (user input)
             else if (['querySelector', 'getElementById', 'getElementsByClassName', 'getElementsByTagName'].includes(methodName)) {
               const sourceId = `source-dom-${line}`;
               sources.push({ type: 'user_input', location: { file: 'current', line } });
@@ -572,11 +572,11 @@ export class CodeAnalyzer {
             }
           }
 
-          // 检测污点汇聚点（危险操作）
+          // Detect taint sinks (dangerous operations)
           if (t.isIdentifier(callee)) {
             const funcName = callee.name;
 
-            // eval系列 (代码注入)
+            // eval family (code injection)
             if (['eval', 'Function', 'setTimeout', 'setInterval'].includes(funcName)) {
               const sinkId = `sink-eval-${line}`;
               sinks.push({ type: 'eval', location: { file: 'current', line } });
@@ -587,12 +587,12 @@ export class CodeAnalyzer {
                 location: { file: 'current', line },
               });
 
-              // 检查参数是否被污染
+              // Check if arguments are tainted
               self.checkTaintedArguments(path.node.arguments, taintMap, taintPaths, funcName, line);
             }
           }
 
-          // 成员表达式调用的危险方法
+          // Dangerous methods called via member expressions
           if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
             const methodName = callee.property.name;
 
@@ -610,7 +610,7 @@ export class CodeAnalyzer {
               self.checkTaintedArguments(path.node.arguments, taintMap, taintPaths, methodName, line);
             }
 
-            // SQL查询方法 (SQL注入)
+            // SQL query methods (SQL injection)
             if (['query', 'execute', 'exec', 'run'].includes(methodName)) {
               const sinkId = `sink-sql-${line}`;
               sinks.push({ type: 'sql-injection', location: { file: 'current', line } });
@@ -623,7 +623,7 @@ export class CodeAnalyzer {
               self.checkTaintedArguments(path.node.arguments, taintMap, taintPaths, methodName, line);
             }
 
-            // 命令执行 (Command Injection)
+            // Command execution (Command Injection)
             if (['exec', 'spawn', 'execSync', 'spawnSync'].includes(methodName)) {
               const sinkId = `sink-command-${line}`;
               sinks.push({ type: 'other', location: { file: 'current', line } });
@@ -636,7 +636,7 @@ export class CodeAnalyzer {
               self.checkTaintedArguments(path.node.arguments, taintMap, taintPaths, methodName, line);
             }
 
-            // 路径遍历 (Path Traversal)
+            // Path traversal (Path Traversal)
             if (['readFile', 'writeFile', 'readFileSync', 'writeFileSync', 'open'].includes(methodName)) {
               const sinkId = `sink-file-${line}`;
               sinks.push({ type: 'other', location: { file: 'current', line } });
@@ -651,13 +651,13 @@ export class CodeAnalyzer {
           }
         },
 
-        // 识别更多污点源
+        // Identify additional taint sources
         MemberExpression(path) {
           const obj = path.node.object;
           const prop = path.node.property;
           const line = path.node.loc?.start.line || 0;
 
-          // location.* (URL参数)
+          // location.* (URL parameters)
           if (t.isIdentifier(obj) && obj.name === 'location' && t.isIdentifier(prop)) {
             if (['href', 'search', 'hash', 'pathname'].includes(prop.name)) {
               const sourceId = `source-url-${line}`;
@@ -669,7 +669,7 @@ export class CodeAnalyzer {
                 location: { file: 'current', line },
               });
 
-              // 标记为污点
+              // Mark as tainted
               const parent = path.parent;
               if (t.isVariableDeclarator(parent) && t.isIdentifier(parent.id)) {
                 taintMap.set(parent.id.name, { sourceType: 'url', sourceLine: line });
@@ -701,7 +701,7 @@ export class CodeAnalyzer {
             });
           }
 
-          // window.name (可被跨窗口污染)
+          // window.name (can be tainted cross-window)
           if (t.isIdentifier(obj) && obj.name === 'window' &&
               t.isIdentifier(prop) && prop.name === 'name') {
             const sourceId = `source-window-name-${line}`;
@@ -714,7 +714,7 @@ export class CodeAnalyzer {
             });
           }
 
-          // postMessage接收 (跨域消息)
+          // postMessage receiver (cross-origin messages)
           if (t.isIdentifier(obj) && obj.name === 'event' &&
               t.isIdentifier(prop) && prop.name === 'data') {
             const sourceId = `source-postmessage-${line}`;
@@ -727,7 +727,7 @@ export class CodeAnalyzer {
             });
           }
 
-          // WebSocket消息
+          // WebSocket messages
           if (t.isIdentifier(obj) && obj.name === 'message' &&
               t.isIdentifier(prop) && prop.name === 'data') {
             const sourceId = `source-websocket-${line}`;
@@ -741,13 +741,13 @@ export class CodeAnalyzer {
           }
         },
 
-        // 识别DOM操作污点汇聚点
+        // Identify DOM manipulation taint sinks
         AssignmentExpression(path) {
           const left = path.node.left;
           const right = path.node.right;
           const line = path.node.loc?.start.line || 0;
 
-          // innerHTML, outerHTML (XSS风险)
+          // innerHTML, outerHTML (XSS risk)
           if (t.isMemberExpression(left) && t.isIdentifier(left.property)) {
             const propName = left.property.name;
             if (['innerHTML', 'outerHTML'].includes(propName)) {
@@ -760,7 +760,7 @@ export class CodeAnalyzer {
                 location: { file: 'current', line },
               });
 
-              // 检查右值是否被污染
+              // Check if right-hand value is tainted
               if (t.isIdentifier(right) && taintMap.has(right.name)) {
                 const taintInfo = taintMap.get(right.name)!;
                 taintPaths.push({
@@ -777,31 +777,31 @@ export class CodeAnalyzer {
         },
       });
 
-      // 第二遍遍历：污点传播分析（显式流）
+      // Second pass: taint propagation analysis (explicit flow)
       traverse(ast, {
-        // 赋值传播
+        // Assignment propagation
         VariableDeclarator(path) {
           const id = path.node.id;
           const init = path.node.init;
 
           if (t.isIdentifier(id) && init) {
-            // 检查是否经过Sanitizer处理
+            // Check if processed by a Sanitizer
             if (t.isCallExpression(init) && self.checkSanitizer(init, sanitizers)) {
-              // 如果参数是污点变量，经过Sanitizer后清除污点
+              // If argument is a tainted variable, clear taint after Sanitizer processing
               const arg = init.arguments[0];
               if (t.isIdentifier(arg) && taintMap.has(arg.name)) {
-                // 不传播污点（已被清洗）
+                // Do not propagate taint (already sanitized)
                 logger.debug(`Taint cleaned by sanitizer: ${arg.name} -> ${id.name}`);
                 return;
               }
             }
 
-            // 直接赋值传播
+            // Direct assignment propagation
             if (t.isIdentifier(init) && taintMap.has(init.name)) {
               const taintInfo = taintMap.get(init.name)!;
               taintMap.set(id.name, taintInfo);
             }
-            // 二元表达式传播
+            // Binary expression propagation
             else if (t.isBinaryExpression(init)) {
               const leftTainted = t.isIdentifier(init.left) && taintMap.has(init.left.name);
               const rightTainted = t.isIdentifier(init.right) && taintMap.has(init.right.name);
@@ -811,7 +811,7 @@ export class CodeAnalyzer {
                 taintMap.set(id.name, taintInfo);
               }
             }
-            // 函数调用传播（非Sanitizer）
+            // Function call propagation (non-Sanitizer)
             else if (t.isCallExpression(init)) {
               const arg = init.arguments[0];
               if (t.isIdentifier(arg) && taintMap.has(arg.name)) {
@@ -822,7 +822,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 赋值表达式传播
+        // Assignment expression propagation
         AssignmentExpression(path) {
           const left = path.node.left;
           const right = path.node.right;
@@ -838,7 +838,7 @@ export class CodeAnalyzer {
       logger.warn('Data flow analysis failed', error);
     }
 
-    // 使用LLM辅助进行深度污点分析（如果有污点路径）
+    // Use LLM-assisted deep taint analysis (if taint paths exist)
     if (taintPaths.length > 0 && this.llm) {
       try {
         await this.enhanceTaintAnalysisWithLLM(code, sources, sinks, taintPaths);
@@ -856,10 +856,10 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 使用LLM增强污点分析
+   * Enhance taint analysis with LLM
    *
-   * 对于复杂的数据流，使用LLM进行深度分析
-   * 识别隐式数据流和复杂的污点传播路径
+   * For complex data flows, use LLM for deep analysis
+   * Identify implicit data flows and complex taint propagation paths
    */
   private async enhanceTaintAnalysisWithLLM(
     code: string,
@@ -884,7 +884,7 @@ export class CodeAnalyzer {
         maxTokens: 2000,
       });
 
-      // 尝试解析LLM返回的额外污点路径
+      // Try to parse additional taint paths returned by LLM
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const llmResult = JSON.parse(jsonMatch[0]) as { taintPaths?: Array<any> };
@@ -892,7 +892,7 @@ export class CodeAnalyzer {
         if (Array.isArray(llmResult.taintPaths)) {
           logger.info(`LLM identified ${llmResult.taintPaths.length} additional taint paths`);
 
-          // 将LLM发现的路径添加到结果中（去重）
+          // Add LLM-discovered paths to results (deduplicated)
           llmResult.taintPaths.forEach((path: any) => {
             const exists = taintPaths.some(
               p => p.source.location.line === path.source?.location?.line &&
@@ -915,7 +915,7 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 检查函数参数是否被污染
+   * Check if function arguments are tainted
    */
   private checkTaintedArguments(
     args: Array<t.Expression | t.SpreadElement | t.ArgumentPlaceholder>,
@@ -946,15 +946,15 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 识别安全风险 - 增强版
+   * Identify security risks - enhanced version
    *
-   * 基于OWASP Top 10和CWE标准进行全面的安全风险检测
-   * 结合静态分析和AI分析结果
+   * Comprehensive security risk detection based on OWASP Top 10 and CWE standards
+   * Combining static analysis and AI analysis results
    */
   private identifySecurityRisks(code: string, aiAnalysis: Record<string, unknown>): SecurityRisk[] {
     const risks: SecurityRisk[] = [];
 
-    // 从AI分析中提取风险
+    // Extract risks from AI analysis
     if (Array.isArray(aiAnalysis.securityRisks)) {
       aiAnalysis.securityRisks.forEach((risk: unknown) => {
         if (typeof risk === 'object' && risk !== null) {
@@ -970,7 +970,7 @@ export class CodeAnalyzer {
       });
     }
 
-    // 基于规则的静态检测 - 增强版
+    // Rule-based static detection - enhanced version
     try {
       const ast = parser.parse(code, {
         sourceType: 'module',
@@ -978,7 +978,7 @@ export class CodeAnalyzer {
       });
 
       traverse(ast, {
-        // 1. XSS风险检测
+        // 1. XSS risk detection
         AssignmentExpression(path) {
           const left = path.node.left;
           const line = path.node.loc?.start.line || 0;
@@ -986,7 +986,7 @@ export class CodeAnalyzer {
           if (t.isMemberExpression(left) && t.isIdentifier(left.property)) {
             const propName = left.property.name;
 
-            // innerHTML/outerHTML赋值
+            // innerHTML/outerHTML assignment
             if (['innerHTML', 'outerHTML', 'insertAdjacentHTML'].includes(propName)) {
               risks.push({
                 type: 'xss',
@@ -1010,7 +1010,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 2. 代码注入风险
+        // 2. Code injection risk
         CallExpression(path) {
           const callee = path.node.callee;
           const line = path.node.loc?.start.line || 0;
@@ -1052,15 +1052,15 @@ export class CodeAnalyzer {
             }
           }
 
-          // 3. SQL注入风险检测（字符串拼接查询）
+          // 3. SQL injection risk detection (string concatenation queries)
           if (t.isMemberExpression(callee) && t.isIdentifier(callee.property)) {
             const methodName = callee.property.name;
 
-            // 数据库查询方法
+            // Database query methods
             if (['query', 'execute', 'exec', 'run'].includes(methodName)) {
               const firstArg = path.node.arguments[0];
 
-              // 检查是否使用字符串拼接
+              // Check if string concatenation is used
               if (t.isBinaryExpression(firstArg) || t.isTemplateLiteral(firstArg)) {
                 risks.push({
                   type: 'sql-injection',
@@ -1074,7 +1074,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 4. 不安全的随机数生成
+        // 4. Insecure random number generation
         MemberExpression(path) {
           const obj = path.node.object;
           const prop = path.node.property;
@@ -1082,7 +1082,7 @@ export class CodeAnalyzer {
 
           if (t.isIdentifier(obj) && obj.name === 'Math' &&
               t.isIdentifier(prop) && prop.name === 'random') {
-            // 检查是否用于安全相关场景（通过上下文判断）
+            // Check if used in security-related context (determined by context)
             const parent = path.parent;
             if (t.isCallExpression(parent) || t.isBinaryExpression(parent)) {
               risks.push({
@@ -1096,7 +1096,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 5. 硬编码敏感信息检测
+        // 5. Hardcoded sensitive information detection
         VariableDeclarator(path) {
           const id = path.node.id;
           const init = path.node.init;
@@ -1106,7 +1106,7 @@ export class CodeAnalyzer {
             const varName = id.name.toLowerCase();
             const value = init.value;
 
-            // 检测可能的密钥、密码、token
+            // Detect possible keys, passwords, tokens
             const sensitivePatterns = [
               { pattern: /(password|passwd|pwd)/i, type: 'password' },
               { pattern: /(api[_-]?key|apikey)/i, type: 'API key' },
@@ -1133,7 +1133,7 @@ export class CodeAnalyzer {
       logger.warn('Static security analysis failed', error);
     }
 
-    // 去重（基于type和line）
+    // Deduplicate (based on type and line)
     const uniqueRisks = risks.filter((risk, index, self) =>
       index === self.findIndex((r) => r.type === risk.type && r.location.line === risk.location.line)
     );
@@ -1142,14 +1142,14 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 计算代码质量评分 - 增强版
+   * Calculate code quality score - enhanced version
    *
-   * 综合多个维度计算代码质量:
-   * - 安全性 (Security)
-   * - 复杂度 (Complexity)
-   * - 可维护性 (Maintainability)
-   * - 代码异味 (Code Smells)
-   * - AI评估 (AI Assessment)
+   * Calculate code quality across multiple dimensions:
+   * - Security
+   * - Complexity
+   * - Maintainability
+   * - Code Smells
+   * - AI Assessment
    */
   private calculateQualityScore(
     structure: CodeStructure,
@@ -1164,7 +1164,7 @@ export class CodeAnalyzer {
   ): number {
     let score = 100;
 
-    // 1. 安全风险扣分 (权重: 40%)
+    // 1. Security risk deduction (weight: 40%)
     let securityScore = 100;
     securityRisks.forEach((risk) => {
       if (risk.severity === 'critical') securityScore -= 20;
@@ -1174,19 +1174,19 @@ export class CodeAnalyzer {
     });
     securityScore = Math.max(0, securityScore);
 
-    // 2. 代码复杂度扣分 (权重: 25%)
+    // 2. Code complexity deduction (weight: 25%)
     let complexityScore = 100;
     if (complexityMetrics) {
-      // 圈复杂度评分
+      // Cyclomatic complexity scoring
       if (complexityMetrics.cyclomaticComplexity > 20) complexityScore -= 30;
       else if (complexityMetrics.cyclomaticComplexity > 10) complexityScore -= 15;
       else if (complexityMetrics.cyclomaticComplexity > 5) complexityScore -= 5;
 
-      // 认知复杂度评分
+      // Cognitive complexity scoring
       if (complexityMetrics.cognitiveComplexity > 15) complexityScore -= 20;
       else if (complexityMetrics.cognitiveComplexity > 10) complexityScore -= 10;
     } else {
-      // 回退到简单的平均复杂度计算
+      // Fallback to simple average complexity calculation
       const avgComplexity =
         structure.functions.reduce((sum, fn) => sum + fn.complexity, 0) / (structure.functions.length || 1);
       if (avgComplexity > 10) complexityScore -= 20;
@@ -1194,10 +1194,10 @@ export class CodeAnalyzer {
     }
     complexityScore = Math.max(0, complexityScore);
 
-    // 3. 可维护性评分 (权重: 20%)
+    // 3. Maintainability score (weight: 20%)
     let maintainabilityScore = complexityMetrics?.maintainabilityIndex || 70;
 
-    // 4. 代码异味扣分 (权重: 15%)
+    // 4. Code smell deduction (weight: 15%)
     let codeSmellScore = 100;
     if (antiPatterns) {
       antiPatterns.forEach((pattern) => {
@@ -1208,20 +1208,20 @@ export class CodeAnalyzer {
     }
     codeSmellScore = Math.max(0, codeSmellScore);
 
-    // 5. AI评分 (如果可用)
-    let aiScore = 70; // 默认值
+    // 5. AI score (if available)
+    let aiScore = 70; // default value
     if (typeof aiAnalysis.qualityScore === 'number') {
       aiScore = aiAnalysis.qualityScore;
     }
 
-    // 加权平均
+    // Weighted average
     score =
       securityScore * 0.40 +
       complexityScore * 0.25 +
       maintainabilityScore * 0.20 +
       codeSmellScore * 0.15;
 
-    // 与AI评分取平均（如果AI评分可用）
+    // Average with AI score (if AI score is available)
     if (typeof aiAnalysis.qualityScore === 'number') {
       score = (score + aiScore) / 2;
     }
@@ -1230,10 +1230,10 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 检查是否为Sanitizer函数调用
-   * @param node - AST节点
-   * @param sanitizers - Sanitizer函数集合
-   * @returns 是否为Sanitizer
+   * Check if this is a Sanitizer function call
+   * @param node - AST node
+   * @param sanitizers - Set of Sanitizer functions
+   * @returns Whether it is a Sanitizer
    */
   private checkSanitizer(
     node: t.CallExpression,
@@ -1241,12 +1241,12 @@ export class CodeAnalyzer {
   ): boolean {
     const { callee } = node;
 
-    // 简单函数调用: encodeURIComponent()
+    // Simple function call: encodeURIComponent()
     if (t.isIdentifier(callee)) {
       return sanitizers.has(callee.name);
     }
 
-    // 成员表达式: DOMPurify.sanitize(), validator.escape()
+    // Member expression: DOMPurify.sanitize(), validator.escape()
     if (t.isMemberExpression(callee)) {
       const fullName = this.getMemberExpressionName(callee);
       return sanitizers.has(fullName);
@@ -1256,9 +1256,9 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 获取成员表达式的完整名称
-   * @param node - 成员表达式节点
-   * @returns 完整名称，如 "DOMPurify.sanitize"
+   * Get the full name of a member expression
+   * @param node - Member expression node
+   * @returns Full name, e.g. "DOMPurify.sanitize"
    */
   private getMemberExpressionName(node: t.MemberExpression): string {
     const parts: string[] = [];
@@ -1279,10 +1279,10 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 检测代码模式和反模式
+   * Detect code patterns and anti-patterns
    *
-   * 识别常见的设计模式和代码异味
-   * 基于业界最佳实践和代码质量标准
+   * Identify common design patterns and code smells
+   * Based on industry best practices and code quality standards
    */
   private detectCodePatterns(code: string): {
     patterns: Array<{ name: string; location: number; description: string }>;
@@ -1298,7 +1298,7 @@ export class CodeAnalyzer {
       });
 
       traverse(ast, {
-        // 检测单例模式
+        // Detect Singleton pattern
         VariableDeclarator(path) {
           const init = path.node.init;
           if (t.isCallExpression(init) &&
@@ -1315,7 +1315,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 检测观察者模式
+        // Detect Observer pattern
         ClassDeclaration(path) {
           const methods = path.node.body.body.filter(m => t.isClassMethod(m));
           const methodNames = methods.map(m =>
@@ -1333,7 +1333,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 反模式: 过长函数
+        // Anti-pattern: long function
         FunctionDeclaration(path) {
           const loc = path.node.loc;
           if (loc) {
@@ -1349,7 +1349,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 反模式: 深层嵌套
+        // Anti-pattern: deep nesting
         IfStatement(path) {
           let depth = 0;
           let current: typeof path.parentPath | null = path.parentPath;
@@ -1373,19 +1373,19 @@ export class CodeAnalyzer {
           }
         },
 
-        // 反模式: 魔法数字
+        // Anti-pattern: magic numbers
         NumericLiteral(path) {
           const value = path.node.value;
           const parent = path.parent;
 
-          // 忽略常见的数字 (0, 1, -1, 2, 10, 100, 1000)
+          // Ignore common numbers (0, 1, -1, 2, 10, 100, 1000)
           const commonNumbers = [0, 1, -1, 2, 10, 100, 1000];
           if (commonNumbers.includes(value)) return;
 
-          // 忽略数组索引
+          // Ignore array indices
           if (t.isMemberExpression(parent) && parent.property === path.node) return;
 
-          // 忽略函数参数默认值
+          // Ignore function parameter default values
           if (t.isAssignmentPattern(parent)) return;
 
           antiPatterns.push({
@@ -1396,7 +1396,7 @@ export class CodeAnalyzer {
           });
         },
 
-        // 反模式: 空catch块
+        // Anti-pattern: empty catch block
         CatchClause(path) {
           const body = path.node.body.body;
           if (body.length === 0) {
@@ -1409,7 +1409,7 @@ export class CodeAnalyzer {
           }
         },
 
-        // 反模式: 使用var而非let/const
+        // Anti-pattern: using var instead of let/const
         VariableDeclaration(path) {
           if (path.node.kind === 'var') {
             antiPatterns.push({
@@ -1422,7 +1422,7 @@ export class CodeAnalyzer {
         },
       });
 
-      // 重复代码检测 - 基于AST结构相似度
+      // Duplicate code detection - based on AST structural similarity
       const duplicates = this.detectDuplicateCode(ast);
       duplicates.forEach(dup => {
         antiPatterns.push({
@@ -1440,12 +1440,12 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 分析代码复杂度指标
+   * Analyze code complexity metrics
    *
-   * 计算多种复杂度指标:
-   * - 圈复杂度 (Cyclomatic Complexity)
-   * - 认知复杂度 (Cognitive Complexity)
-   * - 维护性指数 (Maintainability Index)
+   * Calculate multiple complexity metrics:
+   * - Cyclomatic Complexity
+   * - Cognitive Complexity
+   * - Maintainability Index
    */
   private analyzeComplexityMetrics(code: string): {
     cyclomaticComplexity: number;
@@ -1474,7 +1474,7 @@ export class CodeAnalyzer {
       let nestingLevel = 0;
 
       traverse(ast, {
-        // 圈复杂度
+        // Cyclomatic complexity
         IfStatement() { cyclomaticComplexity++; },
         SwitchCase() { cyclomaticComplexity++; },
         ForStatement() { cyclomaticComplexity++; },
@@ -1488,7 +1488,7 @@ export class CodeAnalyzer {
         },
         CatchClause() { cyclomaticComplexity++; },
 
-        // 认知复杂度（考虑嵌套）
+        // Cognitive complexity (considering nesting)
         'IfStatement|ForStatement|WhileStatement|DoWhileStatement': {
           enter() {
             nestingLevel++;
@@ -1499,7 +1499,7 @@ export class CodeAnalyzer {
           },
         },
 
-        // Halstead指标
+        // Halstead metrics
         BinaryExpression(path) {
           operators++;
           uniqueOperators.add(path.node.operator);
@@ -1525,18 +1525,18 @@ export class CodeAnalyzer {
       logger.warn('Complexity metrics calculation failed', error);
     }
 
-    // Halstead指标计算
-    const n1 = uniqueOperators.size; // 唯一操作符数
-    const n2 = uniqueOperands.size;  // 唯一操作数数
-    const N1 = operators;             // 总操作符数
-    const N2 = operands;              // 总操作数数
+    // Halstead metrics calculation
+    const n1 = uniqueOperators.size; // unique operator count
+    const n2 = uniqueOperands.size;  // unique operand count
+    const N1 = operators;             // total operator count
+    const N2 = operands;              // total operand count
 
     const vocabulary = n1 + n2;
     const length = N1 + N2;
     const difficulty = (n1 / 2) * (N2 / (n2 || 1));
     const effort = difficulty * length;
 
-    // 维护性指数 (Maintainability Index)
+    // Maintainability Index
     // MI = 171 - 5.2 * ln(V) - 0.23 * G - 16.2 * ln(LOC)
     const volume = length * Math.log2(vocabulary || 1);
     const loc = code.split('\n').length;
@@ -1558,16 +1558,16 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 检测重复代码 - 基于AST结构相似度
+   * Detect duplicate code - based on AST structural similarity
    *
-   * 使用AST结构哈希和相似度算法检测重复代码块
-   * 算法参考:
+   * Use AST structure hashing and similarity algorithms to detect duplicate code blocks
+   * Algorithm references:
    * - Token-based Clone Detection
    * - AST-based Clone Detection (Type-1, Type-2, Type-3 clones)
    *
-   * Type-1: 完全相同的代码（除了空格和注释）
-   * Type-2: 结构相同但变量名不同
-   * Type-3: 结构相似但有小的修改
+   * Type-1: Identical code (except whitespace and comments)
+   * Type-2: Same structure but different variable names
+   * Type-3: Similar structure but with minor modifications
    */
   private detectDuplicateCode(ast: t.File): Array<{
     location: number;
@@ -1585,7 +1585,7 @@ export class CodeAnalyzer {
     try {
       const self = this;
 
-      // 收集所有代码块（函数、类方法、块语句）
+      // Collect all code blocks (functions, class methods, block statements)
       traverse(ast, {
         FunctionDeclaration(path) {
           const hash = self.computeASTHash(path.node);
@@ -1632,13 +1632,13 @@ export class CodeAnalyzer {
         },
       });
 
-      // 比较所有代码块，查找重复
+      // Compare all code blocks to find duplicates
       for (let i = 0; i < codeBlocks.length; i++) {
         for (let j = i + 1; j < codeBlocks.length; j++) {
           const block1 = codeBlocks[i]!;
           const block2 = codeBlocks[j]!;
 
-          // Type-1 克隆: 完全相同的哈希
+          // Type-1 clone: identical hash
           if (block1.hash === block2.hash) {
             duplicates.push({
               location: block1.location,
@@ -1648,13 +1648,13 @@ export class CodeAnalyzer {
             continue;
           }
 
-          // Type-2/Type-3 克隆: 计算相似度
+          // Type-2/Type-3 clone: calculate similarity
           const similarity = this.calculateCodeSimilarity(
             block1.normalizedCode,
             block2.normalizedCode
           );
 
-          // 相似度阈值: 0.85 (85%以上认为是重复代码)
+          // Similarity threshold: 0.85 (85% or above is considered duplicate code)
           if (similarity >= 0.85) {
             duplicates.push({
               location: block1.location,
@@ -1672,26 +1672,26 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 计算AST节点的哈希值
+   * Compute hash value of an AST node
    *
-   * 用于Type-1克隆检测（完全相同的代码）
-   * 忽略位置信息和注释
+   * Used for Type-1 clone detection (identical code)
+   * Ignores location information and comments
    */
   private computeASTHash(node: t.Node): string {
-    // 简化的哈希计算：将AST转换为规范化的字符串
+    // Simplified hash computation: convert AST to normalized string
     const normalized = JSON.stringify(node, (key, value) => {
-      // 忽略位置信息
+      // Ignore location information
       if (['loc', 'start', 'end', 'range'].includes(key)) {
         return undefined;
       }
-      // 忽略注释
+      // Ignore comments
       if (key === 'comments' || key === 'leadingComments' || key === 'trailingComments') {
         return undefined;
       }
       return value;
     });
 
-    // 使用简单的字符串哈希（实际应该用更好的哈希算法如MD5/SHA256）
+    // Use simple string hash (ideally should use a better hash algorithm like MD5/SHA256)
     let hash = 0;
     for (let i = 0; i < normalized.length; i++) {
       const char = normalized.charCodeAt(i);
@@ -1702,10 +1702,10 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 规范化代码 - 用于Type-2克隆检测
+   * Normalize code - used for Type-2 clone detection
    *
-   * 将变量名、函数名等标识符替换为占位符
-   * 保留代码结构
+   * Replace identifiers such as variable names and function names with placeholders
+   * Preserve code structure
    */
   private normalizeCode(node: t.Node): string {
     let identifierCounter = 0;
@@ -1717,23 +1717,23 @@ export class CodeAnalyzer {
       Identifier(path) {
         const name = path.node.name;
 
-        // 跳过保留字和内置对象
+        // Skip reserved words and built-in objects
         const reserved = ['console', 'window', 'document', 'Math', 'JSON', 'Array', 'Object', 'String', 'Number'];
         if (reserved.includes(name)) return;
 
-        // 为每个唯一标识符分配一个规范化的名称
+        // Assign a normalized name for each unique identifier
         if (!identifierMap.has(name)) {
           identifierMap.set(name, `VAR_${identifierCounter++}`);
         }
         path.node.name = identifierMap.get(name)!;
       },
 
-      // 规范化字符串字面量
+      // Normalize string literals
       StringLiteral(path) {
         path.node.value = 'STRING';
       },
 
-      // 规范化数字字面量
+      // Normalize numeric literals
       NumericLiteral(path) {
         path.node.value = 0;
       },
@@ -1743,27 +1743,27 @@ export class CodeAnalyzer {
   }
 
   /**
-   * 计算两段代码的相似度
+   * Calculate similarity between two code segments
    *
-   * 使用Levenshtein距离算法计算字符串相似度
-   * 返回值: 0.0 (完全不同) 到 1.0 (完全相同)
+   * Use Levenshtein distance algorithm to calculate string similarity
+   * Return value: 0.0 (completely different) to 1.0 (identical)
    */
   private calculateCodeSimilarity(code1: string, code2: string): number {
-    // Levenshtein距离算法
+    // Levenshtein distance algorithm
     const len1 = code1.length;
     const len2 = code2.length;
 
-    // 优化：如果长度差异太大，直接返回低相似度
+    // Optimization: if length difference is too large, return low similarity directly
     if (Math.abs(len1 - len2) > Math.max(len1, len2) * 0.3) {
       return 0;
     }
 
-    // 动态规划矩阵 - 使用Array.from确保类型安全
+    // Dynamic programming matrix - using Array.from to ensure type safety
     const matrix: number[][] = Array.from({ length: len1 + 1 }, () =>
       Array.from({ length: len2 + 1 }, () => 0)
     );
 
-    // 初始化第一行和第一列
+    // Initialize first row and first column
     for (let i = 0; i <= len1; i++) {
       matrix[i]![0] = i;
     }
@@ -1771,14 +1771,14 @@ export class CodeAnalyzer {
       matrix[0]![j] = j;
     }
 
-    // 填充矩阵
+    // Fill matrix
     for (let i = 1; i <= len1; i++) {
       for (let j = 1; j <= len2; j++) {
         const cost = code1[i - 1] === code2[j - 1] ? 0 : 1;
         matrix[i]![j] = Math.min(
-          matrix[i - 1]![j]! + 1,      // 删除
-          matrix[i]![j - 1]! + 1,      // 插入
-          matrix[i - 1]![j - 1]! + cost // 替换
+          matrix[i - 1]![j]! + 1,      // deletion
+          matrix[i]![j - 1]! + 1,      // insertion
+          matrix[i - 1]![j - 1]! + cost // substitution
         );
       }
     }
@@ -1786,7 +1786,7 @@ export class CodeAnalyzer {
     const distance = matrix[len1]![len2]!;
     const maxLen = Math.max(len1, len2);
 
-    // 相似度 = 1 - (编辑距离 / 最大长度)
+    // Similarity = 1 - (edit distance / max length)
     return 1 - (distance / maxLen);
   }
 }

@@ -1,47 +1,47 @@
 /**
- * 安全的 JSON 操作工具
+ * Safe JSON operation utilities
  *
- * 功能：
- * - 处理循环引用
- * - 处理 BigInt
- * - 处理特殊对象（Error、RegExp、Date等）
- * - 提供友好的错误处理
+ * Features:
+ * - Handles circular references
+ * - Handles BigInt
+ * - Handles special objects (Error, RegExp, Date, etc.)
+ * - Provides friendly error handling
  */
 
 /**
- * 安全的 JSON.stringify
+ * Safe JSON.stringify
  *
- * @param data 要序列化的数据
- * @param space 缩进空格数（可选）
- * @param maxDepth 最大深度（默认10，防止深层嵌套）
- * @returns JSON 字符串，失败时返回错误描述
+ * @param data Data to serialize
+ * @param space Indentation spaces (optional)
+ * @param maxDepth Maximum depth (default 10, prevents deep nesting)
+ * @returns JSON string, or error description on failure
  */
 export function safeStringify(data: any, space?: number, maxDepth = 10): string {
   const seen = new WeakSet();
   let depth = 0;
 
   const replacer = (key: string, value: any): any => {
-    // 处理 undefined
+    // Handle undefined
     if (value === undefined) {
       return '[undefined]';
     }
 
-    // 处理 BigInt
+    // Handle BigInt
     if (typeof value === 'bigint') {
       return `[BigInt: ${value.toString()}]`;
     }
 
-    // 处理函数
+    // Handle functions
     if (typeof value === 'function') {
       return `[Function: ${value.name || 'anonymous'}]`;
     }
 
-    // 处理 Symbol
+    // Handle Symbol
     if (typeof value === 'symbol') {
       return `[Symbol: ${value.toString()}]`;
     }
 
-    // 处理特殊对象
+    // Handle special objects
     if (value instanceof Error) {
       return {
         __type: 'Error',
@@ -66,22 +66,22 @@ export function safeStringify(data: any, space?: number, maxDepth = 10): string 
       };
     }
 
-    // 处理对象和数组
+    // Handle objects and arrays
     if (value !== null && typeof value === 'object') {
-      // 深度限制
+      // Depth limit
       depth++;
       if (depth > maxDepth) {
         depth--;
         return '[Max depth exceeded]';
       }
 
-      // 循环引用检测
+      // Circular reference detection
       if (seen.has(value)) {
         return '[Circular Reference]';
       }
       seen.add(value);
 
-      // 正常返回
+      // Normal return
       const result = value;
       depth--;
       return result;
@@ -93,16 +93,16 @@ export function safeStringify(data: any, space?: number, maxDepth = 10): string 
   try {
     return JSON.stringify(data, replacer, space);
   } catch (error) {
-    // 如果还是失败，返回错误描述
+    // If it still fails, return an error description
     return `[Serialization Error: ${error instanceof Error ? error.message : String(error)}]`;
   }
 }
 
 /**
- * 安全的 JSON.parse
+ * Safe JSON.parse
  *
- * @param text JSON 字符串
- * @returns 解析后的对象，失败时返回 null
+ * @param text JSON string
+ * @returns Parsed object, or null on failure
  */
 export function safeParse(text: string): any {
   try {

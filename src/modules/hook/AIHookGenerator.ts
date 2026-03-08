@@ -1,40 +1,40 @@
 /**
- * AIHookGenerator — AI 驱动的 Hook 代码生成器
+ * AIHookGenerator — AI-driven Hook code generator
  *
- * 设计理念：
- * - 完全基于 HookManager 的能力，不重复实现 hook 逻辑
- * - 接收自然语言描述或结构化请求，转化为 HookCreateOptions
- * - 支持所有 HookManager 已注册的类型
- * - 生成的代码可直接注入浏览器执行
+ * Design philosophy:
+ * - Fully based on HookManager capabilities, no duplicate hook logic
+ * - Accepts natural language descriptions or structured requests, translates them into HookCreateOptions
+ * - Supports all types registered in HookManager
+ * - Generated code can be directly injected into the browser for execution
  */
 
 import { HookManager, type HookCreateOptions } from './HookManager.js';
 
-// ==================== AI Hook 请求类型 ====================
+// ==================== AI Hook Request Types ====================
 
 export interface AIHookRequest {
-  /** 自然语言描述（如 "Hook 所有 fetch 请求，捕获请求和响应"） */
+  /** Natural language description (e.g., "Hook all fetch requests, capture request and response") */
   description: string;
-  /** Hook 目标配置 */
+  /** Hook target configuration */
   target: AIHookTarget;
-  /** Hook 行为配置 */
+  /** Hook behavior configuration */
   behavior: AIHookBehavior;
-  /** 条件过滤 */
+  /** Condition filtering */
   condition?: AIHookCondition;
-  /** 自定义代码片段 */
+  /** Custom code snippets */
   customCode?: AIHookCustomCode;
 }
 
 export interface AIHookTarget {
-  /** hook 类型（对应注册表中的类型名） */
+  /** Hook type (corresponds to the type name in the registry) */
   type: string;
-  /** 目标函数或对象名（如 "btoa", "fetch"） */
+  /** Target function or object name (e.g., "btoa", "fetch") */
   name?: string;
-  /** 对象路径（如 "window.crypto.subtle"），用于 object-method 类型 */
+  /** Object path (e.g., "window.crypto.subtle"), used for object-method type */
   object?: string;
-  /** 属性名或方法名 */
+  /** Property name or method name */
   property?: string;
-  /** 正则匹配模式（用于匹配多个函数） */
+  /** Regex match pattern (for matching multiple functions) */
   pattern?: string;
 }
 
@@ -51,7 +51,7 @@ export interface AIHookBehavior {
 }
 
 export interface AIHookCondition {
-  /** 通用 JS 条件表达式 */
+  /** General JS condition expression */
   expression?: string;
   urlPattern?: string;
   argFilter?: string;
@@ -88,23 +88,23 @@ export class AIHookGenerator {
     this.manager = manager || new HookManager();
   }
 
-  /** 获取内部的 HookManager 实例 */
+  /** Get the internal HookManager instance */
   getManager(): HookManager {
     return this.manager;
   }
 
   /**
-   * 生成 hook 代码
-   * 核心方法：将 AIHookRequest 转化为 HookCreateOptions，委托给 HookManager
+   * Generate hook code
+   * Core method: translates AIHookRequest into HookCreateOptions, delegates to HookManager
    */
   generate(request: AIHookRequest): AIHookResult {
-    // 1. 将 AI 请求转化为 HookManager 的配置
+    // 1. Translate the AI request into HookManager configuration
     const options = this.translateRequest(request);
 
-    // 2. 委托给 HookManager 创建
+    // 2. Delegate to HookManager for creation
     const { hookId, script } = this.manager.create(options);
 
-    // 3. 构建结果
+    // 3. Build the result
     return {
       hookId,
       code: script,
@@ -119,14 +119,14 @@ export class AIHookGenerator {
   }
 
   /**
-   * 批量生成 hook
+   * Batch generate hooks
    */
   generateBatch(requests: AIHookRequest[]): AIHookResult[] {
     return requests.map(req => this.generate(req));
   }
 
   /**
-   * 快捷方法：生成函数 hook
+   * Shortcut method: generate function hook
    */
   hookFunction(
     target: string,
@@ -157,7 +157,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook fetch 请求
+   * Shortcut method: Hook fetch requests
    */
   hookFetch(options?: {
     urlPattern?: string;
@@ -183,7 +183,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook XHR 请求
+   * Shortcut method: Hook XHR requests
    */
   hookXHR(options?: {
     urlPattern?: string;
@@ -209,7 +209,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook WebSocket
+   * Shortcut method: Hook WebSocket
    */
   hookWebSocket(options?: {
     urlPattern?: string;
@@ -230,7 +230,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook 对象属性
+   * Shortcut method: Hook object property
    */
   hookProperty(
     object: string,
@@ -253,7 +253,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook 事件监听
+   * Shortcut method: Hook event listeners
    */
   hookEvent(
     eventName?: string,
@@ -274,7 +274,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook 对象方法
+   * Shortcut method: Hook object method
    */
   hookObjectMethod(
     object: string,
@@ -306,7 +306,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook eval / Function
+   * Shortcut method: Hook eval / Function
    */
   hookEval(options?: {
     action?: 'log' | 'block';
@@ -325,7 +325,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook localStorage
+   * Shortcut method: Hook localStorage
    */
   hookLocalStorage(options?: {
     keyPattern?: string;
@@ -343,13 +343,13 @@ export class AIHookGenerator {
         blockExecution: options?.action === 'block',
       },
       condition: {
-        urlPattern: options?.keyPattern, // 复用 urlPattern 存放 keyPattern
+        urlPattern: options?.keyPattern, // Reuse urlPattern to store keyPattern
       },
     });
   }
 
   /**
-   * 快捷方法：Hook cookie
+   * Shortcut method: Hook cookie
    */
   hookCookie(options?: {
     action?: 'log' | 'block';
@@ -367,7 +367,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 快捷方法：Hook 定时器
+   * Shortcut method: Hook timers
    */
   hookTimers(options?: {
     timerType?: 'setTimeout' | 'setInterval' | 'both';
@@ -386,7 +386,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 注入自定义脚本
+   * Inject custom script
    */
   injectCustom(script: string, description?: string): AIHookResult {
     return this.generate({
@@ -398,14 +398,14 @@ export class AIHookGenerator {
   }
 
   /**
-   * 获取 hook 数据（代理到 HookManager）
+   * Get hook data (proxied to HookManager)
    */
   getHookData(hookId: string): unknown[] {
     return this.manager.getRecords(hookId);
   }
 
   /**
-   * 获取所有 hook 列表
+   * Get list of all hooks
    */
   listHooks(): Array<{
     hookId: string;
@@ -418,7 +418,7 @@ export class AIHookGenerator {
   }
 
   /**
-   * 清除 hook 数据
+   * Clear hook data
    */
   clearData(hookId?: string): void {
     if (hookId) {
@@ -431,34 +431,34 @@ export class AIHookGenerator {
   }
 
   /**
-   * 启用/禁用 hook
+   * Enable/disable hook
    */
   toggleHook(hookId: string, enabled: boolean): boolean {
     return enabled ? this.manager.enable(hookId) : this.manager.disable(hookId);
   }
 
   /**
-   * 导出数据
+   * Export data
    */
   exportData(format: 'json' | 'csv' = 'json'): string {
     return this.manager.exportData(format);
   }
 
-  // ==================== 内部方法 ====================
+  // ==================== Internal Methods ====================
 
   /**
-   * 将 AIHookRequest 翻译为 HookCreateOptions
+   * Translate AIHookRequest into HookCreateOptions
    */
   private translateRequest(request: AIHookRequest): HookCreateOptions {
     const { target, behavior, condition, customCode, description } = request;
 
-    // 确定 hook 类型
+    // Determine hook type
     const type = target.type;
 
-    // 构建 params（类型特定参数）
+    // Build params (type-specific parameters)
     const params: Record<string, unknown> = {};
 
-    // 根据目标类型分配 params
+    // Assign params based on target type
     if (target.name && (type === 'function' || type === 'timer')) {
       if (type === 'function') {
         params.target = target.name;
@@ -485,17 +485,17 @@ export class AIHookGenerator {
       params.urlPattern = condition.urlPattern;
     }
 
-    // 对于 localstorage 的 keyPattern
+    // keyPattern for localstorage
     if (type === 'localstorage' && condition?.urlPattern) {
       params.keyPattern = condition.urlPattern;
     }
 
-    // 对于 custom 类型的完全替换
+    // Full replacement for custom type
     if (type === 'custom' && customCode?.replace) {
       params.script = customCode.replace;
     }
 
-    // 构建 action
+    // Build action
     let action: HookCreateOptions['action'] = 'log';
     if (behavior.blockExecution) {
       action = 'block';
@@ -503,14 +503,14 @@ export class AIHookGenerator {
       action = 'modify';
     }
 
-    // 构建 capture
+    // Build capture
     const capture: HookCreateOptions['capture'] = {};
     if (behavior.captureArgs) capture.args = true;
     if (behavior.captureReturn) capture.returnValue = true;
     if (behavior.captureStack) capture.stack = behavior.captureStack;
     if (behavior.captureTiming) capture.timing = true;
 
-    // 构建 condition
+    // Build condition
     const condOpts: HookCreateOptions['condition'] = {};
     if (condition?.expression || condition?.argFilter) {
       condOpts.expression = condition.expression || condition.argFilter;
@@ -519,14 +519,14 @@ export class AIHookGenerator {
     if (condition?.minInterval) condOpts.minInterval = condition.minInterval;
     if (condition?.urlPattern) condOpts.urlPattern = condition.urlPattern;
 
-    // 构建 lifecycle
+    // Build lifecycle
     const lifecycle: HookCreateOptions['lifecycle'] = {};
     if (customCode?.before) lifecycle.before = customCode.before;
     if (customCode?.after) lifecycle.after = customCode.after;
     if (customCode?.onError) lifecycle.onError = customCode.onError;
     if (customCode?.replace && type !== 'custom') lifecycle.replace = customCode.replace;
 
-    // 构建 store
+    // Build store
     const store: HookCreateOptions['store'] = {
       console: behavior.logToConsole ?? true,
       consoleFormat: behavior.consoleFormat || 'compact',

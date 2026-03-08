@@ -1,19 +1,19 @@
 /**
- * 反混淆主管线
+ * Main deobfuscation pipeline
  *
- * 统一调度所有反混淆子模块，按检测结果自动选择最优管线：
- *   1. PackerDeobfuscator  — Packer / AAEncode / URLEncode 解包
- *   2. JSVMPDeobfuscator   — JSVMP 虚拟机保护还原
- *   3. AdvancedDeobfuscator — 高级混淆 (invisible-unicode, 控制流平坦化, 不透明谓词, 死代码…)
- *   4. ASTOptimizer         — 通用 AST 优化 (常量折叠/传播, 变量内联, 序列展开…)
- *   5. 基础管线             — 字符串数组提取/替换, 字符串解码, 表达式简化, 变量重命名
- *   6. LLM 辅助分析        — 可选，利用 AI 做语义分析
+ * Orchestrates all deobfuscation sub-modules, automatically selecting the optimal pipeline based on detection results:
+ *   1. PackerDeobfuscator  — Packer / AAEncode / URLEncode unpacking
+ *   2. JSVMPDeobfuscator   — JSVMP virtual machine protection restoration
+ *   3. AdvancedDeobfuscator — Advanced obfuscation (invisible-unicode, control flow flattening, opaque predicates, dead code…)
+ *   4. ASTOptimizer         — General AST optimization (constant folding/propagation, variable inlining, sequence expansion…)
+ *   5. Basic pipeline       — String array extraction/replacement, string decoding, expression simplification, variable renaming
+ *   6. LLM-assisted analysis — Optional, leveraging AI for semantic analysis
  *
- * 设计原则：
- *   - 每个子管线独立 try/catch，单步失败不中断整体
- *   - 检测优先，只对检测到的混淆类型执行对应管线
- *   - 管线顺序固定：先解包 → 再深度还原 → 再 AST 优化 → 最后基础清理
- *   - 结果缓存 + LRU 淘汰
+ * Design principles:
+ *   - Each sub-pipeline has independent try/catch; a single step failure does not interrupt the overall process
+ *   - Detection first; only execute corresponding pipelines for detected obfuscation types
+ *   - Fixed pipeline order: unpack first → then deep restoration → then AST optimization → finally basic cleanup
+ *   - Result caching + LRU eviction
  */
 
 import * as parser from '@babel/parser';
@@ -27,43 +27,43 @@ import type { DeobfuscateOptions, DeobfuscateResult, ObfuscationType, Transforma
 import { logger } from '../../utils/logger.js';
 import { LLMService } from '../../services/LLMService.js';
 
-// 子模块
+// Sub-modules
 import { AdvancedDeobfuscator, type AdvancedDeobfuscateOptions } from './AdvancedDeobfuscator.js';
 import { JSVMPDeobfuscator } from './JSVMPDeobfuscator.js';
 import { ASTOptimizer } from './ASTOptimizer.js';
 import { PackerDeobfuscator, AAEncodeDeobfuscator, URLEncodeDeobfuscator, UniversalUnpacker } from './PackerDeobfuscator.js';
 
-// ==================== 扩展选项 ====================
+// ==================== Extended Options ====================
 
 export interface DeobfuscateFullOptions extends DeobfuscateOptions {
-  /** 启用高级反混淆管线（AdvancedDeobfuscator） */
+  /** Enable advanced deobfuscation pipeline (AdvancedDeobfuscator) */
   advanced?: boolean;
-  /** 启用 JSVMP 专项反混淆 */
+  /** Enable JSVMP-specific deobfuscation */
   jsvmp?: boolean;
-  /** 启用 AST 优化器 */
+  /** Enable AST optimizer */
   astOptimize?: boolean;
-  /** 启用 Packer/AAEncode/URLEncode 自动解包 */
+  /** Enable Packer/AAEncode/URLEncode auto-unpacking */
   unpack?: boolean;
-  /** 激进 VM 反混淆 */
+  /** Aggressive VM deobfuscation */
   aggressiveVM?: boolean;
-  /** 超时(ms)，默认 60000 */
+  /** Timeout in ms, default 60000 */
   timeout?: number;
-  /** 自动模式：根据检测结果自动启用对应管线（默认 true） */
+  /** Auto mode: automatically enable corresponding pipelines based on detection results (default true) */
   auto?: boolean;
 }
 
-// ==================== 主类 ====================
+// ==================== Main Class ====================
 
 export class Deobfuscator {
   private llm?: LLMService;
 
-  // 子模块实例
+  // Sub-module instances
   private advancedDeobfuscator: AdvancedDeobfuscator;
   private jsvmpDeobfuscator: JSVMPDeobfuscator;
   private astOptimizer: ASTOptimizer;
   private universalUnpacker: UniversalUnpacker;
 
-  // 缓存
+  // Cache
   private stringArrays: Map<string, string[]> = new Map();
   private resultCache = new Map<string, DeobfuscateResult>();
   private maxCacheSize = 100;
@@ -76,13 +76,13 @@ export class Deobfuscator {
     this.universalUnpacker = new UniversalUnpacker();
   }
 
-  // ==================== 公共 API ====================
+  // ==================== Public API ====================
 
   /**
-   * 完整反混淆管线入口
+   * Full deobfuscation pipeline entry point
    */
   async deobfuscate(options: DeobfuscateFullOptions): Promise<DeobfuscateResult> {
-    // 缓存
+    // Cache
     const cacheKey = this.generateCacheKey(options);
     const cached = this.resultCache.get(cacheKey);
     if (cached) {
@@ -93,32 +93,32 @@ export class Deobfuscator {
     logger.info('Starting deobfuscation pipeline...');
     const startTime = Date.now();
 
-    // 全局收集器：子管线的 warnings 和 unresolvedParts 在这里汇聚
-    // 最终完整透传给外部 AI，让外部 AI 基于这些信息做更深度的推理
+    // Global collectors: warnings and unresolvedParts from sub-pipelines are aggregated here
+    // Fully passed through to the external AI for deeper reasoning based on this information
     const pipelineWarnings: string[] = [];
     const pipelineUnresolved: UnresolvedPart[] = [];
 
     try {
       let code = options.code;
       const transformations: Transformation[] = [];
-      const autoMode = options.auto !== false; // 默认自动
+      const autoMode = options.auto !== false; // default auto
 
-      // ── Step 0: 检测混淆类型 ──
+      // ── Step 0: Detect obfuscation types ──
       const obfuscationType = this.detectObfuscationType(code);
       logger.info(`Detected obfuscation types: ${obfuscationType.join(', ')}`);
-      pipelineWarnings.push(`检测到的混淆类型: ${obfuscationType.join(', ')}`);
+      pipelineWarnings.push(`Detected obfuscation types: ${obfuscationType.join(', ')}`);
 
-      // ── Step 1: Packer / AAEncode / URLEncode 自动解包 ──
+      // ── Step 1: Packer / AAEncode / URLEncode auto-unpacking ──
       if (this.shouldRun(options.unpack, autoMode, obfuscationType, ['packer', 'aaencode', 'urlencoded', 'eval-obfuscation'])) {
         code = await this.runUnpack(code, transformations);
       }
 
-      // ── Step 2: JSVMP 虚拟机保护还原 ──
+      // ── Step 2: JSVMP virtual machine protection restoration ──
       if (this.shouldRun(options.jsvmp, autoMode, obfuscationType, ['vm-protection'])) {
         code = await this.runJSVMP(code, options, transformations, pipelineWarnings, pipelineUnresolved);
       }
 
-      // ── Step 3: 高级反混淆 ──
+      // ── Step 3: Advanced deobfuscation ──
       if (this.shouldRun(options.advanced, autoMode, obfuscationType, [
         'invisible-unicode', 'control-flow-flattening', 'string-array-rotation',
         'dead-code-injection', 'opaque-predicates', 'custom',
@@ -126,32 +126,32 @@ export class Deobfuscator {
         code = await this.runAdvanced(code, options, transformations, pipelineWarnings);
       }
 
-      // ── Step 4: 基础管线 ──
-      // 字符串数组提取 + 替换
+      // ── Step 4: Basic pipeline ──
+      // String array extraction + replacement
       code = await this.extractStringArrays(code, transformations);
       code = await this.basicTransform(code, transformations);
       code = await this.decodeStrings(code, transformations);
       code = await this.decryptArrays(code, transformations);
 
-      // 控制流平坦化还原（基础版，仅 aggressive 时）
+      // Control flow unflattening (basic version, only in aggressive mode)
       if (options.aggressive) {
         code = await this.unflattenControlFlow(code, transformations);
       }
 
-      // 表达式简化
+      // Expression simplification
       code = await this.simplifyExpressions(code, transformations);
 
-      // ── Step 5: AST 优化器 ──
+      // ── Step 5: AST optimizer ──
       if (this.shouldRun(options.astOptimize, autoMode, obfuscationType, ['javascript-obfuscator', 'uglify', 'webpack'])) {
         code = await this.runASTOptimizer(code, transformations);
       }
 
-      // ── Step 6: 变量重命名 ──
+      // ── Step 6: Variable renaming ──
       if (options.renameVariables) {
         code = await this.renameVariables(code, transformations);
       }
 
-      // ── Step 7: LLM 辅助分析 ──
+      // ── Step 7: LLM-assisted analysis ──
       let analysis = 'Deobfuscation pipeline completed.';
       if (this.llm && options.llm) {
         const llmResult = await this.llmAnalysis(code);
@@ -161,12 +161,12 @@ export class Deobfuscator {
         }
       }
 
-      // ── 结果 ──
+      // ── Result ──
       const deobfuscateTime = Date.now() - startTime;
       const readabilityScore = this.calculateReadabilityScore(code);
       const confidence = this.calculateConfidence(transformations, readabilityScore);
 
-      // 重新检测，因为某些类型可能在子管线中被发现
+      // Re-detect, as some types may have been discovered in sub-pipelines
       const finalTypes = this.mergeObfuscationTypes(obfuscationType, transformations);
 
       logger.success(`Deobfuscation completed in ${deobfuscateTime}ms (confidence: ${(confidence * 100).toFixed(1)}%)`);
@@ -178,7 +178,7 @@ export class Deobfuscator {
         obfuscationType: finalTypes,
         transformations,
         analysis,
-        // 完整透传给外部 AI：所有子管线的分析信息
+        // Fully passed through to external AI: all sub-pipeline analysis information
         warnings: pipelineWarnings.length > 0 ? pipelineWarnings : undefined,
         unresolvedParts: pipelineUnresolved.length > 0 ? pipelineUnresolved : undefined,
       };
@@ -191,10 +191,10 @@ export class Deobfuscator {
     }
   }
 
-  // ==================== 子管线调度 ====================
+  // ==================== Sub-pipeline Scheduling ====================
 
   /**
-   * 是否应该运行某个子管线
+   * Whether a specific sub-pipeline should run
    */
   private shouldRun(
     explicitFlag: boolean | undefined,
@@ -202,11 +202,11 @@ export class Deobfuscator {
     detected: ObfuscationType[],
     triggers: ObfuscationType[],
   ): boolean {
-    // 显式关闭
+    // Explicitly disabled
     if (explicitFlag === false) return false;
-    // 显式开启
+    // Explicitly enabled
     if (explicitFlag === true) return true;
-    // 自动模式：检测到对应类型就开
+    // Auto mode: enable when corresponding type is detected
     if (autoMode) {
       return detected.some(t => triggers.includes(t));
     }
@@ -214,7 +214,7 @@ export class Deobfuscator {
   }
 
   /**
-   * Packer / AAEncode / URLEncode 解包
+   * Packer / AAEncode / URLEncode unpacking
    */
   private async runUnpack(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -236,8 +236,8 @@ export class Deobfuscator {
   }
 
   /**
-   * JSVMP 虚拟机保护还原
-   * warnings/unresolvedParts 完整透传给外部 AI
+   * JSVMP virtual machine protection restoration
+   * warnings/unresolvedParts are fully passed through to external AI
    */
   private async runJSVMP(
     code: string,
@@ -255,18 +255,18 @@ export class Deobfuscator {
         timeout: options.timeout ?? 30000,
       });
 
-      // 无论是否成功还原，warnings 都透传给外部 AI
+      // Regardless of restoration success, warnings are passed through to external AI
       if (result.warnings && result.warnings.length > 0) {
         pipelineWarnings.push(...result.warnings.map(w => `[JSVMP] ${w}`));
       }
 
-      // unresolvedParts 完整透传
+      // unresolvedParts fully passed through
       if (result.unresolvedParts && result.unresolvedParts.length > 0) {
         pipelineUnresolved.push(...result.unresolvedParts);
       }
 
       if (result.isJSVMP && result.confidence > 0.3) {
-        // 构建 detail 供外部 AI 深入分析
+        // Build detail for external AI to perform deeper analysis
         const detail: Record<string, unknown> = {
           vmType: result.vmType,
           confidence: result.confidence,
@@ -305,8 +305,8 @@ export class Deobfuscator {
 
         return result.deobfuscatedCode;
       } else if (result.isJSVMP) {
-        // 检测到了 JSVMP 但置信度太低，仍然把分析信息传出
-        pipelineWarnings.push(`[JSVMP] 检测到VM保护但还原置信度过低(${(result.confidence * 100).toFixed(1)}%)，代码未修改`);
+        // JSVMP detected but confidence too low, still pass analysis information through
+        pipelineWarnings.push(`[JSVMP] VM protection detected but restoration confidence too low (${(result.confidence * 100).toFixed(1)}%), code unchanged`);
         transformations.push({
           type: 'jsvmp',
           description: `JSVMP detected but confidence too low (${(result.confidence * 100).toFixed(1)}%), code unchanged`,
@@ -320,15 +320,15 @@ export class Deobfuscator {
       }
     } catch (error) {
       logger.warn('JSVMPDeobfuscator failed', error);
-      pipelineWarnings.push(`[JSVMP] 反混淆失败: ${error}`);
+      pipelineWarnings.push(`[JSVMP] Deobfuscation failed: ${error}`);
       transformations.push({ type: 'jsvmp', description: `JSVMP deobfuscation failed: ${error}`, success: false });
     }
     return code;
   }
 
   /**
-   * 高级反混淆管线
-   * warnings 完整透传给外部 AI
+   * Advanced deobfuscation pipeline
+   * warnings are fully passed through to external AI
    */
   private async runAdvanced(
     code: string,
@@ -341,13 +341,13 @@ export class Deobfuscator {
       const advOptions: AdvancedDeobfuscateOptions = {
         code,
         aggressiveVM: options.aggressiveVM,
-        useASTOptimization: false, // AST 优化单独在 Step 5 处理，避免重复
+        useASTOptimization: false, // AST optimization handled separately in Step 5 to avoid duplication
         timeout: options.timeout,
       };
 
       const result = await this.advancedDeobfuscator.deobfuscate(advOptions);
 
-      // 无论结果如何，warnings 透传给外部 AI
+      // Regardless of the result, warnings are passed through to external AI
       if (result.warnings && result.warnings.length > 0) {
         pipelineWarnings.push(...result.warnings.map(w => `[Advanced] ${w}`));
       }
@@ -367,14 +367,14 @@ export class Deobfuscator {
       }
     } catch (error) {
       logger.warn('AdvancedDeobfuscator failed', error);
-      pipelineWarnings.push(`[Advanced] 高级反混淆失败: ${error}`);
+      pipelineWarnings.push(`[Advanced] Advanced deobfuscation failed: ${error}`);
       transformations.push({ type: 'advanced', description: `Advanced deobfuscation failed: ${error}`, success: false });
     }
     return code;
   }
 
   /**
-   * AST 优化器
+   * AST optimizer
    */
   private async runASTOptimizer(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -395,10 +395,10 @@ export class Deobfuscator {
     return code;
   }
 
-  // ==================== 检测 ====================
+  // ==================== Detection ====================
 
   /**
-   * 检测混淆类型（综合检测）
+   * Detect obfuscation types (comprehensive detection)
    */
   private detectObfuscationType(code: string): ObfuscationType[] {
     const types: ObfuscationType[] = [];
@@ -413,12 +413,12 @@ export class Deobfuscator {
       types.push('webpack');
     }
 
-    // UglifyJS (单行长代码)
+    // UglifyJS (single-line long code)
     if (code.length > 1000 && !code.includes('\n')) {
       types.push('uglify');
     }
 
-    // VM 保护
+    // VM protection
     if (code.includes('eval') && code.includes('Function')) {
       types.push('vm-protection');
     }
@@ -438,29 +438,29 @@ export class Deobfuscator {
       types.push('urlencoded');
     }
 
-    // Invisible Unicode (零宽字符)
+    // Invisible Unicode (zero-width characters)
     if (/[\u200B-\u200F\u2028-\u202F\uFEFF]/.test(code)) {
       types.push('invisible-unicode');
     }
 
-    // 控制流平坦化 (while + switch 嵌套)
+    // Control flow flattening (while + switch nesting)
     if (/while\s*\([^)]*\)\s*\{?\s*switch\s*\(/.test(code) ||
         /while\s*\(\s*!!\s*\[\s*\]\s*\)\s*\{?\s*switch/.test(code)) {
       types.push('control-flow-flattening');
     }
 
-    // 不透明谓词 (恒真/恒假条件)
+    // Opaque predicates (always-true/always-false conditions)
     if (/if\s*\(\s*typeof\s+\w+\s*[!=]==?\s*['"]undefined['"]\s*\)/.test(code) &&
         code.includes('_0x')) {
       types.push('opaque-predicates');
     }
 
-    // 死代码注入
+    // Dead code injection
     if (/if\s*\(\s*false\s*\)|if\s*\(\s*![1!]\s*\)/.test(code)) {
       types.push('dead-code-injection');
     }
 
-    // 字符串数组旋转
+    // String array rotation
     if (/\(\s*function\s*\(\s*_0x[a-f0-9]+\s*,\s*_0x[a-f0-9]+\s*\).*?push\s*\(\s*.*?shift\s*\(\s*\)/.test(code)) {
       types.push('string-array-rotation');
     }
@@ -470,17 +470,17 @@ export class Deobfuscator {
       types.push('jsfuck');
     }
 
-    // eval 混淆
+    // eval obfuscation
     if (/eval\s*\(\s*['"`]/.test(code) || /eval\s*\(\s*atob\s*\(/.test(code)) {
       types.push('eval-obfuscation');
     }
 
-    // Hex 编码字符串
+    // Hex-encoded strings
     if (/\\x[0-9a-fA-F]{2}/.test(code)) {
       types.push('hex-encoding');
     }
 
-    // Base64 编码
+    // Base64 encoding
     if (/atob\s*\(|btoa\s*\(/.test(code) && /[A-Za-z0-9+/]{20,}={0,2}/.test(code)) {
       types.push('base64-encoding');
     }
@@ -493,7 +493,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 合并子管线检测到的额外混淆类型
+   * Merge additional obfuscation types detected by sub-pipelines
    */
   private mergeObfuscationTypes(
     original: ObfuscationType[],
@@ -501,7 +501,7 @@ export class Deobfuscator {
   ): ObfuscationType[] {
     const types = new Set<ObfuscationType>(original);
 
-    // 从 transformations 推断新发现的类型
+    // Infer newly discovered types from transformations
     for (const t of transformations) {
       if (t.success) {
         if (t.type === 'unpack' && t.description.includes('Packer')) types.add('packer');
@@ -515,7 +515,7 @@ export class Deobfuscator {
       }
     }
 
-    // 移除 unknown（如果有具体类型）
+    // Remove 'unknown' if specific types exist
     if (types.size > 1) {
       types.delete('unknown');
     }
@@ -523,17 +523,17 @@ export class Deobfuscator {
     return [...types];
   }
 
-  // ==================== 基础管线方法 ====================
+  // ==================== Basic Pipeline Methods ====================
 
   /**
-   * 基础 AST 转换 (常量折叠 + 死代码消除)
+   * Basic AST transforms (constant folding + dead code elimination)
    */
   private async basicTransform(code: string, transformations: Transformation[]): Promise<string> {
     try {
       const ast = parser.parse(code, { sourceType: 'module', plugins: ['jsx', 'typescript'] });
 
       traverse(ast, {
-        // 常量折叠
+        // Constant folding
         BinaryExpression(path) {
           if (t.isNumericLiteral(path.node.left) && t.isNumericLiteral(path.node.right)) {
             const l = path.node.left.value;
@@ -557,13 +557,13 @@ export class Deobfuscator {
               path.replaceWith(t.numericLiteral(result));
             }
           }
-          // 字符串拼接折叠
+          // String concatenation folding
           if (t.isStringLiteral(path.node.left) && t.isStringLiteral(path.node.right) && path.node.operator === '+') {
             path.replaceWith(t.stringLiteral(path.node.left.value + path.node.right.value));
           }
         },
 
-        // 死代码消除
+        // Dead code elimination
         IfStatement(path) {
           if (t.isBooleanLiteral(path.node.test)) {
             if (path.node.test.value) {
@@ -576,7 +576,7 @@ export class Deobfuscator {
           }
         },
 
-        // 条件表达式简化 true ? a : b → a
+        // Conditional expression simplification: true ? a : b → a
         ConditionalExpression(path) {
           if (t.isBooleanLiteral(path.node.test)) {
             path.replaceWith(path.node.test.value ? path.node.consequent : path.node.alternate);
@@ -595,7 +595,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 字符串解码 (hex / unicode)
+   * String decoding (hex / unicode)
    */
   private async decodeStrings(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -607,7 +607,7 @@ export class Deobfuscator {
           const value = path.node.value;
           let newValue = value;
 
-          // 十六进制
+          // Hexadecimal
           if (value.includes('\\x')) {
             newValue = newValue.replace(/\\x([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
           }
@@ -637,7 +637,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 提取字符串数组 (JavaScript Obfuscator 特有)
+   * Extract string arrays (specific to JavaScript Obfuscator)
    */
   private async extractStringArrays(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -677,7 +677,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 数组解密 (替换字符串数组引用)
+   * Array decryption (replace string array references)
    */
   private async decryptArrays(code: string, transformations: Transformation[]): Promise<string> {
     if (this.stringArrays.size === 0) return code;
@@ -721,7 +721,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 控制流平坦化还原 (基础版)
+   * Control flow unflattening (basic version)
    */
   private async unflattenControlFlow(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -737,22 +737,22 @@ export class Deobfuscator {
 
           if (!t.isSwitchStatement(switchNode)) return;
 
-          // 查找调度变量
+          // Find the dispatch variable
           const discriminant = switchNode.discriminant;
           if (!t.isMemberExpression(discriminant)) return;
 
-          // 检查是否是典型的 array[index++] 模式
+          // Check if this is the typical array[index++] pattern
           const obj = discriminant.object;
           if (!t.isIdentifier(obj)) return;
 
-          // 尝试找到调度序列
+          // Try to find the dispatch sequence
           const binding = path.scope.getBinding(obj.name);
           if (!binding || !binding.path.isVariableDeclarator()) return;
 
           const init = binding.path.node.init;
           if (!t.isCallExpression(init)) return;
 
-          // 典型模式: "0|1|2|3".split("|")
+          // Typical pattern: "0|1|2|3".split("|")
           const callee = init.callee;
           if (
             t.isMemberExpression(callee) &&
@@ -764,7 +764,7 @@ export class Deobfuscator {
             const order = callee.object.value.split('|').map(Number);
             const cases = switchNode.cases;
 
-            // 按执行顺序重组 case 的 consequent
+            // Reorder case consequents by execution order
             const orderedStatements: t.Statement[] = [];
             for (const idx of order) {
               const matchedCase = cases.find(c => t.isStringLiteral(c.test, { value: String(idx) }) || t.isNumericLiteral(c.test, { value: idx }));
@@ -799,7 +799,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 表达式简化
+   * Expression simplification
    */
   private async simplifyExpressions(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -808,7 +808,7 @@ export class Deobfuscator {
 
       traverse(ast, {
         UnaryExpression(path) {
-          // !!value → Boolean(value) 保持语义但更清晰（这里直接保留原值）
+          // !!value → Boolean(value) preserves semantics but is clearer (here we keep the original value)
           if (
             path.node.operator === '!' &&
             t.isUnaryExpression(path.node.argument) &&
@@ -829,7 +829,7 @@ export class Deobfuscator {
           }
         },
 
-        // 逗号表达式展开: (a, b, c) → 最后一个值（在表达式位置）
+        // Comma expression expansion: (a, b, c) → last value (in expression position)
         SequenceExpression(path) {
           if (path.node.expressions.length === 1) {
             path.replaceWith(path.node.expressions[0]);
@@ -852,7 +852,7 @@ export class Deobfuscator {
   }
 
   /**
-   * 变量重命名
+   * Variable renaming
    */
   private async renameVariables(code: string, transformations: Transformation[]): Promise<string> {
     try {
@@ -860,7 +860,7 @@ export class Deobfuscator {
       let renamed = 0;
       const renameMap = new Map<string, string>();
 
-      // 第一遍：收集需要重命名的变量
+      // First pass: collect variables that need renaming
       traverse(ast, {
         VariableDeclarator(path) {
           if (t.isIdentifier(path.node.id) && path.node.id.name.startsWith('_0x')) {
@@ -872,7 +872,7 @@ export class Deobfuscator {
         },
       });
 
-      // 第二遍：使用 scope 安全重命名
+      // Second pass: safely rename using scope
       if (renameMap.size > 0) {
         traverse(ast, {
           Identifier(path) {
@@ -909,7 +909,7 @@ export class Deobfuscator {
     }
   }
 
-  // ==================== 评分 ====================
+  // ==================== Scoring ====================
 
   private calculateConfidence(transformations: Transformation[], readabilityScore: number): number {
     const successCount = transformations.filter((t) => t.success).length;
@@ -932,7 +932,7 @@ export class Deobfuscator {
     return Math.min(score, 100);
   }
 
-  // ==================== 缓存 ====================
+  // ==================== Cache ====================
 
   private generateCacheKey(options: DeobfuscateFullOptions): string {
     const key = JSON.stringify({
@@ -955,7 +955,7 @@ export class Deobfuscator {
     this.resultCache.set(key, result);
   }
 
-  /** 清除缓存 */
+  /** Clear cache */
   clearCache(): void {
     this.resultCache.clear();
     this.stringArrays.clear();

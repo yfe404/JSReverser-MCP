@@ -1,23 +1,23 @@
 /**
- * UnifiedCacheManager - 统一缓存管理器
- * 
- * 核心功能：
- * 1. 协调所有缓存（DetailedDataManager, CodeCache, CodeCompressor）
- * 2. 提供全局缓存统计
- * 3. 智能清理策略（过期数据 → 低命中率 → 大体积）
- * 4. 缓存预热机制
- * 5. 全局缓存大小限制
- * 
- * 设计原则：
- * - 单例模式 - 全局唯一实例
- * - 非侵入式 - 不修改现有缓存实现
- * - 协调者模式 - 只协调，不替代
+ * UnifiedCacheManager - Unified Cache Manager
+ *
+ * Core features:
+ * 1. Coordinate all caches (DetailedDataManager, CodeCache, CodeCompressor)
+ * 2. Provide global cache statistics
+ * 3. Smart cleanup strategy (expired data -> low hit rate -> large size)
+ * 4. Cache preheating mechanism
+ * 5. Global cache size limit
+ *
+ * Design principles:
+ * - Singleton pattern - single global instance
+ * - Non-invasive - does not modify existing cache implementations
+ * - Coordinator pattern - only coordinates, does not replace
  */
 
 import { logger } from './logger.js';
 
 /**
- * 缓存实例接口（适配器模式）
+ * Cache instance interface (adapter pattern)
  */
 export interface CacheInstance {
   name: string;
@@ -27,7 +27,7 @@ export interface CacheInstance {
 }
 
 /**
- * 缓存统计信息
+ * Cache statistics
  */
 export interface CacheStats {
   entries: number;
@@ -40,7 +40,7 @@ export interface CacheStats {
 }
 
 /**
- * 全局缓存统计
+ * Global cache statistics
  */
 export interface GlobalCacheStats {
   totalEntries: number;
@@ -59,21 +59,21 @@ export interface GlobalCacheStats {
 }
 
 /**
- * 统一缓存管理器
+ * Unified cache manager
  */
 export class UnifiedCacheManager {
   private static instance: UnifiedCacheManager;
 
-  // ==================== 配置 ====================
+  // ==================== Configuration ====================
 
   private readonly GLOBAL_MAX_SIZE = 500 * 1024 * 1024; // 500MB
-  private readonly LOW_HIT_RATE_THRESHOLD = 0.3; // 低命中率阈值
+  private readonly LOW_HIT_RATE_THRESHOLD = 0.3; // Low hit rate threshold
 
-  // ==================== 状态 ====================
+  // ==================== State ====================
 
   private caches = new Map<string, CacheInstance>();
 
-  // ==================== 单例模式 ====================
+  // ==================== Singleton ====================
 
   private constructor() {
     logger.info('UnifiedCacheManager initialized');
@@ -86,10 +86,10 @@ export class UnifiedCacheManager {
     return this.instance;
   }
 
-  // ==================== 核心功能 ====================
+  // ==================== Core features ====================
 
   /**
-   * 注册缓存
+   * Register cache
    */
   registerCache(cache: CacheInstance): void {
     this.caches.set(cache.name, cache);
@@ -97,7 +97,7 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 注销缓存
+   * Unregister cache
    */
   unregisterCache(name: string): void {
     this.caches.delete(name);
@@ -105,7 +105,7 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 获取全局统计
+   * Get global statistics
    */
   async getGlobalStats(): Promise<GlobalCacheStats> {
     let totalEntries = 0;
@@ -122,7 +122,7 @@ export class UnifiedCacheManager {
       ttl?: number;
     }> = [];
 
-    // 收集所有缓存的统计信息
+    // Collect statistics from all caches
     for (const [name, cache] of this.caches) {
       try {
         const stats = await cache.getStats();
@@ -145,12 +145,12 @@ export class UnifiedCacheManager {
       }
     }
 
-    // 计算全局命中率
+    // Calculate global hit rate
     const hitRate = totalHits + totalMisses > 0
       ? totalHits / (totalHits + totalMisses)
       : 0;
 
-    // 生成建议
+    // Generate recommendations
     const recommendations = this.generateRecommendations(totalSize, hitRate, cacheStats);
 
     return {
@@ -164,12 +164,12 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 智能清理
+   * Smart cleanup
    *
-   * 策略：
-   * 1. 清理过期数据
-   * 2. 清理低命中率缓存
-   * 3. 清理大体积缓存
+   * Strategy:
+   * 1. Clean up expired data
+   * 2. Clean up low hit rate caches
+   * 3. Clean up large caches
    */
   async smartCleanup(targetSize?: number): Promise<{
     before: number;
@@ -196,34 +196,34 @@ export class UnifiedCacheManager {
       `target ${(target / 1024 / 1024).toFixed(2)}MB`
     );
 
-    // 1. 清理过期数据
+    // 1. Clean up expired data
     await this.cleanupExpired();
 
-    // 2. 检查是否达到目标
+    // 2. Check if target is reached
     let currentStats = await this.getGlobalStats();
     if (currentStats.totalSize <= target) {
       return this.calculateCleanupResult(beforeSize, currentStats.totalSize);
     }
 
-    // 3. 清理低命中率缓存
+    // 3. Clean up low hit rate caches
     await this.cleanupLowHitRate();
 
-    // 4. 再次检查
+    // 4. Check again
     currentStats = await this.getGlobalStats();
     if (currentStats.totalSize <= target) {
       return this.calculateCleanupResult(beforeSize, currentStats.totalSize);
     }
 
-    // 5. 清理大体积缓存（最后手段）
+    // 5. Clean up large caches (last resort)
     await this.cleanupLargeItems();
 
-    // 6. 最终统计
+    // 6. Final statistics
     const afterStats = await this.getGlobalStats();
     return this.calculateCleanupResult(beforeSize, afterStats.totalSize);
   }
 
   /**
-   * 清理过期数据
+   * Clean up expired data
    */
   private async cleanupExpired(): Promise<void> {
     logger.info('Cleaning up expired data...');
@@ -241,7 +241,7 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 清理低命中率缓存
+   * Clean up low hit rate caches
    */
   private async cleanupLowHitRate(): Promise<void> {
     logger.info('Cleaning up low hit rate caches...');
@@ -266,17 +266,17 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 清理大体积缓存
+   * Clean up large caches
    */
   private async cleanupLargeItems(): Promise<void> {
     logger.info('Cleaning up large caches...');
 
     const stats = await this.getGlobalStats();
 
-    // 按大小排序
+    // Sort by size
     const sortedCaches = stats.caches.sort((a, b) => b.size - a.size);
 
-    // 清理最大的缓存
+    // Clear the largest caches
     for (const cacheStats of sortedCaches.slice(0, 2)) {
       const cache = this.caches.get(cacheStats.name);
       if (cache && cache.clear) {
@@ -291,7 +291,7 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 计算清理结果
+   * Calculate cleanup result
    */
   private calculateCleanupResult(before: number, after: number) {
     const freed = before - after;
@@ -311,7 +311,7 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 清除所有缓存
+   * Clear all caches
    */
   async clearAll(): Promise<void> {
     logger.info('Clearing all caches...');
@@ -331,19 +331,19 @@ export class UnifiedCacheManager {
   }
 
   /**
-   * 缓存预热
+   * Cache preheating
    */
   async preheat(urls: string[]): Promise<void> {
     logger.info(`Preheating cache for ${urls.length} URLs...`);
 
-    // 这里可以触发代码收集等操作
-    // 具体实现取决于业务需求
+    // Can trigger code collection and other operations here
+    // Specific implementation depends on business requirements
 
     logger.info('Cache preheat completed');
   }
 
   /**
-   * 生成建议
+   * Generate recommendations
    */
   private generateRecommendations(
     totalSize: number,
@@ -352,7 +352,7 @@ export class UnifiedCacheManager {
   ): string[] {
     const recommendations: string[] = [];
 
-    // 基于总大小的建议
+    // Size-based recommendations
     const sizeRatio = totalSize / this.GLOBAL_MAX_SIZE;
     if (sizeRatio >= 0.9) {
       recommendations.push('🚨 CRITICAL: Cache size at 90%. Run smart_cache_cleanup immediately!');
@@ -362,14 +362,14 @@ export class UnifiedCacheManager {
       recommendations.push('ℹ️  INFO: Cache size at 50%. Monitor usage.');
     }
 
-    // 基于命中率的建议
+    // Hit rate-based recommendations
     if (hitRate < 0.3) {
       recommendations.push('💡 Low cache hit rate (<30%). Consider adjusting TTL or cache strategy.');
     } else if (hitRate > 0.7) {
       recommendations.push('✅ Good cache hit rate (>70%). Cache is working well.');
     }
 
-    // 基于单个缓存的建议
+    // Per-cache recommendations
     for (const cache of cacheStats) {
       const cacheRatio = cache.size / totalSize;
       if (cacheRatio > 0.5) {

@@ -1,6 +1,6 @@
 function printAbstractCaseTemplate() {
-  console.log(`Case: <站点 / 参数名>
-Category: <参数签名|风控参数|设备指纹|工作流>
+  console.log(`Case: <site / parameter name>
+Category: <parameter signing|risk control parameter|device fingerprint|workflow>
 Status: abstract-case
 Runtime: pure-node
 Scope: non-runnable
@@ -11,7 +11,7 @@ This case intentionally does NOT contain executable code.
 It is a high-density abstract template for writing reusable repository-safe reverse cases.
 
 Overview:
-- Goal: <一句话说明要复现什么，以及是否需要 pure extraction / Python port>
+- Goal: <one-sentence description of what to reproduce and whether pure extraction / Python port is needed>
 - Repository boundary: keep this file abstract; put executable code only in \`artifacts/tasks/<task-id>/run/\`.
 - Read order: \`docs/reference/reverse-bootstrap.md\` -> \`docs/reference/case-safety-policy.md\` -> \`docs/reference/reverse-workflow.md\` -> optional \`docs/reference/pure-extraction.md\`.
 
@@ -33,7 +33,7 @@ Success Signals:
 - if pure extraction is attempted, one fixed fixture is recorded and reusable
 
 Fast Repro Path:
-- first find <目标请求>
+- first find <target request>
 - then trace initiator back to <wrapper/signer/runtime>
 - then hook <write-point / signer boundary / send path>
 - then rebuild only enough host to make the path run

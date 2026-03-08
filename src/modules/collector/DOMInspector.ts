@@ -1,16 +1,16 @@
 /**
- * DOM检查器 - 薄封装CDP DOM域
- * 
- * 功能:
- * - 查询DOM元素（querySelector, querySelectorAll）
- * - 获取元素属性和位置
- * - 获取页面DOM结构
- * - 查找可点击元素
- * 
- * 设计原则:
- * - 薄封装CDP DOM域API
- * - 依赖CodeCollector获取Page实例
- * - 解决"AI点击前需要先知道元素存在"的问题
+ * DOM Inspector - thin wrapper around CDP DOM domain
+ *
+ * Features:
+ * - Query DOM elements (querySelector, querySelectorAll)
+ * - Get element attributes and positions
+ * - Get page DOM structure
+ * - Find clickable elements
+ *
+ * Design principles:
+ * - Thin wrapper around CDP DOM domain API
+ * - Depends on CodeCollector for Page instance
+ * - Solves the "AI needs to know elements exist before clicking" problem
  */
 
 import type { CDPSession } from 'puppeteer';
@@ -51,20 +51,20 @@ export class DOMInspector {
   constructor(private collector: CodeCollector) {}
 
   /**
-   * 查询单个元素（类似document.querySelector）
+   * Query a single element (similar to document.querySelector)
    */
   async querySelector(selector: string, _getAttributes = true): Promise<ElementInfo> {
     try {
       const page = await this.collector.getActivePage();
 
-      // 使用page.evaluate查询元素（更简单可靠）
+      // Use page.evaluate to query elements (simpler and more reliable)
       const elementInfo = await page.evaluate((sel) => {
         const element = document.querySelector(sel);
         if (!element) {
           return { found: false };
         }
 
-        // 获取元素属性
+        // Get element attributes
         const attributes: Record<string, string> = {};
         const attrs = element.attributes;
         for (let i = 0; i < attrs.length; i++) {
@@ -74,7 +74,7 @@ export class DOMInspector {
           }
         }
 
-        // 获取边界框
+        // Get bounding box
         const rect = element.getBoundingClientRect();
         const boundingBox = {
           x: rect.x,
@@ -83,7 +83,7 @@ export class DOMInspector {
           height: rect.height,
         };
 
-        // 检查可见性
+        // Check visibility
         const style = window.getComputedStyle(element);
         const visible = style.display !== 'none' && 
                        style.visibility !== 'hidden' && 
@@ -108,12 +108,12 @@ export class DOMInspector {
   }
 
   /**
-   * 查询所有匹配的元素（类似document.querySelectorAll）
+   * Query all matching elements (similar to document.querySelectorAll)
    *
-   * 🔧 修复：降低默认限制，防止返回过多数据导致 MCP token 溢出
+   * Fix: lowered default limit to prevent excessive data causing MCP token overflow
    *
-   * @param selector CSS选择器
-   * @param limit 最大返回元素数量（默认50，原100）
+   * @param selector CSS selector
+   * @param limit Maximum number of elements to return (default 50, previously 100)
    */
   async querySelectorAll(selector: string, limit = 50): Promise<ElementInfo[]> {
     try {
@@ -122,7 +122,7 @@ export class DOMInspector {
       const elements = await page.evaluate((sel, maxLimit) => {
         const nodeList = document.querySelectorAll(sel);
 
-        // 🔧 如果超过限制，输出警告
+        // If exceeding limit, output warning
         if (nodeList.length > maxLimit) {
           console.warn(`[DOMInspector] Found ${nodeList.length} elements for "${sel}", limiting to ${maxLimit}`);
         }
@@ -145,7 +145,7 @@ export class DOMInspector {
           const rect = element.getBoundingClientRect();
           const style = window.getComputedStyle(element);
 
-          // 🔧 限制 textContent 长度，防止单个元素文本过长
+          // Limit textContent length to prevent excessively long text per element
           const textContent = element.textContent?.trim() || '';
           const truncatedText = textContent.length > 500
             ? textContent.substring(0, 500) + '...[truncated]'
@@ -180,7 +180,7 @@ export class DOMInspector {
   }
 
   /**
-   * 获取页面DOM结构（用于AI理解页面布局）
+   * Get page DOM structure (for AI to understand page layout)
    */
   async getStructure(maxDepth = 3, includeText = true): Promise<any> {
     try {
@@ -236,7 +236,7 @@ export class DOMInspector {
   }
 
   /**
-   * 查找所有可点击元素（按钮、链接等）
+   * Find all clickable elements (buttons, links, etc.)
    */
   async findClickable(filterText?: string): Promise<ClickableElement[]> {
     try {
@@ -245,7 +245,7 @@ export class DOMInspector {
       const clickableElements = await page.evaluate((filter) => {
         const results: any[] = [];
 
-        // 查找按钮
+        // Find buttons
         const buttons = document.querySelectorAll('button, input[type="button"], input[type="submit"]');
         buttons.forEach((btn) => {
           const text = btn.textContent?.trim() || (btn as HTMLInputElement).value || '';
@@ -260,7 +260,7 @@ export class DOMInspector {
                          style.opacity !== '0' &&
                          rect.width > 0 && rect.height > 0;
 
-          // 生成选择器
+          // Generate selector
           let selector = btn.tagName.toLowerCase();
           if (btn.id) {
             selector = `#${btn.id}`;
@@ -282,7 +282,7 @@ export class DOMInspector {
           });
         });
 
-        // 查找链接
+        // Find links
         const links = document.querySelectorAll('a[href]');
         links.forEach((link) => {
           const text = link.textContent?.trim() || '';
@@ -330,7 +330,7 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 获取元素的计算样式
+   * Get the computed style of an element
    */
   async getComputedStyle(selector: string): Promise<Record<string, string> | null> {
     try {
@@ -345,7 +345,7 @@ export class DOMInspector {
         const computed = window.getComputedStyle(element);
         const result: Record<string, string> = {};
 
-        // 获取常用样式属性
+        // Get commonly used style properties
         const importantProps = [
           'display', 'visibility', 'opacity', 'position', 'z-index',
           'width', 'height', 'top', 'left', 'right', 'bottom',
@@ -369,16 +369,16 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 等待元素出现（动态DOM监控）
+   * Wait for element to appear (dynamic DOM monitoring)
    */
   async waitForElement(selector: string, timeout = 30000): Promise<ElementInfo | null> {
     try {
       const page = await this.collector.getActivePage();
 
-      // 等待元素出现
+      // Wait for element to appear
       await page.waitForSelector(selector, { timeout });
 
-      // 获取元素信息
+      // Get element info
       return await this.querySelector(selector);
     } catch (error) {
       logger.error(`waitForElement timeout for ${selector}:`, error);
@@ -387,7 +387,7 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 监听DOM变化（MutationObserver）
+   * Observe DOM changes (MutationObserver)
    */
   async observeDOMChanges(options: {
     selector?: string;
@@ -427,7 +427,7 @@ export class DOMInspector {
         subtree: opts.subtree !== false,
       });
 
-      // 存储observer以便后续停止
+      // Store observer for later stopping
       (window as any).__domObserver = observer;
     }, options);
 
@@ -435,7 +435,7 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 停止DOM监听
+   * Stop observing DOM changes
    */
   async stopObservingDOM(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -452,18 +452,18 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 查找包含特定文本的元素
+   * Find elements containing specific text
    */
   async findByText(text: string, tag?: string): Promise<ElementInfo[]> {
     try {
       const page = await this.collector.getActivePage();
 
       const elements = await page.evaluate((searchText, tagName) => {
-        // 转义 XPath 中的引号，防止注入
+        // Escape quotes in XPath to prevent injection
         const escapeXPathString = (str: string): string => {
           if (!str.includes('"')) return `"${str}"`;
           if (!str.includes("'")) return `'${str}'`;
-          // 同时包含单双引号时，使用 concat 拼接
+          // When containing both single and double quotes, use concat to join
           return `concat(${str.split('"').map((part, i) => i === 0 ? `"${part}"` : `'"',"${part}"`).join(',')})`;
         };
         const escaped = escapeXPathString(searchText);
@@ -487,7 +487,7 @@ export class DOMInspector {
           const rect = element.getBoundingClientRect();
           const style = window.getComputedStyle(element);
 
-          // 生成选择器
+          // Generate selector
           let selector = element.tagName.toLowerCase();
           if (element.id) {
             selector = `#${element.id}`;
@@ -527,7 +527,7 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 获取元素的XPath
+   * Get the XPath of an element
    */
   async getXPath(selector: string): Promise<string | null> {
     try {
@@ -582,7 +582,7 @@ export class DOMInspector {
   }
 
   /**
-   * 🆕 检查元素是否在视口内
+   * Check if element is within the viewport
    */
   async isInViewport(selector: string): Promise<boolean> {
     try {
@@ -612,7 +612,7 @@ export class DOMInspector {
   }
 
   /**
-   * 关闭CDP会话
+   * Close CDP session
    */
   async close(): Promise<void> {
     if (this.cdpSession) {

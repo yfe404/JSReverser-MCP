@@ -1,37 +1,37 @@
 /**
- * HookTypeRegistry — 插件化 Hook 类型注册系统
+ * HookTypeRegistry — Plugin-based Hook Type Registration System
  *
- * 设计理念：
- * - 每种 hook 类型（function, fetch, xhr, property, event…）是一个插件
- * - 插件通过 HookTypePlugin 接口描述如何为该类型配置 builder
- * - 内置所有常用类型，支持运行时注册新类型
- * - HookManager 通过 registry 查找类型，无需 switch-case 硬编码
+ * Design philosophy:
+ * - Each hook type (function, fetch, xhr, property, event...) is a plugin
+ * - Plugins describe how to configure the builder for that type via the HookTypePlugin interface
+ * - All common types are built-in, with support for registering new types at runtime
+ * - HookManager looks up types via the registry, avoiding hard-coded switch-case logic
  */
 
 import { HookCodeBuilder, type BuilderConfig } from './HookCodeBuilder.js';
 
-// ==================== 插件接口 ====================
+// ==================== Plugin Interface ====================
 
 export interface HookTypePlugin {
-  /** 类型唯一标识 */
+  /** Unique type identifier */
   name: string;
-  /** 类型说明 */
+  /** Type description */
   description: string;
   /**
-   * 给 builder 注入该类型特定的配置
-   * @param builder - 已初始化的 builder 实例
-   * @param params  - 用户传入的类型特定参数
-   * @returns 配置好的 builder
+   * Inject type-specific configuration into the builder
+   * @param builder - An initialized builder instance
+   * @param params  - Type-specific parameters provided by the user
+   * @returns The configured builder
    */
   apply(builder: HookCodeBuilder, params: Record<string, unknown>): HookCodeBuilder;
   /**
-   * 可选：生成完整的独立脚本（某些类型如 property getter/setter 不适合通用模板）
-   * 如果返回 string，则跳过 builder.build()，直接使用此脚本
+   * Optional: generate a complete standalone script (some types like property getter/setter are not suited for the generic template).
+   * If a string is returned, builder.build() is skipped and this script is used directly.
    */
   customBuild?(builder: HookCodeBuilder, params: Record<string, unknown>): string | null;
 }
 
-// ==================== 注册表 ====================
+// ==================== Registry ====================
 
 export class HookTypeRegistry {
   private plugins: Map<string, HookTypePlugin> = new Map();
@@ -40,7 +40,7 @@ export class HookTypeRegistry {
     this.registerBuiltins();
   }
 
-  /** 注册一个 hook 类型插件 */
+  /** Register a hook type plugin */
   register(plugin: HookTypePlugin): void {
     if (this.plugins.has(plugin.name)) {
       console.warn(`[HookTypeRegistry] Overwriting existing plugin: ${plugin.name}`);
@@ -48,27 +48,27 @@ export class HookTypeRegistry {
     this.plugins.set(plugin.name, plugin);
   }
 
-  /** 获取插件 */
+  /** Get a plugin */
   get(name: string): HookTypePlugin | undefined {
     return this.plugins.get(name);
   }
 
-  /** 检查类型是否已注册 */
+  /** Check if a type is registered */
   has(name: string): boolean {
     return this.plugins.has(name);
   }
 
-  /** 获取所有已注册类型 */
+  /** Get all registered types */
   list(): HookTypePlugin[] {
     return Array.from(this.plugins.values());
   }
 
-  /** 注销插件 */
+  /** Unregister a plugin */
   unregister(name: string): boolean {
     return this.plugins.delete(name);
   }
 
-  // ==================== 内置类型注册 ====================
+  // ==================== Built-in Type Registration ====================
 
   private registerBuiltins(): void {
     this.register(createFunctionPlugin());
@@ -86,10 +86,10 @@ export class HookTypeRegistry {
   }
 }
 
-// ==================== 内置插件工厂 ====================
+// ==================== Built-in Plugin Factories ====================
 
 /**
- * function 类型 — Hook 全局/任意函数
+ * function type — Hook any global/arbitrary function
  * params: { target: string }
  */
 function createFunctionPlugin(): HookTypePlugin {
@@ -105,7 +105,7 @@ function createFunctionPlugin(): HookTypePlugin {
 }
 
 /**
- * fetch 类型 — Hook window.fetch
+ * fetch type — Hook window.fetch
  * params: { urlPattern?: string }
  */
 function createFetchPlugin(): HookTypePlugin {
@@ -238,7 +238,7 @@ function createFetchPlugin(): HookTypePlugin {
 }
 
 /**
- * xhr 类型 — Hook XMLHttpRequest
+ * xhr type — Hook XMLHttpRequest
  * params: { urlPattern?: string }
  */
 function createXHRPlugin(): HookTypePlugin {
@@ -342,7 +342,7 @@ function createXHRPlugin(): HookTypePlugin {
 }
 
 /**
- * websocket 类型 — Hook WebSocket
+ * websocket type — Hook WebSocket
  * params: { urlPattern?: string }
  */
 function createWebSocketPlugin(): HookTypePlugin {
@@ -429,7 +429,7 @@ function createWebSocketPlugin(): HookTypePlugin {
 }
 
 /**
- * property 类型 — Hook 对象属性的 getter/setter
+ * property type — Hook object property getter/setter
  * params: { object: string, property: string }
  */
 function createPropertyPlugin(): HookTypePlugin {
@@ -538,7 +538,7 @@ function createPropertyPlugin(): HookTypePlugin {
 }
 
 /**
- * event 类型 — Hook addEventListener
+ * event type — Hook addEventListener
  * params: { eventName?: string, targetSelector?: string }
  */
 function createEventPlugin(): HookTypePlugin {
@@ -604,7 +604,7 @@ function createEventPlugin(): HookTypePlugin {
         lines.push(`    hookData.blocked = true;`);
         lines.push(`    return;`);
       } else {
-        // 包装 listener 以监控事件触发
+        // Wrap listener to monitor event firing
         lines.push(`    const __wrappedListener = function(e) {`);
         lines.push(`      const fireData = {`);
         lines.push(`        hookId: '${hookId}', target: 'eventFired', eventType: type,`);
@@ -627,7 +627,7 @@ function createEventPlugin(): HookTypePlugin {
 }
 
 /**
- * timer 类型 — Hook setTimeout/setInterval
+ * timer type — Hook setTimeout/setInterval
  * params: { timerType?: 'setTimeout' | 'setInterval' | 'both' }
  */
 function createTimerPlugin(): HookTypePlugin {
@@ -703,7 +703,7 @@ function createTimerPlugin(): HookTypePlugin {
 }
 
 /**
- * localstorage 类型
+ * localstorage type
  */
 function createLocalStoragePlugin(): HookTypePlugin {
   return {
@@ -788,7 +788,7 @@ function createLocalStoragePlugin(): HookTypePlugin {
 }
 
 /**
- * cookie 类型 — Hook document.cookie
+ * cookie type — Hook document.cookie
  */
 function createCookiePlugin(): HookTypePlugin {
   return {
@@ -859,7 +859,7 @@ function createCookiePlugin(): HookTypePlugin {
 }
 
 /**
- * eval 类型 — Hook eval 和 Function 构造函数
+ * eval type — Hook eval and Function constructor
  */
 function createEvalPlugin(): HookTypePlugin {
   return {
@@ -946,7 +946,7 @@ function createEvalPlugin(): HookTypePlugin {
 }
 
 /**
- * object-method 类型 — Hook 对象的方法
+ * object-method type — Hook a method on an object
  * params: { object: string, method: string }
  */
 function createObjectMethodPlugin(): HookTypePlugin {
@@ -963,7 +963,7 @@ function createObjectMethodPlugin(): HookTypePlugin {
 }
 
 /**
- * custom 类型 — 用户完全自定义
+ * custom type — Fully user-defined
  * params: { script: string }
  */
 function createCustomPlugin(): HookTypePlugin {

@@ -1,63 +1,63 @@
 /**
- * HookCodeBuilder — 可组合的 Hook 代码构建器
+ * HookCodeBuilder — Composable Hook Code Builder
  *
- * 设计理念：
- * - 用声明式链式调用取代硬编码模板字符串
- * - 每个阶段（before/condition/execute/after/store）都可以插入自定义代码
- * - 支持 async 函数感知
- * - 支持灵活的数据捕获和存储策略
- * - 生成的代码是自包含的 IIFE，可直接注入浏览器
+ * Design philosophy:
+ * - Use declarative chaining calls instead of hard-coded template strings
+ * - Each stage (before/condition/execute/after/store) can have custom code inserted
+ * - Supports async function awareness
+ * - Supports flexible data capture and storage strategies
+ * - Generated code is a self-contained IIFE that can be directly injected into the browser
  */
 
-// ==================== 构建器配置类型 ====================
+// ==================== Builder Configuration Types ====================
 
 export interface HookTarget {
-  /** 目标表达式，如 'window.fetch'、'document.cookie'、'navigator.sendBeacon' */
+  /** Target expression, e.g. 'window.fetch', 'document.cookie', 'navigator.sendBeacon' */
   expression: string;
-  /** 用于日志显示的友好名称 */
+  /** Friendly name for log display */
   label?: string;
 }
 
 export interface CaptureOptions {
   args?: boolean;
   returnValue?: boolean;
-  stack?: boolean | number; // true = 全栈, number = 限制帧数
+  stack?: boolean | number; // true = full stack, number = limit frame count
   timing?: boolean;
   thisContext?: boolean;
 }
 
 export interface ConditionConfig {
-  /** JS 表达式字符串，在 hook 内部求值；可访问 args, callCount, timestamp */
+  /** JS expression string, evaluated inside the hook; has access to args, callCount, timestamp */
   expression?: string;
   maxCalls?: number;
   minInterval?: number;
-  /** URL 匹配模式（用于 fetch/xhr 类型），正则字符串 */
+  /** URL match pattern (for fetch/xhr types), regex string */
   urlPattern?: string;
 }
 
 export interface StoreConfig {
-  /** 全局存储的键名，默认 '__hookStore' */
+  /** Global storage key name, default '__hookStore' */
   globalKey?: string;
-  /** 单个 hook 的最大记录数，默认 500 */
+  /** Maximum number of records per hook, default 500 */
   maxRecords?: number;
-  /** 是否输出到 console，默认 true */
+  /** Whether to output to console, default true */
   console?: boolean;
-  /** console 输出格式: 'full' | 'compact' | 'json' */
+  /** Console output format: 'full' | 'compact' | 'json' */
   consoleFormat?: 'full' | 'compact' | 'json';
-  /** 自定义序列化函数体（可访问 hookData），返回要存储的对象 */
+  /** Custom serializer function body (has access to hookData), returns the object to store */
   serializer?: string;
 }
 
 export interface LifecycleCode {
-  /** 在原始函数调用前执行的代码，可访问 args, hookData, originalFn */
+  /** Code executed before the original function call, has access to args, hookData, originalFn */
   before?: string;
-  /** 在原始函数调用后执行的代码，可访问 args, result, hookData, originalFn */
+  /** Code executed after the original function call, has access to args, result, hookData, originalFn */
   after?: string;
-  /** 错误处理代码，可访问 error, args, hookData */
+  /** Error handling code, has access to error, args, hookData */
   onError?: string;
-  /** 无论成功失败都会执行的代码 */
+  /** Code that executes regardless of success or failure */
   onFinally?: string;
-  /** 完全替换原始函数的代码（使用后 before/after 不生效） */
+  /** Code that completely replaces the original function (before/after will not take effect when used) */
   replace?: string;
 }
 
@@ -72,7 +72,7 @@ export interface BuilderConfig {
   action: HookAction;
   hookId: string;
   asyncAware: boolean;
-  /** 用于描述此 hook 的注释说明 */
+  /** Description comment for this hook */
   description?: string;
 }
 
@@ -99,63 +99,63 @@ export class HookCodeBuilder {
     };
   }
 
-  // ==================== 链式配置方法 ====================
+  // ==================== Chaining Configuration Methods ====================
 
-  /** 设置 hook 目标 */
+  /** Set hook target */
   intercept(expression: string, label?: string): this {
     this.config.target = { expression, label: label || expression };
     return this;
   }
 
-  /** 设置 hook ID */
+  /** Set hook ID */
   id(hookId: string): this {
     this.config.hookId = hookId;
     return this;
   }
 
-  /** 设置描述 */
+  /** Set description */
   describe(description: string): this {
     this.config.description = description;
     return this;
   }
 
-  /** 设置行为 */
+  /** Set action */
   action(action: HookAction): this {
     this.config.action = action;
     return this;
   }
 
-  /** 捕获参数 */
+  /** Capture arguments */
   captureArgs(): this {
     this.config.capture.args = true;
     return this;
   }
 
-  /** 捕获返回值 */
+  /** Capture return value */
   captureReturn(): this {
     this.config.capture.returnValue = true;
     return this;
   }
 
-  /** 捕获调用栈 */
+  /** Capture call stack */
   captureStack(maxFrames?: number): this {
     this.config.capture.stack = maxFrames || true;
     return this;
   }
 
-  /** 捕获执行时间 */
+  /** Capture execution timing */
   captureTiming(): this {
     this.config.capture.timing = true;
     return this;
   }
 
-  /** 捕获 this 上下文 */
+  /** Capture this context */
   captureThis(): this {
     this.config.capture.thisContext = true;
     return this;
   }
 
-  /** 全部捕获 */
+  /** Capture all */
   captureAll(stackFrames?: number): this {
     this.config.capture = {
       args: true,
@@ -167,103 +167,103 @@ export class HookCodeBuilder {
     return this;
   }
 
-  /** 设置条件表达式 */
+  /** Set condition expression */
   when(expression: string): this {
     this.config.condition.expression = expression;
     return this;
   }
 
-  /** 设置最大调用次数 */
+  /** Set maximum call count */
   maxCalls(n: number): this {
     this.config.condition.maxCalls = n;
     return this;
   }
 
-  /** 设置最小调用间隔 */
+  /** Set minimum call interval */
   minInterval(ms: number): this {
     this.config.condition.minInterval = ms;
     return this;
   }
 
-  /** 设置 URL 匹配模式 */
+  /** Set URL match pattern */
   urlPattern(pattern: string): this {
     this.config.condition.urlPattern = pattern;
     return this;
   }
 
-  /** 插入 before 生命周期代码 */
+  /** Insert before lifecycle code */
   before(code: string): this {
     this.config.lifecycle.before = code;
     return this;
   }
 
-  /** 插入 after 生命周期代码 */
+  /** Insert after lifecycle code */
   after(code: string): this {
     this.config.lifecycle.after = code;
     return this;
   }
 
-  /** 插入 error 处理代码 */
+  /** Insert error handling code */
   onError(code: string): this {
     this.config.lifecycle.onError = code;
     return this;
   }
 
-  /** 插入 finally 代码 */
+  /** Insert finally code */
   onFinally(code: string): this {
     this.config.lifecycle.onFinally = code;
     return this;
   }
 
-  /** 完全替换原始函数 */
+  /** Completely replace the original function */
   replace(code: string): this {
     this.config.lifecycle.replace = code;
     return this;
   }
 
-  /** 设置存储配置 */
+  /** Set storage configuration */
   storeTo(globalKey: string, maxRecords?: number): this {
     this.config.store.globalKey = globalKey;
     if (maxRecords !== undefined) this.config.store.maxRecords = maxRecords;
     return this;
   }
 
-  /** 设置 console 输出 */
+  /** Set console output */
   console(enabled: boolean, format?: StoreConfig['consoleFormat']): this {
     this.config.store.console = enabled;
     if (format) this.config.store.consoleFormat = format;
     return this;
   }
 
-  /** 自定义序列化 */
+  /** Custom serialization */
   serializer(code: string): this {
     this.config.store.serializer = code;
     return this;
   }
 
-  /** 启用 async 感知（自动 await Promise 返回值） */
+  /** Enable async awareness (automatically await Promise return values) */
   async(enabled = true): this {
     this.config.asyncAware = enabled;
     return this;
   }
 
-  /** 获取当前配置（用于调试或序列化） */
+  /** Get current configuration (for debugging or serialization) */
   getConfig(): Readonly<BuilderConfig> {
     return { ...this.config };
   }
 
-  /** 从配置对象构建（用于反序列化） */
+  /** Build from configuration object (for deserialization) */
   static fromConfig(config: BuilderConfig): HookCodeBuilder {
     const builder = new HookCodeBuilder();
     builder.config = { ...config };
     return builder;
   }
 
-  // ==================== 代码生成 ====================
+  // ==================== Code Generation ====================
 
   /**
-   * 构建最终的 hook 代码字符串
-   * 生成的是自包含的 IIFE，可直接注入浏览器
+   * Build the final hook code string
+   * Generates a self-contained IIFE that can be directly injected into the browser
    */
   build(): string {
     if (!this.config.target.expression) {
@@ -273,14 +273,14 @@ export class HookCodeBuilder {
     const { target, hookId, description, action, capture, condition, store, lifecycle, asyncAware } = this.config;
     const label = target.label || target.expression;
 
-    // 如果是完全替换模式
+    // If in full replacement mode
     if (lifecycle.replace) {
       return this.buildReplaceHook();
     }
 
     const lines: string[] = [];
 
-    // -- 头部注释 --
+    // -- Header comments --
     lines.push(`// Hook: ${description || label}`);
     lines.push(`// ID: ${hookId}`);
     lines.push(`// Generated: ${new Date().toISOString()}`);
@@ -288,10 +288,10 @@ export class HookCodeBuilder {
     lines.push(`  'use strict';`);
     lines.push(``);
 
-    // -- 初始化全局存储 --
+    // -- Initialize global storage --
     lines.push(...this.buildStorageInit());
 
-    // -- 保存原始引用 --
+    // -- Save original reference --
     lines.push(`  const __original = ${target.expression};`);
     lines.push(`  if (typeof __original !== 'function') {`);
     lines.push(`    console.warn('[${hookId}] Target is not a function: ${label}');`);
@@ -299,19 +299,19 @@ export class HookCodeBuilder {
     lines.push(`  }`);
     lines.push(``);
 
-    // -- 条件状态变量 --
+    // -- Condition state variables --
     lines.push(...this.buildConditionState());
 
-    // -- Hook 函数体 --
+    // -- Hook function body --
     const isAsync = asyncAware;
     const fnKeyword = isAsync ? 'async function' : 'function';
 
     lines.push(`  ${target.expression} = ${fnKeyword}(...args) {`);
 
-    // 条件检查
+    // Condition check
     lines.push(...this.buildConditionCheck());
 
-    // 构建 hookData
+    // Build hookData
     lines.push(`    const hookData = {`);
     lines.push(`      hookId: '${hookId}',`);
     lines.push(`      target: '${label}',`);
@@ -326,12 +326,12 @@ export class HookCodeBuilder {
     lines.push(`    };`);
     lines.push(``);
 
-    // console 输出（调用前）
+    // Console output (before call)
     if (store.console) {
       lines.push(...this.buildConsoleLog('called', store.consoleFormat || 'compact'));
     }
 
-    // before 生命周期
+    // Before lifecycle
     if (lifecycle.before) {
       lines.push(`    // [before]`);
       lines.push(`    ${lifecycle.before}`);
@@ -345,7 +345,7 @@ export class HookCodeBuilder {
       lines.push(...this.buildStore());
       lines.push(`    return undefined;`);
     } else {
-      // 执行原始函数（try-catch-finally）
+      // Execute original function (try-catch-finally)
       if (capture.timing) {
         lines.push(`    const __startTime = performance.now();`);
       }
@@ -363,13 +363,13 @@ export class HookCodeBuilder {
         lines.push(`      hookData.returnValue = result;`);
       }
 
-      // after 生命周期
+      // After lifecycle
       if (lifecycle.after) {
         lines.push(`      // [after]`);
         lines.push(`      ${lifecycle.after}`);
       }
 
-      // 存储
+      // Store
       lines.push(...this.buildStore().map(l => `  ${l}`));
 
       lines.push(`      return result;`);
@@ -396,7 +396,7 @@ export class HookCodeBuilder {
     lines.push(`  };`);
     lines.push(``);
 
-    // 保留原始函数属性
+    // Preserve original function properties
     lines.push(`  try { Object.defineProperty(${target.expression}, 'length', { value: __original.length }); } catch(e) {}`);
     lines.push(`  try { Object.defineProperty(${target.expression}, 'name', { value: __original.name }); } catch(e) {}`);
     lines.push(``);
@@ -407,7 +407,7 @@ export class HookCodeBuilder {
     return lines.join('\n');
   }
 
-  // ==================== 内部构建方法 ====================
+  // ==================== Internal Build Methods ====================
 
   private buildReplaceHook(): string {
     const { target, hookId, lifecycle, description } = this.config;

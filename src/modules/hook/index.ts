@@ -1,8 +1,8 @@
 /**
- * Hook 模块公共导出
+ * Hook module public exports
  */
 
-// 核心构建器
+// Core builder
 export { HookCodeBuilder } from './HookCodeBuilder.js';
 export type {
   HookTarget,
@@ -14,11 +14,11 @@ export type {
   BuilderConfig,
 } from './HookCodeBuilder.js';
 
-// 类型注册表
+// Type registry
 export { HookTypeRegistry } from './HookTypeRegistry.js';
 export type { HookTypePlugin } from './HookTypeRegistry.js';
 
-// Hook 管理器
+// Hook manager
 export { HookManager } from './HookManager.js';
 export type {
   HookCreateOptions,
@@ -27,7 +27,7 @@ export type {
   HookManagerStats,
 } from './HookManager.js';
 
-// AI Hook 生成器
+// AI Hook generator
 export { AIHookGenerator } from './AIHookGenerator.js';
 export type {
   AIHookRequest,

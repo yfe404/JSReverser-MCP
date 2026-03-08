@@ -1,71 +1,71 @@
 # Case Index
 
-仓库内公开的参数 / 链路沉淀入口统一放在 `scripts/cases/`。
+Public parameter / pipeline reference entries in the repository are located in `scripts/cases/`.
 
-这里仅保留抽象 case、方法论和验收口径，不放可直接复用的完整实现代码。
+Only abstract cases, methodologies, and acceptance criteria are kept here -- no directly reusable complete implementation code.
 
-## 已公开链路
+## Published Pipelines
 
-### MCP 通用工作流
+### MCP General Workflow
 
 - Case: [scripts/cases/mcp-reverse-pure-node-workflow.mjs](mcp-reverse-pure-node-workflow.mjs)
-- Category: 工作流
+- Category: Workflow
 - Status: abstract-case
 - Runtime: pure-node
-- Notes: 先看工具顺序、每步产物和下一步判定，再映射到具体站点 case
+- Notes: First review tool order, per-step artifacts, and next-step decisions, then map to a specific site case
 
-### 高密度抽象骨架模板
+### High-Density Abstract Skeleton Template
 
 - Case: [scripts/cases/abstract-case-template.mjs](abstract-case-template.mjs)
-- Category: 模板
+- Category: Template
 - Status: abstract-case
 - Runtime: pure-node
-- Notes: 新增站点 case 时先从这份高密度抽象骨架开始，补齐关键字段、hook 点、断点提示、pure extraction 关键点
+- Notes: When adding a new site case, start from this high-density abstract skeleton and fill in key fields, hook points, breakpoint hints, and pure extraction key points
 
 
-### 某东 `h5st` 参数
+### JD `h5st` Parameter
 
 - Case: [scripts/cases/jd-h5st-pure-node.mjs](jd-h5st-pure-node.mjs)
-- Category: 参数签名
+- Category: Parameter Signing
 - Status: abstract-case
 - Runtime: pure-node
-- Notes: 已覆盖从 Node 补环境、portable runtime 到 pure extraction / Python port 的抽象流程
+- Notes: Covers the abstract flow from Node environment rebuild, portable runtime to pure extraction / Python port
 
-### 某手 `falcon` 风控参数
+### Kuaishou `falcon` Anti-Fraud Parameter
 
 - Case: [scripts/cases/ks-hxfalcon-pure-node.mjs](ks-hxfalcon-pure-node.mjs)
-- Category: 风控参数
+- Category: Anti-Fraud Parameter
 - Status: abstract-case
 - Runtime: pure-node
-- Notes: 风控链路定位与 local rebuild 抽象 case
+- Notes: Anti-fraud pipeline identification and local rebuild abstract case
 
-### 某音 `a-bogus` 参数
+### Douyin `a-bogus` Parameter
 
 - Case: [scripts/cases/douyin-a-bogus-pure-node.mjs](douyin-a-bogus-pure-node.mjs)
-- Category: 参数签名
+- Category: Parameter Signing
 - Status: abstract-case
 - Runtime: pure-node
-- Notes: 参数链路定位、工具顺序映射、纯 Node 复现与 pure extraction 后置阶段抽象 case
+- Notes: Parameter pipeline identification, tool order mapping, pure Node reproduction and pure extraction post-phase abstract case
 
-## 字段规范
+## Field Specification
 
-- `Case`: 仓库内公开的抽象 case 文件路径
-- `Category`: 参数签名、风控参数、设备指纹、工作流等分类
-- `Status`: 当前沉淀状态，例如 `abstract-case`
-- `Runtime`: 当前主要复现运行时，例如 `pure-node`
-- `Notes`: 一句话说明这个 case 覆盖的目标和边界
+- `Case`: Path to the public abstract case file in the repository
+- `Category`: Classification such as parameter signing, anti-fraud parameter, device fingerprint, workflow, etc.
+- `Status`: Current consolidation status, e.g., `abstract-case`
+- `Runtime`: Current primary reproduction runtime, e.g., `pure-node`
+- `Notes`: One-line description of the target and scope covered by this case
 
-## 使用约束
+## Usage Constraints
 
-- 新会话先读：`docs/reference/reverse-bootstrap.md`
-- 读取优先级：先读本地 `artifacts/tasks/<task-id>/`，再读这里的抽象 case
-- 如果新增公开参数 / 链路入口，统一更新本文件
-- 推荐顺序：先看通用 workflow case，再看目标站点 case
-- 真实 page/api host 不直写；统一用 Base64 文本保存，推荐字段名为 `entry_url_b64` 或 `api_host_b64`，并在使用前先解码
-- 可执行脚本和真实任务产物默认保留在本地 `artifacts/tasks/<task-id>/`
-- 仓库内不提交真实 Cookie、Storage、可直接复用的生产参数组合
+- At the start of a new session, first read: `docs/reference/reverse-bootstrap.md`
+- Reading priority: read local `artifacts/tasks/<task-id>/` first, then read abstract cases here
+- If adding new public parameter / pipeline entries, update this file accordingly
+- Recommended order: review the general workflow case first, then the target site case
+- Do not write real page/api hosts directly; use Base64-encoded text with recommended field names `entry_url_b64` or `api_host_b64`, and decode before use
+- Executable scripts and real task artifacts are kept locally in `artifacts/tasks/<task-id>/` by default
+- Do not commit real Cookies, Storage, or directly reusable production parameter combinations to the repository
 
-更多工具入口请看：
+For more tool entry points, see:
 
 - [docs/reference/reverse-bootstrap.md](../../docs/reference/reverse-bootstrap.md)
 - [docs/reference/reverse-task-index.md](../../docs/reference/reverse-task-index.md)

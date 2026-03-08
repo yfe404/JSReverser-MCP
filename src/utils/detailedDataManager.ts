@@ -1,10 +1,10 @@
 /**
- * 详细数据管理器 - 解决上下文溢出问题
- * 
- * 核心思想：
- * 1. 大数据不直接返回，而是缓存到服务器
- * 2. 返回摘要 + 访问令牌（detailId）
- * 3. AI 可以用令牌按需获取完整数据
+ * Detailed Data Manager - Solves context overflow issues
+ *
+ * Core idea:
+ * 1. Large data is not returned directly, but cached on the server
+ * 2. Returns a summary + access token (detailId)
+ * 3. AI can use the token to retrieve full data on demand
  */
 
 import { logger } from './logger.js';
@@ -43,17 +43,17 @@ export class DetailedDataManager {
   private static instance: DetailedDataManager;
   private cache = new Map<string, CacheEntry>();
 
-  // 🆕 优化：延长 TTL，减少令牌过期问题
-  private readonly DEFAULT_TTL = 30 * 60 * 1000; // 30分钟过期（原来10分钟）
-  private readonly MAX_TTL = 60 * 60 * 1000; // 最大1小时
-  private readonly MAX_CACHE_SIZE = 100; // 最多缓存100个对象
+  // Optimization: extended TTL to reduce token expiration issues
+  private readonly DEFAULT_TTL = 30 * 60 * 1000; // 30-minute expiry (previously 10 minutes)
+  private readonly MAX_TTL = 60 * 60 * 1000; // Maximum 1 hour
+  private readonly MAX_CACHE_SIZE = 100; // Cache up to 100 objects
 
-  // 🆕 自动续期配置
-  private readonly AUTO_EXTEND_ON_ACCESS = true; // 访问时自动续期
-  private readonly EXTEND_DURATION = 15 * 60 * 1000; // 续期15分钟
+  // Auto-renewal configuration
+  private readonly AUTO_EXTEND_ON_ACCESS = true; // Auto-renew on access
+  private readonly EXTEND_DURATION = 15 * 60 * 1000; // Renew for 15 minutes
 
   private constructor() {
-    // 🆕 优化：减少清理频率，从60秒改为5分钟
+    // Optimization: reduced cleanup frequency from 60s to 5 minutes
     const timer = setInterval(() => this.cleanup(), 5 * 60 * 1000);
     timer.unref();
   }
@@ -66,24 +66,24 @@ export class DetailedDataManager {
   }
 
   /**
-   * 智能处理数据：自动判断是否需要分层返回
+   * Smart data handling: automatically determines whether layered return is needed
    */
   smartHandle(data: any, threshold = 50 * 1024): any {
     const jsonStr = safeStringify(data);
     const size = jsonStr.length;
 
-    // 小数据直接返回
+    // Return small data directly
     if (size <= threshold) {
       return data;
     }
 
-    // 大数据返回摘要 + detailId
+    // Return summary + detailId for large data
     logger.info(`Data too large (${(size / 1024).toFixed(1)}KB), returning summary with detailId`);
     return this.createDetailedResponse(data);
   }
 
   /**
-   * 创建详细数据响应（摘要 + detailId）
+   * Create detailed data response (summary + detailId)
    */
   private createDetailedResponse(data: any): DetailedDataResponse {
     const detailId = this.store(data);
@@ -98,10 +98,10 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 存储大数据，返回访问令牌（优化版 - 支持 LRU）
+   * Store large data and return access token (optimized - supports LRU)
    */
   store(data: any, customTTL?: number): string {
-    // 🆕 智能清理：缓存满时使用 LRU 策略，而不是清空所有
+    // Smart cleanup: use LRU strategy when cache is full instead of clearing all
     if (this.cache.size >= this.MAX_CACHE_SIZE) {
       this.evictLRU();
     }
@@ -128,7 +128,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 获取完整数据或部分数据（优化版 - 支持自动续期）
+   * Retrieve full or partial data (optimized - supports auto-renewal)
    */
   retrieve(detailId: string, path?: string): any {
     const cached = this.cache.get(detailId);
@@ -139,17 +139,17 @@ export class DetailedDataManager {
 
     const now = Date.now();
 
-    // 检查是否过期
+    // Check if expired
     if (now > cached.expiresAt) {
       this.cache.delete(detailId);
       throw new Error(`DetailId expired: ${detailId}`);
     }
 
-    // 🆕 更新访问统计
+    // Update access statistics
     cached.lastAccessedAt = now;
     cached.accessCount++;
 
-    // 🆕 自动续期：如果启用且剩余时间少于5分钟，自动延长
+    // Auto-renewal: if enabled and remaining time is less than 5 minutes, auto-extend
     if (this.AUTO_EXTEND_ON_ACCESS) {
       const remainingTime = cached.expiresAt - now;
       if (remainingTime < 5 * 60 * 1000) {
@@ -158,18 +158,18 @@ export class DetailedDataManager {
       }
     }
 
-    // 如果指定了路径，返回部分数据
+    // If a path is specified, return partial data
     if (path) {
       return this.getByPath(cached.data, path);
     }
 
-    // 返回完整数据
+    // Return full data
     return cached.data;
   }
 
   /**
-   * 根据路径获取对象的部分数据
-   * 例如：path="window.byted_acrawler.frontierSign"
+   * Get partial data from an object by path
+   * Example: path="window.byted_acrawler.frontierSign"
    */
   private getByPath(obj: any, path: string): any {
     const keys = path.split('.');
@@ -186,7 +186,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 生成数据摘要
+   * Generate data summary
    */
   private generateSummary(data: any): DataSummary {
     const jsonStr = safeStringify(data);
@@ -200,15 +200,15 @@ export class DetailedDataManager {
       preview: jsonStr.substring(0, 200) + (size > 200 ? '...' : ''),
     };
 
-    // 对象结构分析
+    // Object structure analysis
     if (typeof data === 'object' && data !== null) {
       const keys = Object.keys(data);
       summary.structure = {
-        keys: keys.slice(0, 50), // 最多显示50个键
+        keys: keys.slice(0, 50), // Show up to 50 keys
       };
 
       if (!Array.isArray(data)) {
-        // 区分方法和属性
+        // Distinguish methods from properties
         const methods = keys.filter((k) => typeof data[k] === 'function');
         const properties = keys.filter((k) => typeof data[k] !== 'function');
 
@@ -223,7 +223,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 清理过期数据（优化版 - 移除 force 参数）
+   * Clean up expired data (optimized - removed force parameter)
    */
   private cleanup(): void {
     const now = Date.now();
@@ -242,12 +242,12 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 LRU 驱逐策略：删除最久未访问的条目
+   * LRU eviction strategy: remove the least recently accessed entry
    */
   private evictLRU(): void {
     if (this.cache.size === 0) return;
 
-    // 找到最久未访问的条目
+    // Find the least recently accessed entry
     let oldestId: string | null = null;
     let oldestAccessTime = Infinity;
 
@@ -266,7 +266,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 手动延长 detailId 的过期时间
+   * Manually extend the expiration time of a detailId
    */
   extend(detailId: string, additionalTime?: number): void {
     const cached = this.cache.get(detailId);
@@ -288,7 +288,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 获取缓存统计（增强版）
+   * Get cache statistics (enhanced)
    */
   getStats() {
     let totalSize = 0;
@@ -313,7 +313,7 @@ export class DetailedDataManager {
   }
 
   /**
-   * 🆕 获取详细的缓存条目信息
+   * Get detailed cache entry information
    */
   getDetailedStats() {
     const now = Date.now();
@@ -328,14 +328,14 @@ export class DetailedDataManager {
       isExpired: now > entry.expiresAt,
     }));
 
-    // 按最后访问时间排序
+    // Sort by last access time
     entries.sort((a, b) => new Date(b.lastAccessedAt).getTime() - new Date(a.lastAccessedAt).getTime());
 
     return entries;
   }
 
   /**
-   * 清空所有缓存
+   * Clear all cache
    */
   clear(): void {
     this.cache.clear();

@@ -1,16 +1,16 @@
 /**
- * RuntimeInspector - 运行时检查
- * 
- * 功能：
- * 1. 获取调用堆栈（Call Stack）
- * 2. 获取作用域变量（Scope Variables）
- * 3. 获取对象属性（Object Properties）
- * 4. 表达式求值（Expression Evaluation）
- * 
- * 设计原则：
- * - 薄封装CDP Runtime域，直接调用CDP API
- * - 依赖DebuggerManager获取暂停状态
- * - 提供友好的数据格式化
+ * RuntimeInspector - Runtime inspection
+ *
+ * Features:
+ * 1. Get call stack
+ * 2. Get scope variables
+ * 3. Get object properties
+ * 4. Expression evaluation
+ *
+ * Design principles:
+ * - Thin wrapper around CDP Runtime domain, directly calling CDP APIs
+ * - Relies on DebuggerManager for paused state
+ * - Provides friendly data formatting
  */
 
 import type { CDPSession } from 'puppeteer';
@@ -19,7 +19,7 @@ import type { DebuggerManager, CallFrame, Scope } from './DebuggerManager.js';
 import { logger } from '../../utils/logger.js';
 
 /**
- * 变量信息
+ * Variable information
  */
 export interface VariableInfo {
   name: string;
@@ -31,7 +31,7 @@ export interface VariableInfo {
 }
 
 /**
- * 作用域变量
+ * Scope variables
  */
 export interface ScopeVariables {
   scopeType: string;
@@ -40,7 +40,7 @@ export interface ScopeVariables {
 }
 
 /**
- * 调用堆栈信息
+ * Call stack information
  */
 export interface CallStackInfo {
   callFrames: Array<{
@@ -62,7 +62,7 @@ export interface CallStackInfo {
 }
 
 /**
- * 运行时检查器
+ * Runtime inspector
  */
 export class RuntimeInspector {
   private cdpSession: CDPSession | null = null;
@@ -74,7 +74,7 @@ export class RuntimeInspector {
   ) {}
 
   /**
-   * 初始化运行时检查器（启用CDP Runtime域）
+   * Initialize the runtime inspector (enable CDP Runtime domain)
    */
   async init(): Promise<void> {
     if (this.enabled) {
@@ -84,10 +84,10 @@ export class RuntimeInspector {
 
     try {
       const page = await this.collector.getActivePage();
-      // ✅ 修复：使用新的API，避免弃用警告
+      // Fix: use new API to avoid deprecation warnings
       this.cdpSession = await page.createCDPSession();
 
-      // 启用Runtime域
+      // Enable Runtime domain
       await this.cdpSession.send('Runtime.enable');
       this.enabled = true;
 
@@ -99,23 +99,23 @@ export class RuntimeInspector {
   }
 
   /**
-   * 启用运行时检查器（别名方法，与其他模块保持一致）
+   * Enable the runtime inspector (alias method, consistent with other modules)
    */
   async enable(): Promise<void> {
     return this.init();
   }
 
   /**
-   * 检查是否已初始化
+   * Check if initialized
    */
   isInitialized(): boolean {
     return this.enabled;
   }
 
   /**
-   * 🆕 启用异步堆栈追踪（委托给 DebuggerManager，因为需要 Debugger 域）
+   * Enable async stack traces (delegates to DebuggerManager, as it requires the Debugger domain)
    *
-   * @param maxDepth 最大异步堆栈深度（默认 32）
+   * @param maxDepth Maximum async stack depth (default 32)
    */
   async enableAsyncStackTraces(maxDepth: number = 32): Promise<void> {
     if (!this.debuggerManager.isEnabled()) {
@@ -132,7 +132,7 @@ export class RuntimeInspector {
   }
 
   /**
-   * 🆕 禁用异步堆栈追踪
+   * Disable async stack traces
    */
   async disableAsyncStackTraces(): Promise<void> {
     if (!this.debuggerManager.isEnabled()) {
@@ -149,7 +149,7 @@ export class RuntimeInspector {
   }
 
   /**
-   * 禁用运行时检查器
+   * Disable the runtime inspector
    */
   async disable(): Promise<void> {
     if (!this.enabled || !this.cdpSession) {
@@ -172,10 +172,10 @@ export class RuntimeInspector {
     }
   }
 
-  // ==================== 调用堆栈 ====================
+  // ==================== Call Stack ====================
 
   /**
-   * 获取当前调用堆栈
+   * Get the current call stack
    */
   async getCallStack(): Promise<CallStackInfo | null> {
     const pausedState = this.debuggerManager.getPausedState();
@@ -217,10 +217,10 @@ export class RuntimeInspector {
     }
   }
 
-  // ==================== 作用域变量 ====================
+  // ==================== Scope Variables ====================
 
   /**
-   * 获取指定调用帧的所有作用域变量
+   * Get all scope variables for a specific call frame
    */
   async getScopeVariables(callFrameId: string): Promise<ScopeVariables[]> {
     if (!this.enabled || !this.cdpSession) {
@@ -236,7 +236,7 @@ export class RuntimeInspector {
       throw new Error('Not in paused state. Debugger must be paused to get scope variables.');
     }
 
-    // 查找指定的调用帧
+    // Find the specified call frame
     const callFrame = pausedState.callFrames.find(
       (frame: CallFrame) => frame.callFrameId === callFrameId
     );
@@ -248,13 +248,13 @@ export class RuntimeInspector {
     try {
       const scopeVariablesList: ScopeVariables[] = [];
 
-      // 遍历所有作用域
+      // Iterate over all scopes
       for (const scope of callFrame.scopeChain) {
         if (!scope.object.objectId) {
           continue;
         }
 
-        // 获取作用域对象的属性
+        // Get properties of the scope object
         const properties = await this.getObjectProperties(scope.object.objectId);
 
         scopeVariablesList.push({
@@ -276,7 +276,7 @@ export class RuntimeInspector {
   }
 
   /**
-   * 获取当前调用帧的所有作用域变量（便捷方法）
+   * Get all scope variables for the current call frame (convenience method)
    */
   async getCurrentScopeVariables(): Promise<ScopeVariables[]> {
     const pausedState = this.debuggerManager.getPausedState();
@@ -293,10 +293,10 @@ export class RuntimeInspector {
     return await this.getScopeVariables(topFrame.callFrameId);
   }
 
-  // ==================== 对象属性 ====================
+  // ==================== Object Properties ====================
 
   /**
-   * 获取对象的所有属性
+   * Get all properties of an object
    */
   async getObjectProperties(objectId: string): Promise<VariableInfo[]> {
     if (!this.enabled || !this.cdpSession) {
@@ -343,13 +343,13 @@ export class RuntimeInspector {
     }
   }
 
-  // ==================== 表达式求值 ====================
+  // ==================== Expression Evaluation ====================
 
   /**
-   * 在当前调用帧上求值表达式
+   * Evaluate an expression on the current call frame
    */
   async evaluate(expression: string, callFrameId?: string): Promise<any> {
-    // ✅ 参数验证
+    // Parameter validation
     if (!expression || expression.trim() === '') {
       throw new Error('expression parameter is required and cannot be empty');
     }
@@ -360,7 +360,7 @@ export class RuntimeInspector {
       throw new Error('Not in paused state. Use evaluateGlobal() for global context evaluation.');
     }
 
-    // 如果没有指定callFrameId，使用顶层调用帧
+    // If no callFrameId is specified, use the top call frame
     const targetCallFrameId = callFrameId || pausedState.callFrames[0]?.callFrameId;
 
     if (!targetCallFrameId) {
@@ -386,14 +386,14 @@ export class RuntimeInspector {
   }
 
   /**
-   * 在全局上下文中求值表达式（不需要暂停状态）
+   * Evaluate an expression in the global context (does not require paused state)
    */
   async evaluateGlobal(expression: string): Promise<any> {
     if (!this.enabled || !this.cdpSession) {
       throw new Error('Runtime inspector is not enabled. Call init() or enable() first.');
     }
 
-    // ✅ 参数验证
+    // Parameter validation
     if (!expression || expression.trim() === '') {
       throw new Error('expression parameter is required and cannot be empty');
     }
@@ -415,10 +415,10 @@ export class RuntimeInspector {
     }
   }
 
-  // ==================== 辅助方法 ====================
+  // ==================== Helper Methods ====================
 
   /**
-   * 格式化值（将CDP的RemoteObject转换为友好格式）
+   * Format a value (convert CDP RemoteObject to a friendly format)
    */
   private formatValue(remoteObject: any): any {
     if (remoteObject.type === 'undefined') {
@@ -441,15 +441,15 @@ export class RuntimeInspector {
   }
 
   /**
-   * 关闭运行时检查器
+   * Close the runtime inspector
    */
   async close(): Promise<void> {
-    // disable() 内部已处理 detach 和状态清理
+    // disable() already handles detach and state cleanup internally
     if (this.enabled) {
       await this.disable();
     }
 
-    // 仅在 disable() 未能清理时兜底
+    // Fallback only if disable() failed to clean up
     if (this.cdpSession) {
       try {
         await this.cdpSession.detach();

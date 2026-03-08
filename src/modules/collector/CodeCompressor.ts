@@ -1,15 +1,15 @@
 /**
- * 代码压缩器 - 使用gzip压缩代码以减少token消耗
+ * Code compressor - uses gzip compression to reduce token consumption
  *
- * 功能：
- * 1. 多级压缩（0-9级）
- * 2. 流式压缩（大文件）
- * 3. 分块压缩（并行）
- * 4. 并发批量压缩
- * 5. 压缩缓存（LRU）
- * 6. 统计监控
- * 7. 重试机制
- * 8. 进度回调
+ * Features:
+ * 1. Multi-level compression (levels 0-9)
+ * 2. Stream compression (large files)
+ * 3. Chunked compression (parallel)
+ * 4. Concurrent batch compression
+ * 5. Compression cache (LRU)
+ * 6. Statistics monitoring
+ * 7. Retry mechanism
+ * 8. Progress callback
  */
 
 import { gzip, gunzip } from 'zlib';
@@ -20,43 +20,43 @@ import { logger } from '../../utils/logger.js';
 const gzipAsync = promisify(gzip);
 const gunzipAsync = promisify(gunzip);
 
-// ==================== 接口定义 ====================
+// ==================== Interface definitions ====================
 
 export interface CompressedCode {
-  compressed: string; // Base64编码的gzip数据
+  compressed: string; // Base64-encoded gzip data
   originalSize: number;
   compressedSize: number;
   compressionRatio: number;
-  level?: number; // 压缩级别
-  chunks?: number; // 分块数量
+  level?: number; // Compression level
+  chunks?: number; // Number of chunks
   metadata?: {
-    hash: string; // 原始内容的 hash
+    hash: string; // Hash of original content
     timestamp: number;
-    compressionTime: number; // 压缩耗时（ms）
+    compressionTime: number; // Compression time (ms)
   };
 }
 
 export interface CompressOptions {
-  level?: number; // 压缩级别 0-9（默认6）
-  chunkSize?: number; // 分块大小（字节，默认100KB）
-  useCache?: boolean; // 是否使用缓存（默认true）
-  maxRetries?: number; // 最大重试次数（默认3）
-  onProgress?: (progress: number) => void; // 进度回调
+  level?: number; // Compression level 0-9 (default 6)
+  chunkSize?: number; // Chunk size (bytes, default 100KB)
+  useCache?: boolean; // Whether to use cache (default true)
+  maxRetries?: number; // Maximum retry count (default 3)
+  onProgress?: (progress: number) => void; // Progress callback
 }
 
 export interface BatchCompressOptions extends CompressOptions {
-  concurrency?: number; // 并发数量（默认5）
-  onFileProgress?: (file: string, progress: number) => void; // 单文件进度
+  concurrency?: number; // Concurrency count (default 5)
+  onFileProgress?: (file: string, progress: number) => void; // Per-file progress
 }
 
 export interface CompressionStats {
-  totalCompressed: number; // 总压缩次数
-  totalOriginalSize: number; // 总原始大小
-  totalCompressedSize: number; // 总压缩后大小
-  averageRatio: number; // 平均压缩率
-  cacheHits: number; // 缓存命中次数
-  cacheMisses: number; // 缓存未命中次数
-  totalTime: number; // 总耗时（ms）
+  totalCompressed: number; // Total compression count
+  totalOriginalSize: number; // Total original size
+  totalCompressedSize: number; // Total compressed size
+  averageRatio: number; // Average compression ratio
+  cacheHits: number; // Cache hit count
+  cacheMisses: number; // Cache miss count
+  totalTime: number; // Total time (ms)
 }
 
 interface CacheEntry {
@@ -67,20 +67,20 @@ interface CacheEntry {
   timestamp: number;
 }
 
-// ==================== 类实现 ====================
+// ==================== Class implementation ====================
 
 export class CodeCompressor {
   private readonly DEFAULT_LEVEL = 6;
   private readonly DEFAULT_CHUNK_SIZE = 100 * 1024; // 100KB
   private readonly DEFAULT_CONCURRENCY = 5;
   private readonly DEFAULT_MAX_RETRIES = 3;
-  private readonly CACHE_MAX_SIZE = 100; // 最多缓存100个
-  private readonly CACHE_TTL = 3600 * 1000; // 1小时
+  private readonly CACHE_MAX_SIZE = 100; // Maximum 100 cached entries
+  private readonly CACHE_TTL = 3600 * 1000; // 1 hour
 
-  // 压缩缓存（LRU）
+  // Compression cache (LRU)
   private cache: Map<string, CacheEntry> = new Map();
 
-  // 统计信息
+  // Statistics
   private stats: CompressionStats = {
     totalCompressed: 0,
     totalOriginalSize: 0,
@@ -92,7 +92,7 @@ export class CodeCompressor {
   };
 
   /**
-   * 压缩代码（增强版）
+   * Compress code (enhanced version)
    */
   async compress(code: string, options: CompressOptions = {}): Promise<CompressedCode> {
     const startTime = Date.now();
@@ -100,10 +100,10 @@ export class CodeCompressor {
     const useCache = options.useCache ?? true;
     const maxRetries = options.maxRetries ?? this.DEFAULT_MAX_RETRIES;
 
-    // 生成缓存键
+    // Generate cache key
     const cacheKey = this.generateCacheKey(code, level);
 
-    // 检查缓存
+    // Check cache
     if (useCache && this.cache.has(cacheKey)) {
       const cached = this.cache.get(cacheKey)!;
       if (Date.now() - cached.timestamp < this.CACHE_TTL) {
@@ -123,7 +123,7 @@ export class CodeCompressor {
 
     this.stats.cacheMisses++;
 
-    // 重试压缩
+    // Retry compression
     let lastError: Error | null = null;
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -136,7 +136,7 @@ export class CodeCompressor {
         const compressionRatio = (1 - compressedSize / originalSize) * 100;
         const compressionTime = Date.now() - startTime;
 
-        // 更新统计
+        // Update statistics
         this.stats.totalCompressed++;
         this.stats.totalOriginalSize += originalSize;
         this.stats.totalCompressedSize += compressedSize;
@@ -156,7 +156,7 @@ export class CodeCompressor {
           },
         };
 
-        // 保存到缓存
+        // Save to cache
         if (useCache) {
           this.addToCache(cacheKey, {
             compressed: base64,
@@ -175,7 +175,7 @@ export class CodeCompressor {
         logger.warn(`Compression attempt ${attempt + 1}/${maxRetries} failed:`, error);
 
         if (attempt < maxRetries - 1) {
-          // 等待后重试
+          // Wait before retrying
           await new Promise(resolve => setTimeout(resolve, 100 * (attempt + 1)));
         }
       }
@@ -186,7 +186,7 @@ export class CodeCompressor {
   }
 
   /**
-   * 解压代码（增强版）
+   * Decompress code (enhanced version)
    */
   async decompress(compressed: string, maxRetries: number = 3): Promise<string> {
     let lastError: Error | null = null;
@@ -211,7 +211,7 @@ export class CodeCompressor {
   }
 
   /**
-   * 批量压缩文件（增强版 - 并发）
+   * Batch compress files (enhanced version - concurrent)
    */
   async compressBatch(
     files: Array<{ url: string; content: string }>,
@@ -232,7 +232,7 @@ export class CodeCompressor {
       compressionRatio: number;
     }> = [];
 
-    // 分批并发压缩
+    // Batch concurrent compression
     for (let i = 0; i < files.length; i += concurrency) {
       const batch = files.slice(i, i + concurrency);
 
@@ -241,7 +241,7 @@ export class CodeCompressor {
           try {
             const result = await this.compress(file.content, options);
 
-            // 单文件进度回调
+            // Per-file progress callback
             if (options.onFileProgress) {
               options.onFileProgress(file.url, 100);
             }
@@ -255,7 +255,7 @@ export class CodeCompressor {
             };
           } catch (error) {
             logger.error(`Failed to compress ${file.url}:`, error);
-            // 返回未压缩的数据
+            // Return uncompressed data
             return {
               url: file.url,
               compressed: Buffer.from(file.content).toString('base64'),
@@ -269,7 +269,7 @@ export class CodeCompressor {
 
       results.push(...batchResults);
 
-      // 总体进度回调
+      // Overall progress callback
       if (options.onProgress) {
         options.onProgress((results.length / files.length) * 100);
       }
@@ -285,38 +285,38 @@ export class CodeCompressor {
   }
 
   /**
-   * 判断是否值得压缩
+   * Determine if compression is worthwhile
    */
   shouldCompress(code: string, threshold: number = 1024): boolean {
-    // 小于阈值的代码不压缩（压缩开销大于收益）
+    // Code smaller than threshold is not compressed (compression overhead exceeds benefit)
     return code.length > threshold;
   }
 
   /**
-   * 智能选择压缩级别
+   * Intelligently select compression level
    */
   selectCompressionLevel(size: number): number {
     if (size < 10 * 1024) {
-      return 1; // <10KB: 快速压缩
+      return 1; // <10KB: fast compression
     } else if (size < 100 * 1024) {
-      return 6; // 10-100KB: 平衡
+      return 6; // 10-100KB: balanced
     } else if (size < 1024 * 1024) {
-      return 9; // 100KB-1MB: 最大压缩
+      return 9; // 100KB-1MB: maximum compression
     } else {
-      return 6; // >1MB: 平衡（避免太慢）
+      return 6; // >1MB: balanced (avoid being too slow)
     }
   }
 
   /**
-   * 流式压缩（大文件）
+   * Stream compression (large files)
    *
-   * 注意：输出格式与 decompress() 兼容（单个 gzip base64）。
-   * 分块仅用于进度回调和内存控制，最终合并为整体压缩。
+   * Note: Output format is compatible with decompress() (single gzip base64).
+   * Chunking is only used for progress callbacks and memory control; the final result is a single compressed output.
    */
   async compressStream(code: string, options: CompressOptions = {}): Promise<CompressedCode> {
     const chunkSize = options.chunkSize ?? this.DEFAULT_CHUNK_SIZE;
 
-    // 如果文件小于分块大小，使用普通压缩
+    // If file is smaller than chunk size, use normal compression
     if (code.length <= chunkSize) {
       return this.compress(code, options);
     }
@@ -324,14 +324,14 @@ export class CodeCompressor {
     const startTime = Date.now();
     const totalChunks = Math.ceil(code.length / chunkSize);
 
-    // 进度回调（分块报告进度，但最终整体压缩）
+    // Progress callback (reports progress per chunk, but compresses as a whole)
     if (options.onProgress) {
       for (let i = 0; i < code.length; i += chunkSize) {
-        options.onProgress(((i + chunkSize) / code.length) * 80); // 前80%为"分析"阶段
+        options.onProgress(((i + chunkSize) / code.length) * 80); // First 80% is the "analysis" phase
       }
     }
 
-    // 整体压缩（保持与 decompress 兼容的格式）
+    // Compress as a whole (maintaining format compatible with decompress)
     const result = await this.compress(code, { ...options, useCache: false });
 
     if (options.onProgress) {
@@ -354,14 +354,14 @@ export class CodeCompressor {
   }
 
   /**
-   * 获取压缩统计
+   * Get compression statistics
    */
   getStats(): CompressionStats {
     return { ...this.stats };
   }
 
   /**
-   * 重置统计
+   * Reset statistics
    */
   resetStats(): void {
     this.stats = {
@@ -376,7 +376,7 @@ export class CodeCompressor {
   }
 
   /**
-   * 清空缓存
+   * Clear cache
    */
   clearCache(): void {
     this.cache.clear();
@@ -384,16 +384,16 @@ export class CodeCompressor {
   }
 
   /**
-   * 获取缓存大小
+   * Get cache size
    */
   getCacheSize(): number {
     return this.cache.size;
   }
 
-  // ==================== 私有方法 ====================
+  // ==================== Private methods ====================
 
   /**
-   * 生成缓存键
+   * Generate cache key
    */
   private generateCacheKey(code: string, level: number): string {
     const hash = createHash('md5').update(code).digest('hex');
@@ -401,10 +401,10 @@ export class CodeCompressor {
   }
 
   /**
-   * 添加到缓存（LRU）
+   * Add to cache (LRU)
    */
   private addToCache(key: string, entry: CacheEntry): void {
-    // 如果缓存已满，删除最旧的
+    // If cache is full, delete the oldest entry
     if (this.cache.size >= this.CACHE_MAX_SIZE) {
       const firstKey = this.cache.keys().next().value;
       if (firstKey) {

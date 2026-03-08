@@ -66,7 +66,7 @@ describe('CryptoDetector extended', () => {
     assert.ok(libs.length >= 1);
 
     const kws = detectorInternals.detectByKeywords('AES.encrypt(x); CBC; PKCS7;');
-    // mode/padding 关键词会被跳过，算法关键词应仍可命中
+    // mode/padding keywords are skipped, but algorithm keywords should still match
     assert.ok(Array.isArray(kws));
   });
 

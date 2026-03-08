@@ -1,34 +1,34 @@
 /**
- * AdaptiveDataSerializer - 自适应数据序列化器
- * 
- * 核心功能：
- * 1. 自动检测数据类型（大数组、深层对象、代码字符串、网络请求等）
- * 2. 根据类型选择最优序列化策略
- * 3. 智能截断和采样
- * 4. 保留关键信息，减少 Token 浪费
- * 
- * 设计原则：
- * - 类型检测优先 - 先识别类型再处理
- * - 保留结构 - 保留数据的关键结构信息
- * - 渐进式加载 - 支持按需获取完整数据
+ * AdaptiveDataSerializer - Adaptive Data Serializer
+ *
+ * Core features:
+ * 1. Auto-detect data types (large arrays, deep objects, code strings, network requests, etc.)
+ * 2. Select optimal serialization strategy based on type
+ * 3. Smart truncation and sampling
+ * 4. Preserve key information, reduce token waste
+ *
+ * Design principles:
+ * - Type detection first - identify type before processing
+ * - Preserve structure - keep key structural information
+ * - Progressive loading - support on-demand retrieval of full data
  */
 
 import { DetailedDataManager } from './detailedDataManager.js';
 import { safeStringify } from './safeJson.js';
 
 /**
- * 序列化上下文
+ * Serialization context
  */
 export interface SerializationContext {
-  maxDepth?: number; // 最大深度（默认3）
-  maxArrayLength?: number; // 最大数组长度（默认10）
-  maxStringLength?: number; // 最大字符串长度（默认1000）
-  maxObjectKeys?: number; // 最大对象键数量（默认20）
-  threshold?: number; // 大数据阈值（默认50KB）
+  maxDepth?: number; // Maximum depth (default 3)
+  maxArrayLength?: number; // Maximum array length (default 10)
+  maxStringLength?: number; // Maximum string length (default 1000)
+  maxObjectKeys?: number; // Maximum number of object keys (default 20)
+  threshold?: number; // Large data threshold (default 50KB)
 }
 
 /**
- * 数据类型
+ * Data type
  */
 type DataType =
   | 'large-array'
@@ -41,7 +41,7 @@ type DataType =
   | 'unknown';
 
 /**
- * 自适应数据序列化器
+ * Adaptive data serializer
  */
 export class AdaptiveDataSerializer {
   private readonly DEFAULT_CONTEXT: Required<SerializationContext> = {
@@ -53,15 +53,15 @@ export class AdaptiveDataSerializer {
   };
 
   /**
-   * 序列化数据
+   * Serialize data
    */
   serialize(data: any, context: SerializationContext = {}): string {
     const ctx = { ...this.DEFAULT_CONTEXT, ...context };
 
-    // 检测数据类型
+    // Detect data type
     const type = this.detectType(data);
 
-    // 根据类型选择序列化策略
+    // Select serialization strategy based on type
     switch (type) {
       case 'large-array':
         return this.serializeLargeArray(data, ctx);
@@ -83,7 +83,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 检测数据类型
+   * Detect data type
    */
   private detectType(data: any): DataType {
     if (data === null || data === undefined) {
@@ -92,38 +92,38 @@ export class AdaptiveDataSerializer {
 
     const type = typeof data;
 
-    // 基本类型
+    // Primitive types
     if (type === 'string' || type === 'number' || type === 'boolean') {
-      // 检查是否是代码字符串
+      // Check if it is a code string
       if (type === 'string' && this.isCodeString(data)) {
         return 'code-string';
       }
       return 'primitive';
     }
 
-    // 数组
+    // Array
     if (Array.isArray(data)) {
-      // 检查是否是网络请求数组
+      // Check if it is a network request array
       if (data.length > 0 && this.isNetworkRequest(data[0])) {
         return 'network-requests';
       }
-      // 检查是否是大数组
+      // Check if it is a large array
       if (data.length > 100) {
         return 'large-array';
       }
     }
 
-    // 对象
+    // Object
     if (type === 'object') {
-      // 检查是否是 DOM 结构
+      // Check if it is a DOM structure
       if (this.isDOMStructure(data)) {
         return 'dom-structure';
       }
-      // 检查是否是函数树
+      // Check if it is a function tree
       if (this.isFunctionTree(data)) {
         return 'function-tree';
       }
-      // 检查是否是深层对象
+      // Check if it is a deep object
       if (this.getDepth(data) > 3) {
         return 'deep-object';
       }
@@ -133,14 +133,14 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 序列化大数组
+   * Serialize large array
    */
   private serializeLargeArray(arr: any[], ctx: Required<SerializationContext>): string {
     if (arr.length <= ctx.maxArrayLength) {
       return safeStringify(arr);
     }
 
-    // 采样：前5个 + 后5个
+    // Sample: first 5 + last 5
     const sample = [
       ...arr.slice(0, 5),
       ...arr.slice(-5),
@@ -158,7 +158,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 序列化深层对象
+   * Serialize deep object
    */
   private serializeDeepObject(obj: any, ctx: Required<SerializationContext>): string {
     const limited = this.limitDepth(obj, ctx.maxDepth);
@@ -166,7 +166,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 序列化代码字符串
+   * Serialize code string
    */
   private serializeCodeString(code: string, _ctx: Required<SerializationContext>): string {
     const lines = code.split('\n');
@@ -175,7 +175,7 @@ export class AdaptiveDataSerializer {
       return safeStringify(code);
     }
 
-    // 只返回前50行
+    // Only return the first 50 lines
     const preview = lines.slice(0, 50).join('\n');
     const detailId = DetailedDataManager.getInstance().store(code);
 
@@ -189,14 +189,14 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 序列化网络请求
+   * Serialize network requests
    */
   private serializeNetworkRequests(requests: any[], ctx: Required<SerializationContext>): string {
     if (requests.length <= ctx.maxArrayLength) {
       return safeStringify(requests);
     }
 
-    // 只返回关键信息
+    // Only return key information
     const summary = requests.map(req => ({
       requestId: req.requestId,
       url: req.url,
@@ -217,25 +217,25 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 序列化 DOM 结构
+   * Serialize DOM structure
    */
   private serializeDOMStructure(dom: any, ctx: Required<SerializationContext>): string {
-    // 限制深度
+    // Limit depth
     const limited = this.limitDepth(dom, ctx.maxDepth);
     return safeStringify(limited);
   }
 
   /**
-   * 序列化函数树
+   * Serialize function tree
    */
   private serializeFunctionTree(tree: any, ctx: Required<SerializationContext>): string {
-    // 只保留函数名和调用关系
+    // Only keep function names and call relationships
     const simplified = this.simplifyFunctionTree(tree, ctx.maxDepth);
     return safeStringify(simplified);
   }
 
   /**
-   * 默认序列化
+   * Default serialization
    */
   private serializeDefault(data: any, ctx: Required<SerializationContext>): string {
     const jsonStr = safeStringify(data);
@@ -244,7 +244,7 @@ export class AdaptiveDataSerializer {
       return jsonStr;
     }
 
-    // 大数据返回摘要
+    // Return summary for large data
     const detailId = DetailedDataManager.getInstance().store(data);
 
     return safeStringify({
@@ -257,15 +257,15 @@ export class AdaptiveDataSerializer {
     });
   }
 
-  // ==================== 辅助方法 ====================
+  // ==================== Helper methods ====================
 
   /**
-   * 检查是否是代码字符串
+   * Check if it is a code string
    */
   private isCodeString(str: string): boolean {
     if (str.length < 100) return false;
 
-    // 检查是否包含代码特征
+    // Check if it contains code patterns
     const codePatterns = [
       /function\s+\w+\s*\(/,
       /const\s+\w+\s*=/,
@@ -280,7 +280,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 检查是否是网络请求
+   * Check if it is a network request
    */
   private isNetworkRequest(obj: any): boolean {
     return obj && typeof obj === 'object' &&
@@ -289,7 +289,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 检查是否是 DOM 结构
+   * Check if it is a DOM structure
    */
   private isDOMStructure(obj: any): boolean {
     return obj && typeof obj === 'object' &&
@@ -298,7 +298,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 检查是否是函数树
+   * Check if it is a function tree
    */
   private isFunctionTree(obj: any): boolean {
     return obj && typeof obj === 'object' &&
@@ -307,14 +307,14 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 获取对象深度
+   * Get object depth
    */
   private getDepth(obj: any, currentDepth = 0): number {
     if (obj === null || typeof obj !== 'object') {
       return currentDepth;
     }
 
-    if (currentDepth > 10) return currentDepth; // 防止无限递归
+    if (currentDepth > 10) return currentDepth; // Prevent infinite recursion
 
     let maxDepth = currentDepth;
 
@@ -329,7 +329,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 限制对象深度
+   * Limit object depth
    */
   private limitDepth(obj: any, maxDepth: number, currentDepth = 0): any {
     if (currentDepth >= maxDepth) {
@@ -355,7 +355,7 @@ export class AdaptiveDataSerializer {
   }
 
   /**
-   * 简化函数树
+   * Simplify function tree
    */
   private simplifyFunctionTree(tree: any, maxDepth: number, currentDepth = 0): any {
     if (currentDepth >= maxDepth) {

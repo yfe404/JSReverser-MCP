@@ -39,7 +39,7 @@ describe('PackerDeobfuscator family', () => {
     });
     assert.strictEqual(warned.success, true);
     assert.strictEqual(warned.iterations, 0);
-    assert.ok(warned.warnings.some((w) => w.includes('解包失败')));
+    assert.ok(warned.warnings.some((w) => w.includes('Unpacking failed')));
   });
 
   it('covers unpack/parse/execute/base/beautify private flows', () => {

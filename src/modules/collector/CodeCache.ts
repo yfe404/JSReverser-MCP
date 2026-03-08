@@ -1,5 +1,5 @@
 /**
- * 代码缓存管理器 - 缓存已收集的代码，避免重复收集
+ * Code cache manager - caches collected code to avoid redundant collection
  */
 
 import fs from 'fs/promises';
@@ -19,8 +19,8 @@ export interface CacheEntry {
 
 export interface CacheOptions {
   cacheDir?: string;
-  maxAge?: number; // 缓存过期时间（毫秒）
-  maxSize?: number; // 最大缓存大小（字节）
+  maxAge?: number; // Cache expiration time (milliseconds)
+  maxSize?: number; // Maximum cache size (bytes)
 }
 
 export class CodeCache {
@@ -29,17 +29,17 @@ export class CodeCache {
   private maxSize: number;
   private memoryCache: Map<string, CacheEntry> = new Map();
 
-  // 🆕 内存缓存大小限制（防止内存泄漏）
-  private readonly MAX_MEMORY_CACHE_SIZE = 100; // 最多 100 个条目
+  // Memory cache size limit (prevents memory leaks)
+  private readonly MAX_MEMORY_CACHE_SIZE = 100; // Maximum 100 entries
 
   constructor(options: CacheOptions = {}) {
     this.cacheDir = options.cacheDir || path.join(process.cwd(), '.cache', 'code');
-    this.maxAge = options.maxAge || 24 * 60 * 60 * 1000; // 默认24小时
-    this.maxSize = options.maxSize || 100 * 1024 * 1024; // 默认100MB
+    this.maxAge = options.maxAge || 24 * 60 * 60 * 1000; // Default 24 hours
+    this.maxSize = options.maxSize || 100 * 1024 * 1024; // Default 100MB
   }
 
   /**
-   * 初始化缓存目录
+   * Initialize cache directory
    */
   async init(): Promise<void> {
     try {
@@ -51,7 +51,7 @@ export class CodeCache {
   }
 
   /**
-   * 生成缓存键
+   * Generate cache key
    */
   private generateKey(url: string, options?: Record<string, unknown>): string {
     const data = JSON.stringify({ url, options });
@@ -59,26 +59,26 @@ export class CodeCache {
   }
 
   /**
-   * 获取缓存文件路径
+   * Get cache file path
    */
   private getCachePath(key: string): string {
     return path.join(this.cacheDir, `${key}.json`);
   }
 
   /**
-   * 检查缓存是否过期
+   * Check if cache entry is expired
    */
   private isExpired(entry: CacheEntry): boolean {
     return Date.now() - entry.timestamp > this.maxAge;
   }
 
   /**
-   * 从缓存获取
+   * Get from cache
    */
   async get(url: string, options?: Record<string, unknown>): Promise<CollectCodeResult | null> {
     const key = this.generateKey(url, options);
 
-    // 先检查内存缓存
+    // Check memory cache first
     if (this.memoryCache.has(key)) {
       const entry = this.memoryCache.get(key)!;
       if (!this.isExpired(entry)) {
@@ -94,7 +94,7 @@ export class CodeCache {
       }
     }
 
-    // 检查磁盘缓存
+    // Check disk cache
     try {
       const cachePath = this.getCachePath(key);
       const data = await fs.readFile(cachePath, 'utf-8');
@@ -106,7 +106,7 @@ export class CodeCache {
         return null;
       }
 
-      // 加载到内存缓存
+      // Load into memory cache
       this.memoryCache.set(key, entry);
 
       logger.debug(`Cache hit (disk): ${url}`);
@@ -117,13 +117,13 @@ export class CodeCache {
         collectTime: entry.collectTime,
       };
     } catch (error) {
-      // 缓存不存在或读取失败
+      // Cache does not exist or read failed
       return null;
     }
   }
 
   /**
-   * 保存到缓存
+   * Save to cache
    */
   async set(url: string, result: CollectCodeResult, options?: Record<string, unknown>): Promise<void> {
     const key = this.generateKey(url, options);
@@ -138,12 +138,12 @@ export class CodeCache {
       hash,
     };
 
-    // 保存到内存缓存
+    // Save to memory cache
     this.memoryCache.set(key, entry);
 
-    // ✅ 修复：限制内存缓存大小（LRU 策略）
+    // Fix: limit memory cache size (LRU strategy)
     if (this.memoryCache.size > this.MAX_MEMORY_CACHE_SIZE) {
-      // 删除最早的条目（Map 保持插入顺序）
+      // Delete the oldest entry (Map preserves insertion order)
       const firstKey = this.memoryCache.keys().next().value;
       if (firstKey) {
         this.memoryCache.delete(firstKey);
@@ -151,7 +151,7 @@ export class CodeCache {
       }
     }
 
-    // 保存到磁盘缓存
+    // Save to disk cache
     try {
       const cachePath = this.getCachePath(key);
       await fs.writeFile(cachePath, JSON.stringify(entry, null, 2), 'utf-8');
@@ -160,12 +160,12 @@ export class CodeCache {
       logger.error('Failed to save cache:', error);
     }
 
-    // 检查缓存大小
+    // Check cache size
     await this.cleanup();
   }
 
   /**
-   * 清理过期缓存
+   * Clean up expired cache
    */
   async cleanup(): Promise<void> {
     try {
@@ -186,7 +186,7 @@ export class CodeCache {
         });
       }
 
-      // 如果总大小超过限制，删除最旧的文件
+      // If total size exceeds limit, delete the oldest files
       if (totalSize > this.maxSize) {
         entries.sort((a, b) => a.mtime.getTime() - b.mtime.getTime());
 
@@ -207,7 +207,7 @@ export class CodeCache {
   }
 
   /**
-   * 清空所有缓存
+   * Clear all cache
    */
   async clear(): Promise<void> {
     try {
@@ -227,7 +227,7 @@ export class CodeCache {
   }
 
   /**
-   * 获取缓存统计信息
+   * Get cache statistics
    */
   async getStats(): Promise<{
     memoryEntries: number;
@@ -264,7 +264,7 @@ export class CodeCache {
   }
 
   /**
-   * 预热缓存（加载常用URL到内存）
+   * Warm up cache (load frequently used URLs into memory)
    */
   async warmup(urls: string[]): Promise<void> {
     logger.info(`Warming up cache for ${urls.length} URLs...`);

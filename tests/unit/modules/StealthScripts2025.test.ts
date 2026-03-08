@@ -548,7 +548,7 @@ describe('StealthScripts2025', () => {
         return `orig-${param}`;
       }
     }
-    // 覆盖分支：WebGL2 不存在
+    // Cover branch: WebGL2 does not exist
     setGlobal('WebGLRenderingContext', WebGL1Mock);
     setGlobal('WebGL2RenderingContext', undefined);
 

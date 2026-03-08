@@ -1,5 +1,5 @@
 /**
- * AI代码摘要生成器 - 使用LLM生成代码摘要
+ * AI Code Summarizer - Generate code summaries using LLM
  */
 
 import type { LLMService } from '../../services/LLMService.js';
@@ -11,13 +11,13 @@ export interface CodeSummary {
   type: string;
   size: number;
   
-  // AI生成的摘要
+  // AI-generated summary
   summary: string;
   purpose: string;
   keyFunctions: string[];
   dependencies: string[];
   
-  // 特征检测
+  // Feature detection
   hasEncryption: boolean;
   encryptionMethods?: string[];
   hasAPI: boolean;
@@ -25,15 +25,15 @@ export interface CodeSummary {
   hasObfuscation: boolean;
   obfuscationType?: string;
   
-  // 安全评估
+  // Security assessment
   securityIssues?: string[];
   suspiciousPatterns?: string[];
   
-  // 复杂度评估
+  // Complexity assessment
   complexity: 'low' | 'medium' | 'high';
   linesOfCode: number;
   
-  // 建议
+  // Recommendations
   recommendations?: string[];
 }
 
@@ -41,13 +41,13 @@ export class AISummarizer {
   constructor(private llmService: LLMService) {}
 
   /**
-   * 生成单个文件的摘要
+   * Generate a summary for a single file
    */
   async summarizeFile(file: CodeFile): Promise<CodeSummary> {
     logger.info(`Generating AI summary for: ${file.url}`);
 
-    // 截取代码片段（避免token溢出）
-    const maxLength = 10000; // 约2000 tokens
+    // Truncate code snippet (to avoid token overflow)
+    const maxLength = 10000; // approximately 2000 tokens
     const codeSnippet = file.content.length > maxLength
       ? file.content.substring(0, maxLength) + '\n\n... (truncated)'
       : file.content;
@@ -74,20 +74,20 @@ export class AISummarizer {
     } catch (error) {
       logger.error(`Failed to generate AI summary for ${file.url}:`, error);
 
-      // 降级到基础分析
+      // Fall back to basic analysis
       return this.basicAnalysis(file);
     }
   }
 
   /**
-   * 批量生成摘要
+   * Generate summaries in batch
    */
   async summarizeBatch(files: CodeFile[], maxConcurrent: number = 3): Promise<CodeSummary[]> {
     logger.info(`Generating AI summaries for ${files.length} files...`);
 
     const results: CodeSummary[] = [];
     
-    // 分批处理，避免并发过多
+    // Process in batches to avoid excessive concurrency
     for (let i = 0; i < files.length; i += maxConcurrent) {
       const batch = files.slice(i, i + maxConcurrent);
       const batchResults = await Promise.all(
@@ -102,7 +102,7 @@ export class AISummarizer {
   }
 
   /**
-   * 生成整体项目摘要
+   * Generate an overall project summary
    */
   async summarizeProject(files: CodeFile[]): Promise<{
     totalFiles: number;
@@ -115,7 +115,7 @@ export class AISummarizer {
   }> {
     logger.info('Generating project-level AI summary...');
 
-    // 收集所有文件的基础信息
+    // Collect basic information for all files
     const fileInfos = files.map(f => ({
       url: f.url,
       size: f.size,
@@ -176,7 +176,7 @@ Format your response as JSON.`;
   }
 
   /**
-   * 构建摘要提示词
+   * Build summary prompt
    */
   private buildSummaryPrompt(url: string, code: string): string {
     return `Analyze this JavaScript file and provide a structured summary:
@@ -208,7 +208,7 @@ Provide analysis in JSON format with the following structure:
   }
 
   /**
-   * 解析AI响应
+   * Parse AI response
    */
   private parseSummaryResponse(response: string, file: CodeFile): CodeSummary {
     try {
@@ -241,22 +241,22 @@ Provide analysis in JSON format with the following structure:
   }
 
   /**
-   * 基础分析（降级方案）
+   * Basic analysis (fallback)
    */
   private basicAnalysis(file: CodeFile): CodeSummary {
     const content = file.content;
     const lines = content.split('\n');
 
-    // 简单的模式匹配
+    // Simple pattern matching
     const hasEncryption = /encrypt|decrypt|crypto|cipher|aes|rsa/i.test(content);
     const hasAPI = /fetch|xhr|ajax|axios|request/i.test(content);
     const hasObfuscation = /eval\(|\\x[0-9a-f]{2}|\\u[0-9a-f]{4}/i.test(content);
 
-    // 提取函数名
+    // Extract function names
     const functionMatches = content.matchAll(/function\s+([a-zA-Z_$][a-zA-Z0-9_$]*)/g);
     const keyFunctions = Array.from(functionMatches, m => m[1]).filter((name): name is string => !!name).slice(0, 10);
 
-    // 评估复杂度
+    // Assess complexity
     const avgLineLength = content.length / lines.length;
     const complexity: 'low' | 'medium' | 'high' = 
       avgLineLength > 100 ? 'high' :

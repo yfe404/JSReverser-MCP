@@ -1,28 +1,28 @@
-# 自动化入口剧本
+# Automation Entry Playbook
 
-默认按三段式执行：
+Execute in three phases by default:
 
-1. 页面观察
-2. 运行时采样
-3. 本地补环境
+1. Page observation
+2. Runtime sampling
+3. Local environment rebuild
 
-标准入口：
+Standard entry:
 
 1. `check_browser_health`
-2. `new_page` 或 `select_page`
+2. `new_page` or `select_page`
 3. `analyze_target`
 4. `search_in_scripts`
 5. `list_network_requests` + `get_request_initiator`
-6. 如果目标涉及首屏初始化、首个请求前参数生成、页面首次执行逻辑：先 `inject_preload_script`
+6. If the target involves initial page load, pre-first-request parameter generation, or first-execution logic: run `inject_preload_script` first
 7. `record_reverse_evidence`
 8. `create_hook` + `inject_hook`
-9. 触发动作
+9. Trigger action
 10. `get_hook_data(summary)`
-11. 命中后 `get_hook_data(raw)` + `record_reverse_evidence`
+11. After a hit: `get_hook_data(raw)` + `record_reverse_evidence`
 12. `export_rebuild_bundle`
-13. 本地补环境复现
+13. Local environment rebuild and reproduction
 
-重试上限：2 次。
+Retry limit: 2 attempts.
 
-只有在 Hook 无法解释关键上下文时才进入断点路径。
-如果问题出在首屏初始化，就优先走 preload 采样，不要等页面脚本跑完后再补 hook。
+Only enter the breakpoint path when hooks cannot explain the key context.
+If the issue is in initial page load, prioritize preload sampling instead of waiting for page scripts to finish before adding hooks.

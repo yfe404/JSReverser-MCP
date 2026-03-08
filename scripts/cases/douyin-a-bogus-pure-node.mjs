@@ -1,6 +1,6 @@
 function printAbstractCaseGuide() {
-  console.log(`Case: 某音 a-bogus 参数
-Category: 参数签名
+  console.log(`Case: Douyin a-bogus parameter
+Category: parameter signing
 Status: abstract-case
 Runtime: pure-node
 Scope: non-runnable

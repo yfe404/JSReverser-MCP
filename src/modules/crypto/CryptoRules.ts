@@ -1,6 +1,6 @@
 /**
- * 加密检测规则配置
- * 支持动态加载和扩展
+ * Crypto detection rule configuration
+ * Supports dynamic loading and extension
  */
 
 export interface CryptoKeywordRule {
@@ -46,7 +46,7 @@ export interface SecurityRule {
 }
 
 /**
- * 加密规则管理器
+ * Crypto rules manager
  */
 export class CryptoRulesManager {
   private keywordRules: Map<string, CryptoKeywordRule> = new Map();
@@ -60,10 +60,10 @@ export class CryptoRulesManager {
   }
 
   /**
-   * 加载默认规则
+   * Load default rules
    */
   private loadDefaultRules(): void {
-    // 加载关键字规则
+    // Load keyword rules
     this.addKeywordRule({
       category: 'symmetric',
       keywords: ['AES', 'DES', '3DES', 'TripleDES', 'RC4', 'RC2', 'Blowfish', 'Twofish', 'ChaCha20', 'Camellia', 'SEED', 'ARIA', 'SM4'],
@@ -106,7 +106,7 @@ export class CryptoRulesManager {
       description: 'Padding schemes'
     });
 
-    // 加载库规则
+    // Load library rules
     this.addLibraryRule({
       name: 'CryptoJS',
       patterns: ['CryptoJS', 'crypto-js'],
@@ -167,7 +167,7 @@ export class CryptoRulesManager {
       features: ['ECDSA', 'ECDH', 'secp256k1']
     });
 
-    // 加载常量规则（魔数）
+    // Load constant rules (magic numbers)
     this.addConstantRule({
       name: 'MD5',
       type: 'hash',
@@ -200,7 +200,7 @@ export class CryptoRulesManager {
       description: 'AES S-box first 8 values'
     });
 
-    // 加载安全规则
+    // Load security rules
     this.addSecurityRule({
       name: 'weak-md5',
       severity: 'high',
@@ -258,11 +258,11 @@ export class CryptoRulesManager {
     });
   }
 
-  // 规则管理方法
+  // Rule management methods
   addKeywordRule(rule: CryptoKeywordRule): void {
     const existing = this.keywordRules.get(rule.category);
     if (existing) {
-      // 合并关键词（去重），取较高置信度
+      // Merge keywords (deduplicate), use higher confidence
       const mergedKeywords = [...new Set([...existing.keywords, ...rule.keywords])];
       this.keywordRules.set(rule.category, {
         ...existing,
@@ -291,7 +291,7 @@ export class CryptoRulesManager {
     this.securityRules.set(rule.name, rule);
   }
 
-  // 获取规则
+  // Get rules
   getKeywordRules(): CryptoKeywordRule[] {
     return Array.from(this.keywordRules.values());
   }
@@ -313,7 +313,7 @@ export class CryptoRulesManager {
   }
 
   /**
-   * 从JSON加载自定义规则
+   * Load custom rules from JSON
    */
   loadFromJSON(json: string): void {
     try {
@@ -325,7 +325,7 @@ export class CryptoRulesManager {
       
       if (rules.libraries) {
         rules.libraries.forEach((rule: any) => {
-          // JSON 反序列化后 versionPattern 是字符串，需要转回 RegExp
+          // After JSON deserialization, versionPattern is a string; convert back to RegExp
           if (typeof rule.versionPattern === 'string') {
             rule.versionPattern = new RegExp(rule.versionPattern);
           }
@@ -342,8 +342,8 @@ export class CryptoRulesManager {
   }
 
   /**
-   * 导出规则为JSON
-   * 注意：SecurityRule 的 check 函数和 PatternRule 的 custom matcher 无法序列化，仅导出元数据
+   * Export rules as JSON
+   * Note: SecurityRule check functions and PatternRule custom matchers cannot be serialized; only metadata is exported
    */
   exportToJSON(): string {
     return JSON.stringify({
@@ -353,13 +353,13 @@ export class CryptoRulesManager {
         versionPattern: rule.versionPattern?.source, // RegExp → string
       })),
       constants: this.getConstantRules(),
-      // patterns 和 security 仅导出可序列化部分
+      // patterns and security: export only serializable parts
       security: this.getSecurityRules().map(rule => ({
         name: rule.name,
         severity: rule.severity,
         message: rule.message,
         recommendation: rule.recommendation,
-        // check 函数无法序列化，标记为不可导出
+        // check function cannot be serialized; marked as non-exportable
         _note: 'check function not serializable',
       })),
     }, null, 2);

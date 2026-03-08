@@ -1,16 +1,16 @@
-# 客户端配置指南
+# Client Configuration Guide
 
-这份指南按客户端分别给出可直接复制的 MCP 配置示例。
+This guide provides copy-ready MCP configuration examples for each client.
 
-约定：
+Conventions:
 
-- 路径统一写成 `/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js`
-- 如果你要复用已经打开的浏览器，默认 remote debugging 地址使用 `http://127.0.0.1:9222`
-- 外部 AI 配置统一通过 MCP server 的 `env` 传入
+- Paths are written as `/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js`
+- If you want to reuse an already-open browser, the default remote debugging address is `http://127.0.0.1:9222`
+- External AI configuration is passed via the MCP server's `env`
 
-## 最常用完整模板
+## Most Common Full Template
 
-如果你只是想先快速跑起来，推荐直接使用“接管已打开浏览器 + Gemini API”这一份：
+If you just want to get up and running quickly, we recommend using this “take over an open browser + Gemini API” template:
 
 ```json
 {
@@ -32,22 +32,22 @@
 }
 ```
 
-适合场景：
+Suitable scenarios:
 
-- 需要复用本机已登录浏览器
-- 希望 `understand_code` 这类 AI 增强功能开箱即用
-- 使用支持 `mcpServers` JSON 配置格式的客户端
+- Need to reuse a locally logged-in browser
+- Want AI-enhanced features like `understand_code` to work out of the box
+- Using a client that supports the `mcpServers` JSON configuration format
 
-如果你用的是 Codex `config.toml`，直接看下方 “Codex” 小节的完整模板。
+If you are using Codex `config.toml`, see the “Codex” section below for the full template.
 
-## 完整可直接使用示例
+## Complete Ready-to-Use Examples
 
-### 适用于 `mcpServers` JSON 结构的客户端
+### For Clients Using the `mcpServers` JSON Structure
 
-这类客户端通常使用如下 JSON 结构配置 MCP server。  
-如果你的 Claude / Gemini / Cursor 客户端使用的是 `mcpServers` 配置格式，可以直接参考下面模板。
+These clients typically use the following JSON structure to configure the MCP server.
+If your Claude / Gemini / Cursor client uses the `mcpServers` configuration format, you can directly use the templates below.
 
-#### 最小可用
+#### Minimal Configuration
 
 ```json
 {
@@ -62,7 +62,7 @@
 }
 ```
 
-#### 接管已打开浏览器
+#### Take Over an Open Browser
 
 ```json
 {
@@ -79,7 +79,7 @@
 }
 ```
 
-#### 使用 Gemini API
+#### Using the Gemini API
 
 ```json
 {
@@ -101,7 +101,7 @@
 }
 ```
 
-#### 使用 Claude API
+#### Using the Claude API
 
 ```json
 {
@@ -123,7 +123,7 @@
 }
 ```
 
-#### 使用 OpenAI API
+#### Using the OpenAI API
 
 ```json
 {
@@ -145,7 +145,7 @@
 }
 ```
 
-#### 使用 Gemini CLI
+#### Using the Gemini CLI
 
 ```json
 {
@@ -168,18 +168,18 @@
 
 ## Claude Code
 
-### 最简单配置
+### Simplest Configuration
 
 ```bash
 claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js
 ```
 
-### 推荐配置思路
+### Recommended Configuration Approach
 
-如果你使用的是支持 `mcpServers` JSON 配置的 Claude 客户端，优先直接使用上面的 JSON 模板。  
-如果你使用的是 `claude mcp add` 命令行方式，先把 server 加进去，再在对应客户端配置里补 `env`。
+If you are using a Claude client that supports `mcpServers` JSON configuration, prefer using the JSON templates above directly.
+If you are using the `claude mcp add` command-line approach, first add the server, then add `env` in the corresponding client configuration.
 
-### AI 配置示例
+### AI Configuration Examples
 
 Claude API：
 
@@ -220,13 +220,13 @@ OPENAI_API_KEY = "your_key"
 OPENAI_MODEL = "gpt-4o"
 ```
 
-### 接管已打开的 Chrome
+### Take Over an Open Chrome
 
 ```bash
 claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js -- --browserUrl http://127.0.0.1:9222
 ```
 
-如果你本地已经固定开着远程调试端口，也可以改用：
+If you always have a remote debugging port open locally, you can also use:
 
 ```bash
 claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js -- --autoConnect
@@ -236,14 +236,14 @@ claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js 
 
 `Settings -> MCP -> New MCP Server`
 
-### 最简单配置
+### Simplest Configuration
 
 - Command: `node`
 - Args: `[/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js]`
 
-### 完整 JSON 示例
+### Full JSON Example
 
-如果你的 Cursor 版本支持 JSON 形式的 MCP 配置，可直接参考：
+If your version of Cursor supports JSON-based MCP configuration, you can use this directly:
 
 ```json
 {
@@ -265,7 +265,7 @@ claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js 
 }
 ```
 
-### 接管已打开的 Chrome
+### Take Over an Open Chrome
 
 - Command: `node`
 - Args:
@@ -278,22 +278,22 @@ claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js 
 ]
 ```
 
-### 配置外部 AI 环境变量
+### Configure External AI Environment Variables
 
-如果客户端界面支持为 MCP server 配置环境变量，传入这些键即可：
+If the client interface supports configuring environment variables for the MCP server, pass in these keys:
 
 - `DEFAULT_LLM_PROVIDER`
 - `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GEMINI_API_KEY`
 - `OPENAI_MODEL` / `ANTHROPIC_MODEL` / `GEMINI_MODEL`
 - `GEMINI_CLI_PATH`
 
-推荐思路：
+Recommended approach:
 
-- Claude：设置 `DEFAULT_LLM_PROVIDER=anthropic` 和 `ANTHROPIC_API_KEY`
-- Gemini：设置 `DEFAULT_LLM_PROVIDER=gemini` 和 `GEMINI_API_KEY`
-- OpenAI：设置 `DEFAULT_LLM_PROVIDER=openai` 和 `OPENAI_API_KEY`
+- Claude: set `DEFAULT_LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`
+- Gemini: set `DEFAULT_LLM_PROVIDER=gemini` and `GEMINI_API_KEY`
+- OpenAI: set `DEFAULT_LLM_PROVIDER=openai` and `OPENAI_API_KEY`
 
-完整示例：
+Full examples:
 
 - Claude API
 
@@ -327,9 +327,9 @@ claude mcp add js-reverse node /ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js 
 
 ## Codex
 
-Codex 使用 `config.toml`。
+Codex uses `config.toml`.
 
-### 最简单配置
+### Simplest Configuration
 
 ```toml
 [mcp_servers.js-reverse]
@@ -337,7 +337,7 @@ command = "node"
 args = ["/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js"]
 ```
 
-### 接管已打开的 Chrome
+### Take Over an Open Chrome
 
 ```toml
 [mcp_servers.js-reverse]
@@ -349,7 +349,7 @@ args = [
 ]
 ```
 
-### 自动接管本机浏览器
+### Auto-Connect to Local Browser
 
 ```toml
 [mcp_servers.js-reverse]
@@ -360,9 +360,9 @@ args = [
 ]
 ```
 
-### 配置外部 AI 环境变量
+### Configure External AI Environment Variables
 
-Gemini API：
+Gemini API:
 
 ```toml
 [mcp_servers.js-reverse]
@@ -375,7 +375,7 @@ GEMINI_API_KEY = "your_key"
 GEMINI_MODEL = "gemini-2.0-flash-exp"
 ```
 
-Claude API：
+Claude API:
 
 ```toml
 [mcp_servers.js-reverse]
@@ -392,7 +392,7 @@ ANTHROPIC_API_KEY = "your_key"
 ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
 ```
 
-OpenAI API：
+OpenAI API:
 
 ```toml
 [mcp_servers.js-reverse]
@@ -409,7 +409,7 @@ OPENAI_API_KEY = "your_key"
 OPENAI_MODEL = "gpt-4o"
 ```
 
-Gemini CLI：
+Gemini CLI:
 
 ```toml
 [mcp_servers.js-reverse]
@@ -425,25 +425,25 @@ DEFAULT_LLM_PROVIDER = "gemini"
 GEMINI_CLI_PATH = "gemini-cli"
 ```
 
-如果你只想从一个 provider 切换到另一个，通常只需要替换：
+If you just want to switch from one provider to another, you typically only need to replace:
 
-- `DEFAULT_LLM_PROVIDER = "anthropic"` 并设置 `ANTHROPIC_API_KEY`
-- `DEFAULT_LLM_PROVIDER = "openai"` 并设置 `OPENAI_API_KEY`
-- `DEFAULT_LLM_PROVIDER = "gemini"` 并设置 `GEMINI_API_KEY` 或 `GEMINI_CLI_PATH`
+- `DEFAULT_LLM_PROVIDER = "anthropic"` and set `ANTHROPIC_API_KEY`
+- `DEFAULT_LLM_PROVIDER = "openai"` and set `OPENAI_API_KEY`
+- `DEFAULT_LLM_PROVIDER = "gemini"` and set `GEMINI_API_KEY` or `GEMINI_CLI_PATH`
 
-## 配置完成后的验证
+## Post-Configuration Verification
 
-无论你用哪个客户端，建议都做一次最小验证：
+Regardless of which client you use, it is recommended to perform a minimal verification:
 
-1. 打开一个已知页面
-2. 调用 `list_pages`
-3. 调用 `list_scripts`
-4. 调用 `list_network_requests`
+1. Open a known page
+2. Call `list_pages`
+3. Call `list_scripts`
+4. Call `list_network_requests`
 
-如果三者都能返回你当前页面对应的信息，说明配置已经基本正确。
+If all three return information corresponding to your current page, the configuration is essentially correct.
 
-如果你还配置了外部 AI，可以再补一条验证：
+If you also configured an external AI, you can add one more verification step:
 
-5. 调用 `understand_code` 分析一小段代码
+5. Call `understand_code` to analyze a small piece of code
 
-如果返回 provider 未配置错误，通常说明 MCP server 的 `env` 没有传进去，而不是工具本身有问题。
+If you get a provider-not-configured error, it usually means the MCP server's `env` was not passed in, rather than the tool itself having a problem.

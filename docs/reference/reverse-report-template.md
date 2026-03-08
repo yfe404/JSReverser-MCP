@@ -1,82 +1,82 @@
 # Reverse Report Template
 
-这份模板用于沉淀单次逆向任务的结果。重点不是写长文，而是让别人能复现、续做、回看。
+This template is used to document the results of a single reverse engineering task. The focus is not on writing lengthy text, but on enabling others to reproduce, continue, and review the work.
 
-## 开场必读
+## Required Reading Before Starting
 
-开始写报告前，先确认当前任务遵守：
+Before writing a report, first confirm the current task complies with:
 
 - `docs/reference/reverse-bootstrap.md`
 - `docs/reference/case-safety-policy.md`
 - `docs/reference/reverse-workflow.md`
-- 若已进入提纯阶段，再参考 `docs/reference/pure-extraction.md`
+- If already in the pure extraction phase, also refer to `docs/reference/pure-extraction.md`
 
-## 1. 任务概况
+## 1. Task Overview
 
-- 任务名称：
-- 目标页面：
-- 目标接口与字段：
-- 目标动作：
-- 当前阶段：`Observe` / `Capture` / `Rebuild` / `Patch` / `PureExtraction` / `Port`
-- task artifact：
+- Task name:
+- Target page:
+- Target API endpoint and fields:
+- Target action:
+- Current phase: `Observe` / `Capture` / `Rebuild` / `Patch` / `PureExtraction` / `Port`
+- Task artifact:
 
-## 2. 已确认结论
+## 2. Confirmed Conclusions
 
-- 哪个请求参与参数生成
-- 哪个脚本 / 函数最关键
-- 哪些 cookie / storage / header 参与链路
-- 哪些字段是必传，哪些是派生值
+- Which request participates in parameter generation
+- Which script / function is most critical
+- Which cookies / storage / headers participate in the pipeline
+- Which fields are required, and which are derived values
 
-## 3. 运行时证据
+## 3. Runtime Evidence
 
-- hook 记录摘要
-- request -> initiator -> script / function 关联
-- 输入输出样例
-- 命中的时间窗 / 页面动作
-- 代理 env log 摘要
-- 当前 `first divergence` 记录
+- Hook record summary
+- Request -> initiator -> script / function associations
+- Input/output samples
+- Matched time windows / page actions
+- Proxy env log summary
+- Current `first divergence` record
 
-## 4. 本地复现状态
+## 4. Local Reproduction Status
 
-- `env rebuild` 当前入口
-- 已补环境对象
-- 尚未补齐的对象
-- 本地执行报错
-- 当前补丁决策对应的最小因果单元
-- 最近一次 `diff_env_requirements` 结果（仅辅助）
+- `env rebuild` current entry point
+- Environment objects already patched
+- Objects not yet patched
+- Local execution errors
+- Minimal causal unit corresponding to the current patch decision
+- Most recent `diff_env_requirements` result (auxiliary only)
 
-## 5. `first divergence` / 差异分析
+## 5. `first divergence` / Difference Analysis
 
-- 与旧版本或旧结论相比，最早分叉点在哪里
-- 分叉发生在请求、函数输出、crypto、env collect、还是最终拼接
-- 触发该分叉点的代理日志证据
-- 当前为什么判定为这个最小因果单元
-- 已确认差异
-- 仍未确认差异
+- Compared to the old version or old conclusions, where is the earliest fork point
+- Whether the fork occurs at the request, function output, crypto, env collect, or final assembly
+- Proxy log evidence that triggered this fork point
+- Why the current minimal causal unit was determined
+- Confirmed differences
+- Unconfirmed differences
 
-## 6. 风险与不确定性
+## 6. Risks and Uncertainties
 
-- 置信度
-- 是否依赖登录态
-- 是否依赖远程下发
-- 是否存在随机路径 / 时间敏感路径
+- Confidence level
+- Whether it depends on login state
+- Whether it depends on remote delivery
+- Whether random paths / time-sensitive paths exist
 
-## 7. 补丁与回滚步骤
+## 7. Patches and Rollback Steps
 
-- 本次补了哪些环境
-- 每个补丁分别对应哪条代理日志和哪条页面证据
-- 哪些补丁是临时性的
-- 如果回滚，先撤哪几处
+- Which environments were patched this time
+- Which proxy log and page evidence each patch corresponds to
+- Which patches are temporary
+- If rolling back, which patches to revert first
 
-## 8. 验证
+## 8. Verification
 
-- 验证命令
-- 关键输出
-- 本轮补丁后 `first divergence` 是否前移
-- 服务端是否通过
-- 还有哪些测试没覆盖
+- Verification commands
+- Key output
+- Whether `first divergence` moved forward after this round of patches
+- Whether server acceptance passed
+- Which tests are still not covered
 
-## 9. 下一步
+## 9. Next Steps
 
-- 下一步建议
-- 如果下次版本再变，优先看哪里
+- Recommended next steps
+- If the version changes again, where to look first

@@ -1,19 +1,19 @@
 # Reverse Workflow
 
-这份文档是 **模型执行协议**，不是人类教程。
+This document is a **model execution protocol**, not a human tutorial.
 
-目标：把前端逆向任务统一约束成稳定阶段，避免跳步骤、凭记忆推进或在补环境未收敛时过早提纯算法。
+Goal: Unify front-end reverse engineering tasks into stable phases, preventing step-skipping, proceeding from memory, or prematurely extracting pure algorithms before environment patching has converged.
 
-## 适用范围
+## Scope
 
-适用于以下任务：
-- 请求签名、加密参数、风控参数定位
-- 页面运行时采样
-- 本地 Node 补环境复现
-- 补环境通过后的纯算法提纯
-- 提纯后的 Python / 其他宿主迁移
+Applicable to the following tasks:
+- Request signature, encrypted parameter, and risk-control parameter localization
+- Page runtime sampling
+- Local Node environment patching and reproduction
+- Pure algorithm extraction after environment patching passes
+- Porting to Python or other host languages after extraction
 
-## 核心原则
+## Core Principles
 
 - `Observe-first`
 - `Hook-preferred`
@@ -22,7 +22,7 @@
 - `Evidence-first`
 - `Pure-extraction-after-pass`
 
-## 阶段总览
+## Phase Overview
 
 1. `Observe`
 2. `Capture`
@@ -31,168 +31,168 @@
 5. `PureExtraction`
 6. `Port`
 
-任何任务都应明确自己当前处于哪个阶段；没有阶段结论，就不应直接切到下一阶段。
+Every task should clearly identify its current phase; without a phase conclusion, you should not move directly to the next phase.
 
 ---
 
 ## 1. Observe
 
-### 目标
-- 确认目标请求、关键脚本、候选函数、触发动作
-- 建立任务边界，避免盲猜环境或直接补宿主
+### Goal
+- Confirm the target request, key scripts, candidate functions, and trigger actions
+- Establish task boundaries to avoid blindly guessing the environment or directly patching the host
 
-### 必做动作
-- 确认目标请求 URL / 参数 / 响应特征
-- 定位 initiator、候选脚本 URL、候选函数名或关键字符串
-- 记录页面动作、触发条件与目标 `targetContext`
-- 把关键观察写入 task artifact
+### Required Actions
+- Confirm target request URL / parameters / response characteristics
+- Locate the initiator, candidate script URL, candidate function names, or key strings
+- Record page actions, trigger conditions, and the target `targetContext`
+- Write key observations into the task artifact
 
-### 禁止事项
-- 还没确认目标请求就开始补环境
-- 还没定位关键脚本就开始手翻混淆代码
+### Prohibited Actions
+- Starting environment patching before confirming the target request
+- Manually reading obfuscated code before locating key scripts
 
-### 完成判据
-- 已能回答：目标请求是谁发起的、哪段脚本参与、页面上如何触发
+### Completion Criteria
+- Can answer: who initiated the target request, which script is involved, and how to trigger it on the page
 
 ---
 
 ## 2. Capture
 
-### 目标
-- 用最小侵入方式拿到运行时样本、参数、调用顺序和中间值
+### Goal
+- Obtain runtime samples, parameters, call sequences, and intermediate values with minimal intrusion
 
-### 必做动作
-- 优先使用 `hook` 或 preload hook
-- 采样 fetch/xhr、候选函数、关键对象字段
-- 尽量获取调用前后输入输出，而不是只抓最终结果
-- 持续把样本写入 task artifact
+### Required Actions
+- Prefer using `hook` or preload hook
+- Sample fetch/xhr, candidate functions, and key object fields
+- Try to capture input/output before and after calls, not just the final result
+- Continuously write samples into the task artifact
 
-### 禁止事项
-- hook 不足时立刻切断点
-- 一次性抓全部对象快照，导致噪音过大
+### Prohibited Actions
+- Immediately switching to breakpoints when hooks are insufficient
+- Capturing a full object snapshot all at once, causing excessive noise
 
-### 完成判据
-- 已有至少一条可复用的真实运行样本
-- 已知道参数链路的最小调用序列
+### Completion Criteria
+- At least one reusable real runtime sample exists
+- The minimal call sequence of the parameter chain is known
 
 ---
 
 ## 3. Rebuild
 
-### 目标
-- 把页面证据导出为本地可运行的 Node 复现工程
+### Goal
+- Export page evidence into a locally runnable Node reproduction project
 
-### 必做动作
-- 导出 local rebuild bundle
-- 固定入口、目标脚本、初始状态和必要 seed
-- 在 `env/entry.js` 或等价入口上运行目标链路
-- 记录当前运行失败点或首个可运行结果
+### Required Actions
+- Export the local rebuild bundle
+- Pin the entry point, target scripts, initial state, and necessary seeds
+- Run the target chain on `env/entry.js` or an equivalent entry point
+- Record the current failure point or the first runnable result
 
-### 禁止事项
-- 没有页面证据就手写 `window/document/navigator`
-- 直接用 Python `execjs` 开始补环境
+### Prohibited Actions
+- Hand-writing `window/document/navigator` without page evidence
+- Starting environment patching directly with Python `execjs`
 
-### 完成判据
-- 本地已有稳定复现入口
-- 能看到当前运行错误或当前阶段输出
+### Completion Criteria
+- A stable local reproduction entry point exists
+- The current runtime error or current phase output is visible
 
 ---
 
 ## 4. Patch
 
-### 目标
-- 按代理日志和 `first divergence` 驱动补环境，直到本地链路可运行且服务端验收通过
+### Goal
+- Drive environment patching based on proxy logs and `first divergence` until the local chain is runnable and server-side validation passes
 
-### 必做动作
-- 优先读取代理 env log
-- 先记录 `first divergence`
-- 只补当前 `first divergence` 对应的最小因果单元
-- 每轮补丁后立即复测
-- 记录 `first divergence` 是否前移
-- 至少拿到一次服务端验收通过
+### Required Actions
+- Read the proxy env log first
+- Record the `first divergence` first
+- Only patch the minimal causal unit corresponding to the current `first divergence`
+- Re-test immediately after each patch round
+- Record whether the `first divergence` has shifted forward
+- Obtain at least one server-side validation pass
 
-### 禁止事项
-- 没有代理日志就补宿主
-- 没有 `first divergence` 记录就连补多个对象
-- 把补环境成功误当成纯算法已完成
+### Prohibited Actions
+- Patching the host without proxy logs
+- Patching multiple objects without a `first divergence` record
+- Mistaking successful environment patching for completed pure algorithm extraction
 
-### 完成判据
-- 本地 env rebuild 已稳定跑通目标链路
-- 已有一次服务端验收通过
-- 已记录至少一条 `first divergence` 及其修复路径
+### Completion Criteria
+- The local env rebuild stably runs the target chain
+- At least one server-side validation has passed
+- At least one `first divergence` and its fix path have been recorded
 
-### 下一阶段输入
-- 稳定样本
-- 已通过验收的 local rebuild
-- 关键中间值与调用边界证据
+### Next Phase Input
+- Stable samples
+- The validated local rebuild
+- Key intermediate values and call boundary evidence
 
 ---
 
 ## 5. PureExtraction
 
-`PureExtraction` 不是补环境延长线，而是一个独立阶段。
+`PureExtraction` is not an extension of environment patching, but an independent phase.
 
-详细协议见：`docs/reference/pure-extraction.md`
+See detailed protocol at: `docs/reference/pure-extraction.md`
 
-### 进入条件
-- `Patch` 已完成
-- 已有稳定样本、固定夹具候选、服务端验收记录
+### Entry Conditions
+- `Patch` is complete
+- Stable samples, fixture candidates, and server-side validation records exist
 
-### 目标
-- 把“环境噪音”与“算法输入”分开
-- 先提纯 Node 可读纯算实现
-- 形成稳定 fixture
+### Goal
+- Separate “environment noise” from “algorithm input”
+- First extract a readable Node pure algorithm implementation
+- Produce stable fixtures
 
-### 禁止事项
-- env rebuild 还没通过就开始翻 Python
-- 还没区分输入边界就直接照抄页面对象
+### Prohibited Actions
+- Starting Python porting before env rebuild passes
+- Directly copying page objects without distinguishing input boundaries
 
-### 完成判据
-- Node pure implementation 与 runtime fixture 对齐
-- 已明确哪些值属于算法输入、哪些属于环境状态
+### Completion Criteria
+- Node pure implementation is aligned with the runtime fixture
+- It is clear which values are algorithm inputs and which are environment state
 
 ---
 
 ## 6. Port
 
-### 目标
-- 把已提纯的 Node 纯算实现迁移到 Python 或其他宿主
+### Goal
+- Port the extracted Node pure algorithm implementation to Python or other host languages
 
-### 必做动作
-- 使用与 Node pure 相同夹具
-- 逐段对齐输入、关键中间值与最终输出
-- 保留外部语言调用边界说明
+### Required Actions
+- Use the same fixtures as Node pure
+- Align inputs, key intermediate values, and final outputs segment by segment
+- Preserve external language call boundary documentation
 
-### 禁止事项
-- 直接以页面 runtime 为真值源跳过 Node pure
-- 没有 fixture 就直接改写为 Python
+### Prohibited Actions
+- Skipping Node pure by using the page runtime as the source of truth
+- Rewriting to Python without fixtures
 
-### 完成判据
-- 外部语言版本与 Node pure 对齐
-- 至少一条服务端验收通过
+### Completion Criteria
+- The external language version is aligned with Node pure
+- At least one server-side validation has passed
 
 ---
 
-## 阶段切换规则
+## Phase Transition Rules
 
-- 只有 `env rebuild` 跑通且服务端验收通过后，才允许进入 `PureExtraction`
-- 只有 Node pure 已稳定后，才建议进入 `Port`
-- 任一阶段出现不一致，应优先回退到最早出现分叉的阶段，而不是继续往后补
+- Entry to `PureExtraction` is only allowed after `env rebuild` runs successfully and server-side validation passes
+- Entry to `Port` is only recommended after Node pure is stable
+- If any phase shows inconsistency, prioritize rolling back to the earliest divergent phase rather than continuing forward
 
-## 必备产物
+## Required Artifacts
 
-最少应沉淀：
-- 目标请求与脚本证据
-- task artifact 中的 `targetContext`
-- local rebuild 入口
-- 代理 env log
-- `first divergence` 记录
-- runtime 样本
-- pure fixture
-- pure implementation
-- 服务端验收记录
+At minimum, the following should be produced:
+- Target request and script evidence
+- `targetContext` in the task artifact
+- Local rebuild entry point
+- Proxy env log
+- `first divergence` records
+- Runtime samples
+- Pure fixture
+- Pure implementation
+- Server-side validation records
 
-## 配套文档
+## Related Documentation
 
 - `docs/reference/env-patching.md`
 - `docs/reference/pure-extraction.md`

@@ -1,22 +1,22 @@
 /**
- * EventBreakpointManager - 事件监听器断点管理
- * 
- * 功能：
- * 1. 设置事件监听器断点（按事件类型）
- * 2. 在事件触发时暂停执行
- * 3. 支持预定义的事件类别（鼠标、键盘、定时器等）
- * 
- * 设计原则：
- * - 使用 CDP DOMDebugger.setEventListenerBreakpoint
- * - 提供常用事件类别的快捷方法
- * - 支持自定义事件名称
+ * EventBreakpointManager - Event listener breakpoint management
+ *
+ * Features:
+ * 1. Set event listener breakpoints (by event type)
+ * 2. Pause execution when events are triggered
+ * 3. Support predefined event categories (mouse, keyboard, timers, etc.)
+ *
+ * Design principles:
+ * - Uses CDP DOMDebugger.setEventListenerBreakpoint
+ * - Provides shortcut methods for common event categories
+ * - Supports custom event names
  */
 
 import type { CDPSession } from 'puppeteer';
 import { logger } from '../../utils/logger.js';
 
 /**
- * 事件断点信息
+ * Event breakpoint information
  */
 export interface EventBreakpoint {
   id: string;
@@ -28,43 +28,43 @@ export interface EventBreakpoint {
 }
 
 /**
- * 事件断点管理器
+ * Event breakpoint manager
  *
- * 🔧 重构：使用共享的 CDP session，不再创建独立 session
+ * Refactored: uses shared CDP session instead of creating a separate session
  */
 export class EventBreakpointManager {
   private eventBreakpoints: Map<string, EventBreakpoint> = new Map();
   private breakpointCounter = 0;
 
-  // 预定义的事件类别
+  // Predefined event categories
   static readonly MOUSE_EVENTS = ['click', 'dblclick', 'mousedown', 'mouseup', 'mousemove', 'mouseenter', 'mouseleave'];
   static readonly KEYBOARD_EVENTS = ['keydown', 'keyup', 'keypress'];
-  // Timer 使用 Instrumentation Breakpoint（非 DOM 事件）
+  // Timer uses Instrumentation Breakpoint (not DOM events)
   static readonly TIMER_INSTRUMENTATION_EVENTS = ['TimerInstall', 'TimerFire', 'AnimationFrameFired'];
   static readonly WEBSOCKET_EVENTS = ['message', 'open', 'close', 'error'];
 
   /**
-   * @param cdpSession 共享的 CDP Session（由 DebuggerManager 提供）
+   * @param cdpSession Shared CDP Session (provided by DebuggerManager)
    */
   constructor(private cdpSession: CDPSession) {
     logger.info('EventBreakpointManager initialized with shared CDP session');
   }
 
   /**
-   * 设置事件监听器断点
+   * Set an event listener breakpoint
    *
-   * @param eventName 事件名称（如 'click', 'setTimeout'）
-   * @param targetName 可选的目标名称
+   * @param eventName Event name (e.g. 'click', 'setTimeout')
+   * @param targetName Optional target name
    */
   async setEventListenerBreakpoint(eventName: string, targetName?: string): Promise<string> {
     try {
-      // 调用 CDP API 设置事件监听器断点
+      // Call CDP API to set event listener breakpoint
       await this.cdpSession.send('DOMDebugger.setEventListenerBreakpoint', {
         eventName,
         targetName,
       });
 
-      // 创建断点信息
+      // Create breakpoint info
       const breakpointId = `event_${++this.breakpointCounter}`;
       this.eventBreakpoints.set(breakpointId, {
         id: breakpointId,
@@ -84,7 +84,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 删除事件监听器断点
+   * Remove an event listener breakpoint
    */
   async removeEventListenerBreakpoint(breakpointId: string): Promise<boolean> {
     const breakpoint = this.eventBreakpoints.get(breakpointId);
@@ -114,7 +114,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 设置所有鼠标事件断点
+   * Set breakpoints for all mouse events
    */
   async setMouseEventBreakpoints(): Promise<string[]> {
     const breakpointIds: string[] = [];
@@ -127,7 +127,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 设置所有键盘事件断点
+   * Set breakpoints for all keyboard events
    */
   async setKeyboardEventBreakpoints(): Promise<string[]> {
     const breakpointIds: string[] = [];
@@ -140,7 +140,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 设置所有定时器事件断点（使用 Instrumentation Breakpoint）
+   * Set breakpoints for all timer events (using Instrumentation Breakpoint)
    */
   async setTimerEventBreakpoints(): Promise<string[]> {
     const breakpointIds: string[] = [];
@@ -169,7 +169,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 设置所有 WebSocket 事件断点
+   * Set breakpoints for all WebSocket events
    */
   async setWebSocketEventBreakpoints(): Promise<string[]> {
     const breakpointIds: string[] = [];
@@ -182,21 +182,21 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 获取所有事件断点
+   * Get all event breakpoints
    */
   getAllEventBreakpoints(): EventBreakpoint[] {
     return Array.from(this.eventBreakpoints.values());
   }
 
   /**
-   * 获取特定事件断点
+   * Get a specific event breakpoint
    */
   getEventBreakpoint(breakpointId: string): EventBreakpoint | undefined {
     return this.eventBreakpoints.get(breakpointId);
   }
 
   /**
-   * 清除所有事件断点
+   * Clear all event breakpoints
    */
   async clearAllEventBreakpoints(): Promise<void> {
     const breakpoints = Array.from(this.eventBreakpoints.values());
@@ -204,7 +204,7 @@ export class EventBreakpointManager {
     for (const bp of breakpoints) {
       try {
         if (bp.targetName === '__instrumentation__') {
-          // Instrumentation 断点用对应的 remove API
+          // Instrumentation breakpoints use the corresponding remove API
           await this.cdpSession.send('DOMDebugger.removeInstrumentationBreakpoint', {
             eventName: bp.eventName,
           });
@@ -224,7 +224,7 @@ export class EventBreakpointManager {
   }
 
   /**
-   * 🆕 关闭并清理资源
+   * Close and clean up resources
    */
   async close(): Promise<void> {
     try {

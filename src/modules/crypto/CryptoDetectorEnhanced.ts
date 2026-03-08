@@ -1,6 +1,6 @@
 /**
- * CryptoDetector 增强方法
- * 包含统一AST解析、安全评估、强度分析等新功能
+ * CryptoDetector enhanced methods
+ * Includes unified AST parsing, security evaluation, strength analysis, and other new features
  */
 
 import * as parser from '@babel/parser';
@@ -36,7 +36,7 @@ export interface ASTDetectionResult {
 }
 
 /**
- * 统一AST解析和检测（性能优化 - 单次遍历）
+ * Unified AST parsing and detection (performance optimization - single traversal)
  */
 export function detectByAST(
   code: string,
@@ -55,7 +55,7 @@ export function detectByAST(
     const constantRules = rulesManager.getConstantRules();
 
     traverse(ast, {
-      // 检测S-box（替换盒）- 对称加密的特征
+      // Detect S-box (substitution box) - characteristic of symmetric encryption
       VariableDeclarator(path) {
         const node = path.node;
         if (
@@ -79,11 +79,11 @@ export function detectByAST(
         }
       },
 
-      // 检测大数运算 - 非对称加密的特征
+      // Detect big number operations - characteristic of asymmetric encryption
       CallExpression(path) {
         const node = path.node;
         
-        // 检测大数运算方法
+        // Detect big number operation methods
         if (
           node.callee.type === 'MemberExpression' &&
           node.callee.property.type === 'Identifier'
@@ -103,12 +103,12 @@ export function detectByAST(
             });
           }
 
-          // 提取加密参数
+          // Extract encryption parameters
           extractCryptoParameters(node, parameters);
         }
       },
 
-      // 检测哈希函数特征
+      // Detect hash function characteristics
       FunctionDeclaration(path) {
         const node = path.node;
         const funcName = node.id?.name.toLowerCase() || '';
@@ -116,7 +116,7 @@ export function detectByAST(
         if (funcName.includes('hash') || funcName.includes('digest') || funcName.includes('checksum')) {
           const bodyCode = code.substring(node.start || 0, node.end || 0);
 
-          // 检测循环和位运算 - 哈希函数的特征
+          // Detect loops and bitwise operations - characteristic of hash functions
           const hasLoop = bodyCode.includes('for') || bodyCode.includes('while');
           const hasBitOps = />>>|<<|&|\||\^/.test(bodyCode);
 
@@ -135,12 +135,12 @@ export function detectByAST(
         }
       },
 
-      // 检测加密常量（魔数）
+      // Detect cryptographic constants (magic numbers)
       ArrayExpression(path) {
         const elements = path.node.elements;
         if (elements.length < 4) return;
 
-        // 提取数组中的数值
+        // Extract numeric values from the array
         const values: number[] = [];
         elements.forEach((element) => {
           if (t.isNumericLiteral(element)) {
@@ -148,12 +148,12 @@ export function detectByAST(
           }
         });
 
-        // 检查是否匹配已知的加密常量（支持任意位置匹配）
+        // Check if it matches known cryptographic constants (supports matching at any position)
         constantRules.forEach((rule) => {
           if (rule.values.length > values.length) return;
 
           let matched = false;
-          // 滑动窗口：在 values 中查找连续子序列
+          // Sliding window: find contiguous subsequence in values
           for (let offset = 0; offset <= values.length - rule.values.length; offset++) {
             const allMatch = rule.values.every((c, i) => values[offset + i] === c);
             if (allMatch) {
@@ -163,7 +163,7 @@ export function detectByAST(
           }
 
           if (matched) {
-            // 将 'other' 类型映射到 'encoding'
+            // Map 'other' type to 'encoding'
             const algoType = rule.type === 'other' ? 'encoding' : rule.type;
 
             algorithms.push({
@@ -188,7 +188,7 @@ export function detectByAST(
 }
 
 /**
- * 提取加密参数
+ * Extract encryption parameters
  */
 function extractCryptoParameters(
   node: t.CallExpression,
@@ -198,14 +198,14 @@ function extractCryptoParameters(
 
   const calleeName = getCalleeFullName(node.callee);
 
-  // 检测CryptoJS模式
+  // Detect CryptoJS pattern
   if (calleeName.includes('CryptoJS')) {
     const algoMatch = calleeName.match(/CryptoJS\.(AES|DES|TripleDES|RC4|Rabbit|RabbitLegacy)/);
     if (algoMatch) {
       const algoName = algoMatch[1];
       const params: Record<string, unknown> = {};
 
-      // 第三个参数通常是配置对象
+      // The third argument is usually the configuration object
       if (node.arguments.length >= 3 && t.isObjectExpression(node.arguments[2])) {
         const config = node.arguments[2];
         config.properties.forEach((prop) => {
@@ -228,7 +228,7 @@ function extractCryptoParameters(
     }
   }
 
-  // 检测Web Crypto API
+  // Detect Web Crypto API
   if (calleeName.includes('crypto.subtle')) {
     const methodMatch = calleeName.match(/\.(encrypt|decrypt|sign|verify|digest|generateKey)/);
     if (methodMatch && node.arguments.length > 0) {
@@ -256,7 +256,7 @@ function extractCryptoParameters(
 }
 
 /**
- * 获取完整的调用名称
+ * Get the full callee name
  */
 function getCalleeFullName(node: t.MemberExpression): string {
   const parts: string[] = [];
@@ -277,7 +277,7 @@ function getCalleeFullName(node: t.MemberExpression): string {
 }
 
 /**
- * 合并参数到算法
+ * Merge parameters into algorithms
  */
 export function mergeParameters(
   algorithms: CryptoAlgorithm[],
@@ -292,11 +292,11 @@ export function mergeParameters(
 }
 
 /**
- * 安全性评估
+ * Security evaluation
  */
 export function evaluateSecurity(
   algorithms: CryptoAlgorithm[],
-  _code: string, // 保留参数以便未来扩展
+  _code: string, // Reserved parameter for future expansion
   rulesManager: CryptoRulesManager
 ): SecurityIssue[] {
   const issues: SecurityIssue[] = [];
@@ -307,7 +307,7 @@ export function evaluateSecurity(
       algorithm: algo.name,
       mode: algo.parameters?.mode as string,
       padding: algo.parameters?.padding as string,
-      keySize: (algo.parameters as any)?.keySize as number, // keySize 可能存在于参数中
+      keySize: (algo.parameters as any)?.keySize as number, // keySize may exist in the parameters
     };
 
     securityRules.forEach((rule) => {
@@ -327,10 +327,10 @@ export function evaluateSecurity(
 }
 
 /**
- * 加密强度分析
+ * Cryptographic strength analysis
  */
 export function analyzeStrength(
-  _algorithms: CryptoAlgorithm[], // 保留参数以便未来扩展
+  _algorithms: CryptoAlgorithm[], // Reserved parameter for future expansion
   securityIssues: SecurityIssue[]
 ): CryptoStrength {
   let algorithmScore = 100;
@@ -338,8 +338,8 @@ export function analyzeStrength(
   let modeScore = 100;
   let implementationScore = 100;
 
-  // 根据安全问题降低分数
-  // 基于 issue 来源分类（而非匹配 message 文本，避免误分类）
+  // Reduce scores based on security issues
+  // Categorize based on issue origin (rather than matching message text, to avoid misclassification)
   const algorithmIssueKeywords = ['broken', 'deprecated', 'vulnerable', 'MD5', 'SHA-1', 'SHA1', 'DES', 'RC4'];
   const keySizeIssueKeywords = ['key size', 'key length', 'short', 'bits'];
   const modeIssueKeywords = ['ECB', 'mode', 'padding', 'NoPadding'];
@@ -365,16 +365,16 @@ export function analyzeStrength(
     }
   });
 
-  // 确保分数不低于0
+  // Ensure scores do not go below 0
   algorithmScore = Math.max(0, algorithmScore);
   keySizeScore = Math.max(0, keySizeScore);
   modeScore = Math.max(0, modeScore);
   implementationScore = Math.max(0, implementationScore);
 
-  // 计算总分
+  // Calculate total score
   const totalScore = (algorithmScore + keySizeScore + modeScore + implementationScore) / 4;
 
-  // 确定整体强度
+  // Determine overall strength
   let overall: CryptoStrength['overall'];
   if (totalScore >= 80) {
     overall = 'strong';

@@ -1,11 +1,11 @@
 /**
- * 页面控制器 - 薄封装Puppeteer API
- * 
- * 设计原则:
- * - 不重复实现Puppeteer已有的功能
- * - 直接调用page.click(), page.type()等API
- * - 依赖CodeCollector获取Page实例
- * - 所有方法都是薄封装，不超过5行代码
+ * Page controller - thin wrapper around Puppeteer API
+ *
+ * Design principles:
+ * - Does not re-implement existing Puppeteer functionality
+ * - Directly calls page.click(), page.type(), etc.
+ * - Depends on CodeCollector for Page instance
+ * - All methods are thin wrappers, no more than 5 lines of code
  */
 
 import type { CodeCollector } from './CodeCollector.js';
@@ -57,7 +57,7 @@ export class PageController {
   constructor(private collector: CodeCollector) {}
 
   /**
-   * 导航到指定URL（薄封装page.goto）
+   * Navigate to specified URL (thin wrapper around page.goto)
    */
   async navigate(url: string, options?: NavigationOptions): Promise<{
     url: string;
@@ -86,7 +86,7 @@ export class PageController {
   }
 
   /**
-   * 重新加载页面（薄封装page.reload）
+   * Reload page (thin wrapper around page.reload)
    */
   async reload(options?: NavigationOptions): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -98,7 +98,7 @@ export class PageController {
   }
 
   /**
-   * 后退（薄封装page.goBack）
+   * Go back (thin wrapper around page.goBack)
    */
   async goBack(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -107,7 +107,7 @@ export class PageController {
   }
 
   /**
-   * 前进（薄封装page.goForward）
+   * Go forward (thin wrapper around page.goForward)
    */
   async goForward(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -116,7 +116,7 @@ export class PageController {
   }
 
   /**
-   * 点击元素（薄封装page.click）
+   * Click element (thin wrapper around page.click)
    */
   async click(selector: string, options?: ClickOptions): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -129,7 +129,7 @@ export class PageController {
   }
 
   /**
-   * 输入文本（薄封装page.type）
+   * Type text (thin wrapper around page.type)
    */
   async type(selector: string, text: string, options?: TypeOptions): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -140,7 +140,7 @@ export class PageController {
   }
 
   /**
-   * 选择下拉框选项（薄封装page.select）
+   * Select dropdown option (thin wrapper around page.select)
    */
   async select(selector: string, ...values: string[]): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -149,7 +149,7 @@ export class PageController {
   }
 
   /**
-   * 鼠标悬停（薄封装page.hover）
+   * Mouse hover (thin wrapper around page.hover)
    */
   async hover(selector: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -158,7 +158,7 @@ export class PageController {
   }
 
   /**
-   * 滚动页面（薄封装page.evaluate）
+   * Scroll page (thin wrapper around page.evaluate)
    */
   async scroll(options: ScrollOptions): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -169,7 +169,7 @@ export class PageController {
   }
 
   /**
-   * 等待选择器出现并返回元素信息（增强版）
+   * Wait for selector to appear and return element info (enhanced version)
    */
   async waitForSelector(selector: string, timeout?: number): Promise<{
     success: boolean;
@@ -179,12 +179,12 @@ export class PageController {
     try {
       const page = await this.collector.getActivePage();
 
-      // 等待元素出现
+      // Wait for element to appear
       await page.waitForSelector(selector, {
         timeout: timeout || 30000,
       });
 
-      // 获取元素信息
+      // Get element info
       const element = await page.evaluate((sel) => {
         const el = document.querySelector(sel);
         if (!el) return null;
@@ -218,7 +218,7 @@ export class PageController {
   }
 
   /**
-   * 等待导航完成（薄封装page.waitForNavigation）
+   * Wait for navigation to complete (thin wrapper around page.waitForNavigation)
    */
   async waitForNavigation(timeout?: number): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -230,7 +230,7 @@ export class PageController {
   }
 
   /**
-   * 执行JavaScript代码（薄封装page.evaluate）
+   * Execute JavaScript code (thin wrapper around page.evaluate)
    */
   async evaluate<T>(code: string): Promise<T> {
     const page = await this.collector.getActivePage();
@@ -240,7 +240,7 @@ export class PageController {
   }
 
   /**
-   * 获取页面URL（薄封装page.url）
+   * Get page URL (thin wrapper around page.url)
    */
   async getURL(): Promise<string> {
     const page = await this.collector.getActivePage();
@@ -248,7 +248,7 @@ export class PageController {
   }
 
   /**
-   * 获取页面标题（薄封装page.title）
+   * Get page title (thin wrapper around page.title)
    */
   async getTitle(): Promise<string> {
     const page = await this.collector.getActivePage();
@@ -256,7 +256,7 @@ export class PageController {
   }
 
   /**
-   * 获取页面HTML内容（薄封装page.content）
+   * Get page HTML content (thin wrapper around page.content)
    */
   async getContent(): Promise<string> {
     const page = await this.collector.getActivePage();
@@ -264,12 +264,12 @@ export class PageController {
   }
 
   /**
-   * 截图（薄封装page.screenshot）
+   * Take screenshot (thin wrapper around page.screenshot)
    */
   async screenshot(options?: ScreenshotOptions): Promise<Buffer> {
     const page = await this.collector.getActivePage();
 
-    // 🆕 自动创建截图目录
+    // Automatically create screenshot directory
     if (options?.path) {
       const dir = path.dirname(options.path);
       if (!fs.existsSync(dir)) {
@@ -289,7 +289,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 获取页面性能指标
+   * Get page performance metrics
    */
   async getPerformanceMetrics(): Promise<any> {
     const page = await this.collector.getActivePage();
@@ -298,20 +298,20 @@ export class PageController {
       const perf = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
 
       return {
-        // 页面加载时间
+        // Page load time
         domContentLoaded: perf.domContentLoadedEventEnd - perf.domContentLoadedEventStart,
         loadComplete: perf.loadEventEnd - perf.loadEventStart,
 
-        // 网络时间
+        // Network time
         dns: perf.domainLookupEnd - perf.domainLookupStart,
         tcp: perf.connectEnd - perf.connectStart,
         request: perf.responseStart - perf.requestStart,
         response: perf.responseEnd - perf.responseStart,
 
-        // 总时间
+        // Total time
         total: perf.loadEventEnd - perf.fetchStart,
 
-        // 资源统计
+        // Resource statistics
         resources: performance.getEntriesByType('resource').length,
       };
     });
@@ -321,7 +321,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 注入JavaScript代码到页面
+   * Inject JavaScript code into the page
    */
   async injectScript(scriptContent: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -336,7 +336,7 @@ export class PageController {
   }
 
   /**
-   * 在后续文档创建前注入脚本
+   * Inject script before subsequent document creation
    */
   async injectScriptOnNewDocument(scriptContent: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -353,7 +353,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 设置Cookie
+   * Set cookies
    */
   async setCookies(cookies: Array<{
     name: string;
@@ -371,7 +371,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 获取Cookie
+   * Get cookies
    */
   async getCookies(): Promise<any[]> {
     const page = await this.collector.getActivePage();
@@ -381,7 +381,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 清除Cookie
+   * Clear cookies
    */
   async clearCookies(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -391,7 +391,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 设置视口大小
+   * Set viewport size
    */
   async setViewport(width: number, height: number): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -400,7 +400,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 模拟设备
+   * Emulate device
    */
   async emulateDevice(deviceName: 'iPhone' | 'iPad' | 'Android'): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -428,7 +428,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 等待网络空闲
+   * Wait for network idle
    */
   async waitForNetworkIdle(timeout = 30000): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -437,7 +437,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 获取LocalStorage
+   * Get LocalStorage
    */
   async getLocalStorage(): Promise<Record<string, string>> {
     const page = await this.collector.getActivePage();
@@ -458,7 +458,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 设置LocalStorage
+   * Set LocalStorage
    */
   async setLocalStorage(key: string, value: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -471,7 +471,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 清除LocalStorage
+   * Clear LocalStorage
    */
   async clearLocalStorage(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -484,7 +484,7 @@ export class PageController {
   }
 
   /**
-   * 获取SessionStorage
+   * Get SessionStorage
    */
   async getSessionStorage(): Promise<Record<string, string>> {
     const page = await this.collector.getActivePage();
@@ -503,7 +503,7 @@ export class PageController {
   }
 
   /**
-   * 设置SessionStorage
+   * Set SessionStorage
    */
   async setSessionStorage(key: string, value: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -514,7 +514,7 @@ export class PageController {
   }
 
   /**
-   * 清除SessionStorage
+   * Clear SessionStorage
    */
   async clearSessionStorage(): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -525,7 +525,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 模拟键盘按键
+   * Simulate keyboard key press
    */
   async pressKey(key: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -534,7 +534,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 上传文件
+   * Upload file
    */
   async uploadFile(selector: string, filePath: string): Promise<void> {
     const page = await this.collector.getActivePage();
@@ -549,7 +549,7 @@ export class PageController {
   }
 
   /**
-   * 🆕 获取页面所有链接
+   * Get all links on the page
    */
   async getAllLinks(): Promise<Array<{ text: string; href: string }>> {
     const page = await this.collector.getActivePage();
@@ -574,14 +574,14 @@ export class PageController {
   }
 
   /**
-   * 🆕 获取当前Page实例（用于验证码检测等高级功能）
+   * Get current Page instance (for advanced features like CAPTCHA detection)
    */
   async getPage() {
     return await this.collector.getActivePage();
   }
 
   /**
-   * 执行交互回放，用于在采样前自动触发关键动作。
+   * Execute interaction replay, used to automatically trigger key actions before sampling.
    */
   async replayActions(actions: ReplayAction[]): Promise<Array<{index: number; action: string; success: boolean; message: string}>> {
     const results: Array<{index: number; action: string; success: boolean; message: string}> = [];

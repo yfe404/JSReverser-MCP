@@ -40,14 +40,14 @@ describe('mcp-js-reverse-playbook docs contract', () => {
       assert.ok(skill.includes(phrase), `missing phrase in skill: ${phrase}`);
     }
 
-    assert.ok(automationEntry.includes('页面观察'));
-    assert.ok(taskTemplate.includes('本地补环境'));
+    assert.ok(automationEntry.includes('Page observation'));
+    assert.ok(taskTemplate.includes('Local environment patching'));
     assert.ok(outputContract.includes('task artifact'));
     assert.ok(fallbacks.includes('local rebuild'));
     assert.ok(taskArtifacts.includes('timeline.jsonl'));
     assert.ok(localRebuild.includes('env/entry.js'));
     assert.ok(skill.includes('inject_preload_script'));
     assert.ok(automationEntry.includes('inject_preload_script'));
-    assert.ok(automationEntry.includes('首屏初始化'));
+    assert.ok(automationEntry.includes('Initial page load'));
   });
 });

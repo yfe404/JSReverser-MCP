@@ -1,4 +1,4 @@
-# Node 扣包补环境复现
-- 扣最小函数依赖，不整包搬运。
-- 每轮只补 1 个缺失点并重跑。
-- 超过 6 个补丁未收敛则停止，回浏览器取证。
+# Node Environment Rebuild for Extracted Code
+- Extract minimal function dependencies; do not copy entire packages.
+- Patch only 1 missing point per iteration and re-run.
+- If more than 6 patches have not converged, stop and return to the browser for evidence collection.

@@ -3,27 +3,27 @@
 Put executable local scripts here.
 Do not move these scripts into repository case files.
 
-## 目录约束
+## Directory Constraints
 
-- 必须有一个当前主入口，并在这里明确写出
-- 推荐把主线、校验、取证、证据、归档分开
-- 不要让多个等价顶层入口长期并存
-- 不要把 `.venv/`、`__pycache__/`、临时缓存当成任务产物
+- There must be a current main entry point, clearly documented here
+- It is recommended to separate mainline, verification, forensics, evidence, and archived files
+- Do not allow multiple equivalent top-level entry points to coexist long-term
+- Do not treat `.venv/`, `__pycache__/`, or temporary caches as task artifacts
 
-## 推荐结构
+## Recommended Structure
 
-- `core/`: 当前主线 runtime / portable runtime / pure runtime
-- `verify/`: 接口闭环校验
-- `trace/`: 逆向取证、hook、插桩、提纯辅助
-- `server/`: 面向部署或真实调用的最小入口
-- `evidence/`: 基线、夹具、摘要、差异记录
-- `legacy/`: 已归档旧入口
-- `vendor/`: 原始脚本副本
+- `core/`: Current mainline runtime / portable runtime / pure runtime
+- `verify/`: API closed-loop verification
+- `trace/`: Reverse engineering forensics, hooks, instrumentation, extraction aids
+- `server/`: Minimal entry point for deployment or live invocation
+- `evidence/`: Baselines, fixtures, summaries, difference records
+- `legacy/`: Archived old entry points
+- `vendor/`: Copies of original scripts
 
-## 主入口要求
+## Main Entry Point Requirements
 
-请在这里直接写明：
+Please document directly here:
 
-- 当前推荐入口文件
-- 最常用 1 到 3 条命令
-- 哪些目录已经归档，不再继续接新逻辑
+- Current recommended entry file
+- The 1 to 3 most commonly used commands
+- Which directories have been archived and no longer accept new logic

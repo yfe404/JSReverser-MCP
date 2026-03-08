@@ -1,27 +1,27 @@
 # Local Rebuild
 
-本地复现的默认目标不是“完全模拟浏览器”，而是“先跑通目标参数链路”。
+The default goal of local reproduction is not "fully simulate the browser," but "first get the target parameter chain running."
 
-推荐导出文件：
+Recommended export files:
 
 - `env/entry.js`
 - `env/env.js`
 - `env/polyfills.js`
 - `env/capture.json`
 
-执行顺序：
+Execution sequence:
 
-1. 在页面里确认目标请求、脚本、函数
-2. 导出本地复现包
-3. 运行 `env/entry.js`
-4. 优先读取代理 env log
-5. 记录当前 `first divergence`
-6. 按“最小因果单元”做一个补丁决策
-7. 必要时再用 `diff_env_requirements` 做辅助比对
-8. 复跑并确认 `first divergence` 是否前移
-9. 补丁写回 task artifact
+1. Confirm the target request, script, and function on the page
+2. Export the local reproduction package
+3. Run `env/entry.js`
+4. Read the proxy env log first
+5. Record the current `first divergence`
+6. Make one patch decision based on "minimal causal unit"
+7. Use `diff_env_requirements` for supplementary comparison if necessary
+8. Re-run and confirm whether `first divergence` has advanced
+9. Write the patch back to the task artifact
 
-优先补：
+Priority patching targets:
 
 - `window`
 - `document`
@@ -31,4 +31,4 @@
 - `crypto`
 - `fetch/XMLHttpRequest`
 
-不要在没有页面证据、没有代理 env log、没有 `first divergence` 记录的情况下大量脑补环境。
+Do not speculatively patch the environment in bulk without page evidence, proxy env logs, or `first divergence` records.

@@ -1,5 +1,5 @@
 /**
- * Stealth Module - 反检测脚本注入
+ * Stealth Module - Anti-detection script injection
  */
 
 export {

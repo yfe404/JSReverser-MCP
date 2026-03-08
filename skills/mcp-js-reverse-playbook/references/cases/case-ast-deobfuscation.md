@@ -1,71 +1,71 @@
-# 案例：AST 去混淆
+# Case: AST Deobfuscation
 
-## 目标
-- 将混淆代码拆成“可读语义块”，而不是追求一次性还原成最终源码。
-- 输出可验证证据：每一步静态改写都能在运行时对齐行为。
+## Goal
+- Break obfuscated code into "readable semantic blocks" rather than attempting a one-pass restoration to final source code.
+- Produce verifiable evidence: each static rewrite step must align with runtime behavior.
 
-## 适用场景
-- 字符串表 + 索引函数（`_0x***`）
-- 平坦控制流（`while(true)+switch`）
-- 花指令（永真/永假分支、死代码）
-- IIFE 包裹 + 多层代理调用
+## Applicable Scenarios
+- String table + index function (`_0x***`)
+- Flat control flow (`while(true)+switch`)
+- Junk instructions (always-true/always-false branches, dead code)
+- IIFE wrappers + multi-layer proxy calls
 
-## 输入要求
-- 原始脚本（尽量保留 source map 信息）
-- 目标函数名或目标关键字（用于聚焦）
-- 最小运行样本（输入参数和预期输出）
+## Input Requirements
+- Original script (preserve source map information if possible)
+- Target function name or target keyword (for focusing)
+- Minimal runtime sample (input parameters and expected output)
 
-## 流程（建议顺序）
-1. 预扫描
-- 统计 AST 指标：节点数、函数数、字面量比例、`eval/new Function` 出现次数。
-- 标记高风险节点：动态执行、反调试、环境探针。
+## Process (Recommended Order)
+1. Pre-scan
+- Collect AST metrics: node count, function count, literal ratio, `eval/new Function` occurrence count.
+- Flag high-risk nodes: dynamic execution, anti-debugging, environment probes.
 
-2. 字符串层去混淆
-- 定位字符串表与解码函数。
-- 执行“可证明等价”的替换：仅替换可静态求值表达式。
-- 记录替换统计：替换数量、失败数量、失败样本。
+2. String Layer Deobfuscation
+- Locate string table and decoding function.
+- Perform "provably equivalent" replacements: only replace statically evaluable expressions.
+- Record replacement statistics: replacement count, failure count, failure samples.
 
-3. 代理层折叠
-- 识别代理函数（简单转发、参数重排、常量包裹）。
-- 将可内联代理折叠为直接调用。
-- 保留不可判定代理，避免误改业务逻辑。
+3. Proxy Layer Folding
+- Identify proxy functions (simple forwarding, argument reordering, constant wrapping).
+- Fold inlinable proxies into direct calls.
+- Preserve indeterminate proxies to avoid incorrectly modifying business logic.
 
-4. 控制流还原
-- 处理 `while-switch` 平坦化，按 dispatch 序列重建语句顺序。
-- 删除不可达分支前，先跑一次覆盖验证。
+4. Control Flow Restoration
+- Handle `while-switch` flattening, rebuild statement order based on dispatch sequence.
+- Run a coverage verification pass before deleting unreachable branches.
 
-5. 死代码清理
-- 清理未引用声明、永假分支、无副作用表达式。
-- 每次清理后执行语义对比（最小样本）。
+5. Dead Code Cleanup
+- Remove unreferenced declarations, always-false branches, side-effect-free expressions.
+- Perform semantic comparison (minimal sample) after each cleanup step.
 
-6. 运行时回验
-- 对核心函数做输入输出回放：
-  - 原始代码输出
-  - 改写后输出
-- 输出必须一致，否则回滚最近变换。
+6. Runtime Verification
+- Replay input/output for core functions:
+  - Original code output
+  - Rewritten code output
+- Outputs must match; otherwise roll back the most recent transformation.
 
-## 验证口径
-- 结构指标下降：
-  - 节点数减少
-  - 嵌套深度下降
-  - 动态执行点减少
-- 语义指标稳定：
-  - 关键函数 I/O 一致
-  - 关键请求参数一致（若涉及签名）
+## Verification Criteria
+- Structural metrics decrease:
+  - Node count reduced
+  - Nesting depth decreased
+  - Dynamic execution points reduced
+- Semantic metrics remain stable:
+  - Key function I/O consistent
+  - Key request parameters consistent (if signatures are involved)
 
-## 常见失败与回退
-- 字符串解码依赖运行时状态：
-  - 回退到“运行时采样 + 局部替换”，不要全量静态替换。
-- 控制流恢复后行为漂移：
-  - 仅恢复目标函数，缩小改写面。
-- 清理死代码后崩溃：
-  - 保留可疑副作用节点，分批次删除。
+## Common Failures and Fallbacks
+- String decoding depends on runtime state:
+  - Fall back to "runtime sampling + local replacement"; do not perform full static replacement.
+- Behavior drift after control flow restoration:
+  - Only restore the target function; minimize the rewrite surface.
+- Crash after dead code cleanup:
+  - Preserve suspect side-effect nodes; delete in batches.
 
-## 输出产物建议
+## Suggested Output Artifacts
 - `before.js` / `after.stepN.js`
-- `transform-log.json`（每步变换统计）
-- `verify-report.md`（I/O 对比与差异解释）
+- `transform-log.json` (per-step transformation statistics)
+- `verify-report.md` (I/O comparison and difference explanation)
 
-## 安全边界
-- 不在文档中写入可直接批量复用的站点特定 payload。
-- 不提交包含真实凭证或业务敏感参数的样本输入。
+## Security Boundaries
+- Do not include site-specific payloads that can be directly reused in bulk in the documentation.
+- Do not commit sample inputs containing real credentials or business-sensitive parameters.

@@ -510,38 +510,38 @@ function buildActionPlan(result: {
   const addStep = (text: string) => {
     steps.push(`${steps.length + 1}) ${text}`);
   };
-  addStep(`调用 collect_code，参数: {"url":"${result.target}","returnMode":"top-priority","topN":10}`);
+  addStep(`Call collect_code with params: {"url":"${result.target}","returnMode":"top-priority","topN":10}`);
 
   if (result.suspiciousFlows.length > 0) {
     const flow = result.suspiciousFlows[0];
-    addStep(`重点观察可疑请求: ${flow.method} ${flow.url}，命中指标: ${flow.signatureIndicators.join(', ')}`);
+    addStep(`Focus on suspicious request: ${flow.method} ${flow.url}, matched indicators: ${flow.signatureIndicators.join(', ')}`);
   } else {
-    addStep('先触发登录/下单/关键业务操作，再重新运行 analyze_target 捕获动态请求');
+    addStep('Trigger login/checkout/critical business actions first, then rerun analyze_target to capture dynamic requests');
   }
 
   if (result.priorityTargets.length > 0) {
     const top = result.priorityTargets[0];
     if (top.type === 'network') {
-      addStep(`优先复现网络链路: ${top.target}（priority=${top.priorityScore}）`);
+      addStep(`Prioritize reproducing network flow: ${top.target} (priority=${top.priorityScore})`);
     } else {
-      addStep(`优先审计函数: ${top.target}（priority=${top.priorityScore}）`);
+      addStep(`Prioritize auditing function: ${top.target} (priority=${top.priorityScore})`);
     }
   }
 
   if (result.signatureHints.candidateFunctions.length > 0) {
     const fnName = result.signatureHints.candidateFunctions[0];
-    addStep(`使用 search_in_scripts 搜索函数名 "${fnName}"，并用 understand_code 深挖调用链`);
+    addStep(`Use search_in_scripts to search for function name "${fnName}", then use understand_code to trace the call chain`);
   } else {
-    addStep('使用 search_in_scripts 搜索关键词 sign/token/auth/nonce，定位签名生成点');
+    addStep('Use search_in_scripts to search for keywords sign/token/auth/nonce to locate signature generation points');
   }
 
   if (result.topHookIds.length > 0) {
-    addStep(`调用 get_hook_data 查看首个 hook 数据: {"hookId":"${result.topHookIds[0].hookId}"}`);
+    addStep(`Call get_hook_data to view the first hook data: {"hookId":"${result.topHookIds[0].hookId}"}`);
   } else {
-    addStep('用 create_hook + inject_hook 手工注入 fetch/xhr hook 后再采样');
+    addStep('Manually inject fetch/xhr hooks using create_hook + inject_hook, then sample again');
   }
 
-  addStep('对疑似签名代码调用 deobfuscate_code（aggressive=true）并复测请求参数变化');
+  addStep('Run deobfuscate_code (aggressive=true) on suspected signing code and retest request parameter changes');
   return steps;
 }
 

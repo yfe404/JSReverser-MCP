@@ -7,12 +7,12 @@
 
 
 /**
- * 核心类型定义
+ * Core type definitions
  */
 
 import type { Browser, Page } from 'puppeteer';
 
-// ==================== 配置类型 ====================
+// ==================== Configuration Types ====================
 
 export interface Config {
   llm: LLMConfig;
@@ -39,14 +39,14 @@ export interface PuppeteerConfig {
   headless: boolean;
   timeout: number;
   args?: string[];
-  // 🆕 新增可配置项
+  // New configurable options
   viewport?: { width: number; height: number };
   userAgent?: string;
   maxCollectedUrls?: number;
-  // 🔧 新增：防止 MCP token 溢出的限制
-  maxFilesPerCollect?: number;      // 单次收集最大文件数（默认50）
-  maxTotalContentSize?: number;     // 单次返回最大总大小（默认512KB）
-  maxSingleFileSize?: number;       // 单个文件最大大小（默认100KB）
+  // Limits to prevent MCP token overflow
+  maxFilesPerCollect?: number;      // Max files per collection (default 50)
+  maxTotalContentSize?: number;     // Max total size per response (default 512KB)
+  maxSingleFileSize?: number;       // Max single file size (default 100KB)
   useExternalBrowser?: boolean;
   remoteDebuggingUrl?: string;
   userDataDir?: string;
@@ -73,7 +73,7 @@ export interface PerformanceConfig {
   maxCodeSizeMB: number;
 }
 
-// ==================== 代码收集类型 ====================
+// ==================== Code Collection Types ====================
 
 export interface CollectCodeOptions {
   url: string;
@@ -84,16 +84,16 @@ export interface CollectCodeOptions {
   includeDynamic?: boolean;
   includeServiceWorker?: boolean;
   includeWebWorker?: boolean;
-  filterRules?: string[]; // URL过滤规则
+  filterRules?: string[]; // URL filter rules
 
-  // 🆕 智能收集选项
-  smartMode?: 'summary' | 'priority' | 'incremental' | 'full'; // 智能收集模式
-  compress?: boolean; // 是否压缩代码
-  streaming?: boolean; // 是否流式传输
-  maxTotalSize?: number; // 最大总大小（字节）
-  maxFileSize?: number; // 单个文件最大大小
-  priorities?: string[]; // 优先级URL模式
-  dynamicWaitMs?: number; // 动态脚本额外等待时长（毫秒）
+  // Smart collection options
+  smartMode?: 'summary' | 'priority' | 'incremental' | 'full'; // Smart collection mode
+  compress?: boolean; // Whether to compress code
+  streaming?: boolean; // Whether to use streaming transfer
+  maxTotalSize?: number; // Max total size (bytes)
+  maxFileSize?: number; // Max single file size
+  priorities?: string[]; // Priority URL patterns
+  dynamicWaitMs?: number; // Extra wait time for dynamic scripts (ms)
 }
 
 export interface CodeFile {
@@ -102,7 +102,7 @@ export interface CodeFile {
   size: number;
   type: 'inline' | 'external' | 'dynamic' | 'service-worker' | 'web-worker';
   loadTime?: number;
-  metadata?: Record<string, unknown>; // 额外元数据
+  metadata?: Record<string, unknown>; // Additional metadata
 }
 
 export interface CollectCodeResult {
@@ -120,7 +120,7 @@ export interface CollectCodeResult {
     functions: string[];
     imports: string[];
     preview: string;
-  }>; // 🆕 智能收集摘要模式返回
+  }>; // Smart collection summary mode return
 }
 
 export interface DependencyGraph {
@@ -140,15 +140,15 @@ export interface DependencyEdge {
   type: 'import' | 'require' | 'script';
 }
 
-// ==================== 反混淆类型 ====================
+// ==================== Deobfuscation Types ====================
 
 export interface DeobfuscateOptions {
   code: string;
   llm?: 'gpt-4' | 'claude';
-  aggressive?: boolean; // 启用激进的反混淆（控制流平坦化还原等）
-  preserveLogic?: boolean; // 保留原始逻辑
-  renameVariables?: boolean; // 重命名变量为有意义的名称
-  inlineFunctions?: boolean; // 内联简单函数
+  aggressive?: boolean; // Enable aggressive deobfuscation (control flow flattening recovery, etc.)
+  preserveLogic?: boolean; // Preserve original logic
+  renameVariables?: boolean; // Rename variables to meaningful names
+  inlineFunctions?: boolean; // Inline simple functions
 }
 
 export interface DeobfuscateResult {
@@ -160,50 +160,50 @@ export interface DeobfuscateResult {
   analysis: string;
 
   /**
-   * 全部子管线产生的警告/分析信息，外部 AI 可据此做进一步推理
-   * 包含：编码机制分析、VM 结构识别、指令映射、LLM 中间分析等
+   * Warnings/analysis info from all sub-pipelines; external AI can use these for further reasoning.
+   * Includes: encoding mechanism analysis, VM structure identification, instruction mapping, LLM intermediate analysis, etc.
    */
   warnings?: string[];
 
   /**
-   * 未能完全还原的部分，携带位置、原因、建议
-   * 外部 AI 可据此决定是否进行针对性的二次分析
+   * Parts that could not be fully recovered, with location, reason, and suggestions.
+   * External AI can use these to decide whether to perform targeted secondary analysis.
    */
   unresolvedParts?: UnresolvedPart[];
 }
 
 export type ObfuscationType =
-  | 'javascript-obfuscator' // obfuscator.io (最常见)
-  | 'webpack' // Webpack打包混淆
-  | 'uglify' // UglifyJS压缩
-  | 'vm-protection' // VM虚拟机保护
-  | 'self-modifying' // 自修改代码
-  | 'invisible-unicode' // 不可见Unicode混淆 (2025新技术)
-  | 'control-flow-flattening' // 控制流平坦化
-  | 'string-array-rotation' // 字符串数组旋转
-  | 'dead-code-injection' // 死代码注入
-  | 'opaque-predicates' // 不透明谓词
-  | 'jsfuck' // JSFuck编码 ([]()!+)
-  | 'aaencode' // AAEncode (颜文字编码)
+  | 'javascript-obfuscator' // obfuscator.io (most common)
+  | 'webpack' // Webpack bundle obfuscation
+  | 'uglify' // UglifyJS compression
+  | 'vm-protection' // VM virtual machine protection
+  | 'self-modifying' // Self-modifying code
+  | 'invisible-unicode' // Invisible Unicode obfuscation (2025 new technique)
+  | 'control-flow-flattening' // Control flow flattening
+  | 'string-array-rotation' // String array rotation
+  | 'dead-code-injection' // Dead code injection
+  | 'opaque-predicates' // Opaque predicates
+  | 'jsfuck' // JSFuck encoding ([]()!+)
+  | 'aaencode' // AAEncode (emoticon encoding)
   | 'jjencode' // JJEncode
   | 'packer' // Dean Edwards Packer
-  | 'eval-obfuscation' // eval混淆
-  | 'base64-encoding' // Base64编码
-  | 'hex-encoding' // 十六进制编码
-  | 'jscrambler' // JScrambler商业混淆
-  | 'urlencoded' // URL编码混淆
-  | 'custom' // 自定义/魔改混淆
+  | 'eval-obfuscation' // eval obfuscation
+  | 'base64-encoding' // Base64 encoding
+  | 'hex-encoding' // Hexadecimal encoding
+  | 'jscrambler' // JScrambler commercial obfuscation
+  | 'urlencoded' // URL encoding obfuscation
+  | 'custom' // Custom/modified obfuscation
   | 'unknown';
 
 export interface Transformation {
   type: string;
   description: string;
   success: boolean;
-  /** 子管线的详细分析数据，供外部 AI 进一步推理（JSON 可序列化） */
+  /** Detailed analysis data from sub-pipelines for external AI reasoning (JSON-serializable) */
   detail?: Record<string, unknown>;
 }
 
-// ==================== 代码理解类型 ====================
+// ==================== Code Understanding Types ====================
 
 export interface UnderstandCodeOptions {
   code: string;
@@ -218,7 +218,7 @@ export interface UnderstandCodeResult {
   dataFlow: DataFlow;
   securityRisks: SecurityRisk[];
   qualityScore: number;
-  // 新增字段 - 代码模式和复杂度分析
+  // New fields - code pattern and complexity analysis
   codePatterns?: Array<{
     name: string;
     location: number;
@@ -348,7 +348,7 @@ export interface DataSink {
 export interface TaintPath {
   source: DataSource;
   sink: DataSink;
-  path: CodeLocation[]; // 污点传播路径
+  path: CodeLocation[]; // Taint propagation path
   risk?: 'high' | 'medium' | 'low';
 }
 
@@ -366,7 +366,7 @@ export interface CodeLocation {
   column?: number;
 }
 
-// ==================== 加密识别类型 ====================
+// ==================== Crypto Detection Types ====================
 
 export interface DetectCryptoOptions {
   code: string;
@@ -401,29 +401,29 @@ export interface CryptoLibrary {
   confidence: number;
 }
 
-// ==================== Hook管理类型 ====================
-// 核心类型从 modules/hook 导出，这里保留兼容层和通用接口
+// ==================== Hook Management Types ====================
+// Core types are exported from modules/hook; this retains the compatibility layer and common interfaces
 
 /**
- * Hook 创建选项（声明式配置）
- * 详细类型定义见 modules/hook/HookManager.ts
+ * Hook creation options (declarative configuration)
+ * See modules/hook/HookManager.ts for detailed type definitions
  */
 export interface HookOptions {
-  /** hook 类型（对应注册表中的插件名） */
+  /** Hook type (corresponds to plugin name in the registry) */
   type: string;
-  /** hook 目标（函数名、API 名等） */
+  /** Hook target (function name, API name, etc.) */
   target?: string;
-  /** 行为: log / block / modify / passthrough */
+  /** Action: log / block / modify / passthrough */
   action?: 'log' | 'block' | 'modify' | 'passthrough';
-  /** 自定义代码 */
+  /** Custom code */
   customCode?: string;
-  /** 条件配置 */
+  /** Condition configuration */
   condition?: HookCondition;
-  /** 是否启用性能监控 */
+  /** Whether to enable performance monitoring */
   performance?: boolean;
-  /** 类型特定参数 */
+  /** Type-specific parameters */
   params?: Record<string, unknown>;
-  /** 捕获选项 */
+  /** Capture options */
   capture?: {
     args?: boolean;
     returnValue?: boolean;
@@ -431,7 +431,7 @@ export interface HookOptions {
     timing?: boolean;
     thisContext?: boolean;
   };
-  /** 生命周期代码 */
+  /** Lifecycle code */
   lifecycle?: {
     before?: string;
     after?: string;
@@ -439,25 +439,25 @@ export interface HookOptions {
     onFinally?: string;
     replace?: string;
   };
-  /** 存储配置 */
+  /** Storage configuration */
   store?: {
     globalKey?: string;
     maxRecords?: number;
     console?: boolean;
     consoleFormat?: 'full' | 'compact' | 'json';
   };
-  /** 描述 */
+  /** Description */
   description?: string;
 }
 
 export interface HookCondition {
-  /** JS 条件表达式 */
+  /** JS condition expression */
   expression?: string;
-  /** 最大调用次数 */
+  /** Maximum call count */
   maxCalls?: number;
-  /** 最小调用间隔(ms) */
+  /** Minimum call interval (ms) */
   minInterval?: number;
-  /** URL 匹配模式 */
+  /** URL match pattern */
   urlPattern?: string;
 }
 
@@ -488,7 +488,7 @@ export interface HookRecord {
   [key: string]: unknown;
 }
 
-// ==================== 浏览器上下文类型 ====================
+// ==================== Browser Context Types ====================
 
 export interface BrowserContext {
   browser: Browser;
@@ -496,7 +496,7 @@ export interface BrowserContext {
   url: string;
 }
 
-// ==================== 通用结果类型 ====================
+// ==================== Generic Result Types ====================
 
 export interface Result<T> {
   success: boolean;
@@ -505,7 +505,7 @@ export interface Result<T> {
   message?: string;
 }
 
-// ==================== 会话类型 ====================
+// ==================== Session Types ====================
 
 export interface Session {
   id: string;
@@ -523,171 +523,171 @@ export interface SessionData {
   hooks?: HookRecord[];
 }
 
-// ==================== 环境补全相关类型 ====================
+// ==================== Environment Patching Types ====================
 
 /**
- * 环境变量检测结果
+ * Detected environment variables result
  */
 export interface DetectedEnvironmentVariables {
-  window: string[];      // window对象的属性
-  document: string[];    // document对象的属性
-  navigator: string[];   // navigator对象的属性
-  location: string[];    // location对象的属性
-  screen: string[];      // screen对象的属性
-  other: string[];       // 其他全局对象
+  window: string[];      // window object properties
+  document: string[];    // document object properties
+  navigator: string[];   // navigator object properties
+  location: string[];    // location object properties
+  screen: string[];      // screen object properties
+  other: string[];       // Other global objects
 }
 
 /**
- * 缺失的API信息
+ * Missing API information
  */
 export interface MissingAPI {
-  name: string;          // API名称
+  name: string;          // API name
   type: 'function' | 'object' | 'property';
-  path: string;          // 完整路径，如 'window.navigator.userAgent'
-  suggestion: string;    // 补充建议
+  path: string;          // Full path, e.g. 'window.navigator.userAgent'
+  suggestion: string;    // Patching suggestion
 }
 
 /**
- * 环境补全代码
+ * Environment patching code
  */
 export interface EmulationCode {
-  nodejs: string;        // Node.js格式的补环境代码
-  python: string;        // Python + execjs格式的补环境代码
+  nodejs: string;        // Node.js environment patching code
+  python: string;        // Python + execjs environment patching code
 }
 
 /**
- * 环境补全分析选项
+ * Environment patching analysis options
  */
 export interface EnvironmentEmulatorOptions {
-  code: string;                    // 要分析的代码
-  targetRuntime?: 'nodejs' | 'python' | 'both';  // 目标运行时
-  autoFetch?: boolean;             // 是否自动从浏览器提取真实值
-  browserUrl?: string;             // 浏览器访问的URL（用于提取环境变量）
-  browserType?: 'chrome' | 'firefox' | 'safari';  // 浏览器类型
-  includeComments?: boolean;       // 生成的代码是否包含注释
-  extractDepth?: number;           // 环境变量提取深度（默认3层）
-  useAI?: boolean;                 // 是否使用AI分析（默认true）
+  code: string;                    // Code to analyze
+  targetRuntime?: 'nodejs' | 'python' | 'both';  // Target runtime
+  autoFetch?: boolean;             // Whether to auto-fetch real values from browser
+  browserUrl?: string;             // Browser URL (for extracting environment variables)
+  browserType?: 'chrome' | 'firefox' | 'safari';  // Browser type
+  includeComments?: boolean;       // Whether generated code includes comments
+  extractDepth?: number;           // Environment variable extraction depth (default 3 levels)
+  useAI?: boolean;                 // Whether to use AI analysis (default true)
 }
 
 /**
- * 环境补全结果
+ * Environment patching result
  */
 export interface EnvironmentEmulatorResult {
-  // 检测到的环境变量（按类别分组）
+  // Detected environment variables (grouped by category)
   detectedVariables: DetectedEnvironmentVariables;
 
-  // 生成的补环境代码
+  // Generated environment patching code
   emulationCode: EmulationCode;
 
-  // 缺失的API列表（需要手动补充）
+  // Missing API list (requires manual patching)
   missingAPIs: MissingAPI[];
 
-  // 环境变量清单（JSON格式，可导出）
+  // Environment variable manifest (JSON format, exportable)
   variableManifest: Record<string, any>;
 
-  // 补环境建议
+  // Patching recommendations
   recommendations: string[];
 
-  // 统计信息
+  // Statistics
   stats: {
     totalVariables: number;
     autoFilledVariables: number;
     manualRequiredVariables: number;
   };
 
-  // AI分析结果（可选）
+  // AI analysis result (optional)
   aiAnalysis?: any;
 }
 
-// ==================== JSVMP反混淆相关类型 ====================
+// ==================== JSVMP Deobfuscation Types ====================
 
 /**
- * 虚拟机类型
+ * Virtual machine type
  */
 export type VMType = 'custom' | 'obfuscator.io' | 'jsfuck' | 'jjencode' | 'unknown';
 
 /**
- * 指令类型
+ * Instruction type
  */
 export type InstructionType = 'load' | 'store' | 'arithmetic' | 'control' | 'call' | 'unknown';
 
 /**
- * 复杂度级别
+ * Complexity level
  */
 export type ComplexityLevel = 'low' | 'medium' | 'high';
 
 /**
- * VM指令信息
+ * VM instruction information
  */
 export interface VMInstruction {
-  opcode: number | string;       // 操作码
-  name: string;                  // 指令名称（推断）
+  opcode: number | string;       // Opcode
+  name: string;                  // Instruction name (inferred)
   type: InstructionType;
-  description: string;           // 指令描述
-  args?: number;                 // 参数数量
+  description: string;           // Instruction description
+  args?: number;                 // Number of arguments
 }
 
 /**
- * VM特征信息
+ * VM feature information
  */
 export interface VMFeatures {
-  instructionCount: number;      // 指令数量
-  interpreterLocation: string;   // 解释器位置（行号）
-  complexity: ComplexityLevel;   // 复杂度
-  hasSwitch: boolean;            // 是否有大型switch
-  hasInstructionArray: boolean;  // 是否有指令数组
-  hasProgramCounter: boolean;    // 是否有程序计数器
+  instructionCount: number;      // Number of instructions
+  interpreterLocation: string;   // Interpreter location (line number)
+  complexity: ComplexityLevel;   // Complexity
+  hasSwitch: boolean;            // Whether it has a large switch
+  hasInstructionArray: boolean;  // Whether it has an instruction array
+  hasProgramCounter: boolean;    // Whether it has a program counter
 }
 
 /**
- * 未还原部分信息
+ * Unresolved part information
  */
 export interface UnresolvedPart {
-  location: string;              // 位置（行号或函数名）
-  reason: string;                // 未能还原的原因
-  suggestion?: string;           // 建议
+  location: string;              // Location (line number or function name)
+  reason: string;                // Reason for not being resolved
+  suggestion?: string;           // Suggestion
 }
 
 /**
- * JSVMP反混淆选项
+ * JSVMP deobfuscation options
  */
 export interface JSVMPDeobfuscatorOptions {
-  code: string;                  // 要反混淆的代码
-  aggressive?: boolean;          // 是否使用激进模式
-  extractInstructions?: boolean; // 是否提取指令集
-  timeout?: number;              // 超时时间（毫秒）
-  maxIterations?: number;        // 最大迭代次数
+  code: string;                  // Code to deobfuscate
+  aggressive?: boolean;          // Whether to use aggressive mode
+  extractInstructions?: boolean; // Whether to extract instruction set
+  timeout?: number;              // Timeout (milliseconds)
+  maxIterations?: number;        // Maximum iterations
 }
 
 /**
- * JSVMP反混淆结果
+ * JSVMP deobfuscation result
  */
 export interface JSVMPDeobfuscatorResult {
-  // 是否为JSVMP混淆
+  // Whether it is JSVMP obfuscation
   isJSVMP: boolean;
 
-  // 虚拟机类型（如果能识别）
+  // Virtual machine type (if identifiable)
   vmType?: VMType;
 
-  // 虚拟机特征
+  // Virtual machine features
   vmFeatures?: VMFeatures;
 
-  // 提取的指令集（如果extractInstructions=true）
+  // Extracted instruction set (if extractInstructions=true)
   instructions?: VMInstruction[];
 
-  // 还原后的代码
+  // Recovered code
   deobfuscatedCode: string;
 
-  // 还原置信度 (0-1)
+  // Recovery confidence (0-1)
   confidence: number;
 
-  // 还原过程中的警告
+  // Warnings during recovery
   warnings: string[];
 
-  // 未能还原的部分（如果有）
+  // Parts that could not be recovered (if any)
   unresolvedParts?: UnresolvedPart[];
 
-  // 统计信息
+  // Statistics
   stats?: {
     originalSize: number;
     deobfuscatedSize: number;
@@ -696,10 +696,10 @@ export interface JSVMPDeobfuscatorResult {
   };
 }
 
-// ==================== 调试器增强类型 ====================
+// ==================== Debugger Enhanced Types ====================
 
 /**
- * 作用域变量
+ * Scope variable
  */
 export interface ScopeVariable {
   name: string;
@@ -709,11 +709,11 @@ export interface ScopeVariable {
   writable?: boolean;
   configurable?: boolean;
   enumerable?: boolean;
-  objectId?: string; // 用于进一步检查对象属性
+  objectId?: string; // For further object property inspection
 }
 
 /**
- * 断点命中事件
+ * Breakpoint hit event
  */
 export interface BreakpointHitEvent {
   breakpointId: string;
@@ -726,21 +726,21 @@ export interface BreakpointHitEvent {
   };
   callFrames: any[]; // CallFrame[]
   timestamp: number;
-  variables?: ScopeVariable[]; // 自动获取的顶层作用域变量
+  variables?: ScopeVariable[]; // Auto-captured top-level scope variables
   reason: string;
 }
 
 /**
- * 断点命中回调函数
+ * Breakpoint hit callback function
  */
 export type BreakpointHitCallback = (event: BreakpointHitEvent) => void | Promise<void>;
 
 /**
- * 调试会话数据（用于保存/恢复）
+ * Debug session data (for save/restore)
  */
 export interface DebuggerSession {
-  version: string; // 会话格式版本（当前 1.0）
-  timestamp: number; // 创建时间戳
+  version: string; // Session format version (currently 1.0)
+  timestamp: number; // Creation timestamp
   breakpoints: Array<{
     location: {
       scriptId?: string;
@@ -753,25 +753,25 @@ export interface DebuggerSession {
   }>;
   pauseOnExceptions: 'none' | 'uncaught' | 'all';
   metadata?: {
-    url?: string; // 调试的页面 URL
-    description?: string; // 会话描述
-    tags?: string[]; // 标签
-    [key: string]: any; // 其他自定义元数据
+    url?: string; // Page URL being debugged
+    description?: string; // Session description
+    tags?: string[]; // Tags
+    [key: string]: any; // Other custom metadata
   };
 }
 
 /**
- * 作用域变量获取选项
+ * Scope variable retrieval options
  */
 export interface GetScopeVariablesOptions {
-  callFrameId?: string; // 指定调用帧 ID，不指定则获取顶层帧
-  includeObjectProperties?: boolean; // 是否展开对象属性（默认 false）
-  maxDepth?: number; // 对象属性展开的最大深度（默认 1）
-  skipErrors?: boolean; // 是否跳过错误的作用域（默认 true）
+  callFrameId?: string; // Specify call frame ID; if not specified, gets top frame
+  includeObjectProperties?: boolean; // Whether to expand object properties (default false)
+  maxDepth?: number; // Max depth for object property expansion (default 1)
+  skipErrors?: boolean; // Whether to skip errored scopes (default true)
 }
 
 /**
- * 作用域变量获取结果
+ * Scope variable retrieval result
  */
 export interface GetScopeVariablesResult {
   success: boolean;
@@ -833,7 +833,7 @@ export interface ReverseTaskReadApi {
   readLog(name: string, taskId: string): Promise<Record<string, unknown>[]>;
 }
 
-// ==================== 全局类型扩展 ====================
+// ==================== Global Type Extensions ====================
 
 declare global {
   interface Window {

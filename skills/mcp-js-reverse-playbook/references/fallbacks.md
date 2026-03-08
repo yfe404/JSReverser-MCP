@@ -1,7 +1,7 @@
-# 失败回退
-- Hook 无数据：确认动作执行 -> 扩一档范围 -> 仍失败则停，不要直接猜 local rebuild。
-- 如果 Hook 错过首屏初始化：回到页面入口，先补 `inject_preload_script` 再重试。
-- 数据过多：summary 去噪 -> raw 单条下钻。
-- 本地补环境失败：先读代理 env log，确认当前 `first divergence`，再回看页面证据；`diff_env_requirements` 仅作辅助。
-- local rebuild 连续两轮无进展：回到页面观察，补 `record_reverse_evidence` 后再继续。
-- 断点不稳：回退 Hook 路径。
+# Failure Fallbacks
+- Hook returns no data: confirm action was executed -> expand scope by one level -> if still failing, stop. Do not directly guess local rebuild.
+- If Hook missed first-screen initialization: return to the page entry, add `inject_preload_script` first, then retry.
+- Too much data: use summary to filter noise -> drill down into individual raw entries.
+- Local environment patching fails: read the proxy env log first, confirm the current `first divergence`, then review page evidence; `diff_env_requirements` is only an aid.
+- Local rebuild shows no progress for two consecutive rounds: return to page observation, add `record_reverse_evidence`, then continue.
+- Breakpoint unstable: fall back to the Hook path.

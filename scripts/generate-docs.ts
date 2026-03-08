@@ -111,7 +111,7 @@ function generateDocs(): void {
   }
 
   const categoryOrder = Object.values(ToolCategory);
-  let markdown = `<!-- AUTO GENERATED DO NOT EDIT - run 'npm run docs' to update-->\n\n# Chrome DevTools MCP Tool Reference\n\n> 快速按逆向目标查工具，请先看：[\`docs/reverse-task-index.md\`](./reverse-task-index.md)\n\n`;
+  let markdown = `<!-- AUTO GENERATED DO NOT EDIT - run 'npm run docs' to update-->\n\n# Chrome DevTools MCP Tool Reference\n\n> To quickly find tools by reverse engineering goal, see: [\`docs/reverse-task-index.md\`](./reverse-task-index.md)\n\n`;
 
   for (const category of categoryOrder) {
     const toolsInCategory = categories.get(category) || [];

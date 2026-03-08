@@ -1,6 +1,6 @@
 function printAbstractCaseGuide() {
-  console.log(`Case: MCP 前端逆向到纯 Node 工作流
-Category: 工作流
+  console.log(`Case: MCP frontend reverse engineering to pure Node workflow
+Category: workflow
 Status: abstract-case
 Runtime: pure-node
 Scope: non-runnable
@@ -12,8 +12,8 @@ It standardizes which MCP tool to use first, what artifact to collect,
 and which next tool to use based on the observed result.
 
 Goal:
-- 用固定工具顺序，快速完成：页面取证 -> 签名链定位 -> 本地补环境 -> 单文件导出 -> 服务端验证
-- scripts/cases/ 中如果必须记录 page 或 api host，统一保存为 Base64 文本，推荐字段名为 `entry_url_b64` 或 `api_host_b64`，使用前先解码
+- Use a fixed tool sequence to quickly complete: page evidence collection -> signing chain location -> local environment patching -> single-file export -> server-side verification
+- If page or api host must be recorded in scripts/cases/, save them uniformly as Base64 text with recommended field names \`entry_url_b64\` or \`api_host_b64\`; decode before use
 
 Required workflow:
 1) Target request discovery:

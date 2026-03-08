@@ -1,14 +1,14 @@
 /**
- * 脚本管理器 - 薄封装CDP Debugger域
- * 
- * 功能:
- * - 获取页面所有已加载的脚本列表
- * - 获取指定脚本的完整源码
- * - 监听脚本加载事件
- * 
- * 设计原则:
- * - 薄封装CDP Debugger.scriptParsed事件和Debugger.getScriptSource方法
- * - 依赖CodeCollector获取Page实例
+ * Script Manager - Thin wrapper around CDP Debugger domain
+ *
+ * Features:
+ * - Get the list of all loaded scripts on the page
+ * - Get the full source code of a specified script
+ * - Listen for script load events
+ *
+ * Design principles:
+ * - Thin wrapper around CDP Debugger.scriptParsed event and Debugger.getScriptSource method
+ * - Relies on CodeCollector to obtain Page instances
  */
 
 import type { CDPSession } from 'puppeteer';
@@ -27,7 +27,7 @@ export interface ScriptInfo {
 }
 
 /**
- * 脚本分片（100KB/片）
+ * Script chunk (100KB per chunk)
  */
 interface ScriptChunk {
   scriptId: string;
@@ -37,7 +37,7 @@ interface ScriptChunk {
 }
 
 /**
- * 关键词索引条目
+ * Keyword index entry
  */
 interface KeywordIndexEntry {
   scriptId: string;
@@ -53,18 +53,18 @@ export class ScriptManager {
   private scriptsByUrl: Map<string, ScriptInfo[]> = new Map();
   private initialized = false;
 
-  // 🆕 内存索引系统
+  // 🆕 In-memory index system
   private keywordIndex: Map<string, KeywordIndexEntry[]> = new Map();
   private scriptChunks: Map<string, ScriptChunk[]> = new Map();
   private readonly CHUNK_SIZE = 100 * 1024; // 100KB per chunk
 
-  // ✅ 修复：保存事件监听器引用，便于清理
+  // ✅ Fix: Save event listener reference for cleanup
   private scriptParsedListener: ((params: any) => void) | null = null;
 
   constructor(private collector: CodeCollector) {}
 
   /**
-   * 初始化CDP会话并启用Debugger
+   * Initialize CDP session and enable Debugger
    */
   async init(): Promise<void> {
     if (this.initialized) {
@@ -72,14 +72,14 @@ export class ScriptManager {
       return;
     }
 
-    // 🆕 移除冗余检查（initialized 为 true 时 cdpSession 一定不为 null）
+    // 🆕 Removed redundant check (cdpSession is never null when initialized is true)
     const page = await this.collector.getActivePage();
     this.cdpSession = await page.createCDPSession();
     
-    // 启用Debugger域
+    // Enable the Debugger domain
     await this.cdpSession.send('Debugger.enable');
 
-    // ✅ 修复：保存监听器引用，便于后续清理
+    // ✅ Fix: Save listener reference for later cleanup
     this.scriptParsedListener = (params: any) => {
       const scriptInfo: ScriptInfo = {
         scriptId: params.scriptId,
@@ -91,10 +91,10 @@ export class ScriptManager {
         sourceLength: params.length,
       };
 
-      // 存储脚本信息
+      // Store script info
       this.scripts.set(params.scriptId, scriptInfo);
 
-      // 按URL索引
+      // Index by URL
       if (params.url) {
         if (!this.scriptsByUrl.has(params.url)) {
           this.scriptsByUrl.set(params.url, []);
@@ -105,17 +105,17 @@ export class ScriptManager {
       logger.debug(`Script parsed: ${params.url || 'inline'} (${params.scriptId})`);
     };
 
-    // 监听脚本解析事件
+    // Listen for script parsed events
     this.cdpSession.on('Debugger.scriptParsed', this.scriptParsedListener);
 
-    // 🔧 修复：等待脚本解析事件稳定（替代硬编码2秒延迟）
-    // 当启用 Debugger 域时，CDP 会重新触发所有已解析脚本的事件
-    // 通过轮询检测脚本数量是否稳定来判断事件是否完成
+    // 🔧 Fix: Wait for script parsed events to stabilize (replaces hardcoded 2-second delay)
+    // When enabling the Debugger domain, CDP re-fires events for all previously parsed scripts
+    // Poll to detect when the script count stabilizes to determine if events are complete
     let lastCount = 0;
     let stableRounds = 0;
-    const maxWait = 5000; // 最大等待 5 秒
-    const pollInterval = 200; // 每 200ms 检查一次
-    const requiredStableRounds = 3; // 连续 3 次数量不变视为稳定
+    const maxWait = 5000; // Maximum wait 5 seconds
+    const pollInterval = 200; // Check every 200ms
+    const requiredStableRounds = 3; // 3 consecutive unchanged counts means stable
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWait) {
@@ -135,20 +135,20 @@ export class ScriptManager {
   }
 
   /**
-   * 启用脚本管理器（别名方法，与其他模块保持一致）
+   * Enable the script manager (alias method, consistent with other modules)
    */
   async enable(): Promise<void> {
     return this.init();
   }
 
   /**
-   * 获取所有已加载的脚本列表
+   * Get all loaded scripts
    *
-   * ⚠️ 警告：如果 includeSource=true，会一次性加载所有脚本源码，可能导致内存溢出
-   * 建议：对于大型网站，使用 getScriptSource() 按需加载单个脚本
+   * Warning: If includeSource=true, all script sources are loaded at once, which may cause memory overflow
+   * Recommendation: For large websites, use getScriptSource() to load individual scripts on demand
    *
-   * @param includeSource 是否包含源码（默认false，推荐false）
-   * @param maxScripts 最大脚本数量限制（默认1000，防止内存溢出）
+   * @param includeSource Whether to include source code (default false, recommended false)
+   * @param maxScripts Maximum script count limit (default 1000, prevents memory overflow)
    */
   async getAllScripts(includeSource = false, maxScripts = 1000): Promise<ScriptInfo[]> {
     if (!this.cdpSession) {
@@ -157,14 +157,14 @@ export class ScriptManager {
 
     const scripts = Array.from(this.scripts.values());
 
-    // 🔧 修复：检查脚本数量，防止内存溢出
+    // 🔧 Fix: Check script count to prevent memory overflow
     if (scripts.length > maxScripts) {
       logger.warn(`Found ${scripts.length} scripts, limiting to ${maxScripts}. Increase maxScripts parameter if needed.`);
     }
 
     const limitedScripts = scripts.slice(0, maxScripts);
 
-    // 如果需要包含源码，逐个获取
+    // If source code is needed, fetch one by one
     if (includeSource) {
       logger.warn(`Loading source code for ${limitedScripts.length} scripts. This may use significant memory.`);
 
@@ -180,7 +180,7 @@ export class ScriptManager {
             script.source = scriptSource;
             loadedCount++;
 
-            // 每加载 10 个脚本输出进度
+            // Log progress every 10 scripts loaded
             if (loadedCount % 10 === 0) {
               logger.debug(`Loaded ${loadedCount}/${limitedScripts.length} scripts...`);
             }
@@ -200,10 +200,10 @@ export class ScriptManager {
   }
 
   /**
-   * 获取指定脚本的源码
+   * Get the source code of a specified script
    */
   async getScriptSource(scriptId?: string, url?: string): Promise<ScriptInfo | null> {
-    // ✅ 参数验证
+    // ✅ Parameter validation
     if (!scriptId && !url) {
       throw new Error('Either scriptId or url parameter must be provided');
     }
@@ -214,15 +214,15 @@ export class ScriptManager {
 
     let targetScript: ScriptInfo | undefined;
 
-    // 通过scriptId查找
+    // Look up by scriptId
     if (scriptId) {
       targetScript = this.scripts.get(scriptId);
     }
-    // 通过URL查找（支持通配符）
+    // Look up by URL (supports wildcards)
     else if (url) {
       const urlPattern = url.replace(/\*/g, '.*');
 
-      // ✅ 修复：添加正则表达式错误处理
+      // ✅ Fix: Add regex error handling
       let regex: RegExp;
       try {
         regex = new RegExp(urlPattern);
@@ -233,7 +233,7 @@ export class ScriptManager {
 
       for (const [scriptUrl, scripts] of this.scriptsByUrl.entries()) {
         if (regex.test(scriptUrl)) {
-          targetScript = scripts[0]; // 取第一个匹配的脚本
+          targetScript = scripts[0]; // Take the first matching script
           break;
         }
       }
@@ -244,7 +244,7 @@ export class ScriptManager {
       return null;
     }
 
-    // 获取源码
+    // Get source code
     if (!targetScript.source) {
       try {
         const { scriptSource } = await this.cdpSession!.send('Debugger.getScriptSource', {
@@ -253,7 +253,7 @@ export class ScriptManager {
         targetScript.source = scriptSource;
         targetScript.sourceLength = scriptSource.length;
 
-        // 🆕 自动建立索引和分片
+        // 🆕 Automatically build index and chunk
         this.buildKeywordIndex(targetScript.scriptId, targetScript.url, scriptSource);
         this.chunkScript(targetScript.scriptId, scriptSource);
       } catch (error) {
@@ -267,7 +267,7 @@ export class ScriptManager {
   }
 
   /**
-   * 通过URL模式查找脚本
+   * Find scripts by URL pattern
    */
   async findScriptsByUrl(urlPattern: string): Promise<ScriptInfo[]> {
     if (!this.cdpSession) {
@@ -276,7 +276,7 @@ export class ScriptManager {
 
     const pattern = urlPattern.replace(/\*/g, '.*');
 
-    // ✅ 修复：添加正则表达式错误处理
+    // ✅ Fix: Add regex error handling
     let regex: RegExp;
     try {
       regex = new RegExp(pattern);
@@ -298,14 +298,14 @@ export class ScriptManager {
   }
 
   /**
-   * 清除缓存的脚本信息（已废弃，使用 clear() 代替）
+   * Clear cached script info (deprecated, use clear() instead)
    */
   clearCache(): void {
     this.clear();
   }
 
   /**
-   * 搜索关键词（在所有脚本中）
+   * Search for keywords (across all scripts)
    */
   async searchInScripts(
     keyword: string,
@@ -338,7 +338,7 @@ export class ScriptManager {
       maxMatches = 100,
     } = options;
 
-    // ✅ 修复：添加正则表达式错误处理
+    // ✅ Fix: Add regex error handling
     let searchRegex: RegExp;
     try {
       searchRegex = isRegex
@@ -362,15 +362,15 @@ export class ScriptManager {
       context: string;
     }> = [];
 
-    // ✅ 修复：先获取脚本列表（不包含源码），避免一次性加载所有源码
+    // ✅ Fix: Get script list first (without source), avoid loading all sources at once
     const scriptList = await this.getAllScripts(false);
     logger.info(`Searching in ${scriptList.length} scripts...`);
 
-    // 逐个加载脚本源码并搜索
+    // Load script sources one by one and search
     for (const scriptInfo of scriptList) {
       if (matches.length >= maxMatches) break;
 
-      // 按需加载单个脚本源码
+      // Load individual script source on demand
       const script = await this.getScriptSource(scriptInfo.scriptId);
       if (!script || !script.source) continue;
 
@@ -385,7 +385,7 @@ export class ScriptManager {
         for (const match of lineMatches) {
           if (matches.length >= maxMatches) break;
 
-          // 提取上下文
+          // Extract context
           const startLine = Math.max(0, i - contextLines);
           const endLine = Math.min(lines.length - 1, i + contextLines);
           const contextArray = lines.slice(startLine, endLine + 1);
@@ -413,9 +413,9 @@ export class ScriptManager {
   }
 
   /**
-   * 提取函数及其依赖树
+   * Extract a function and its dependency tree
    *
-   * ⚠️ 注意：此方法需要 Babel 依赖。如果 Babel 未安装，将抛出错误。
+   * Note: This method requires Babel dependencies. If Babel is not installed, an error will be thrown.
    */
   async extractFunctionTree(
     scriptId: string,
@@ -442,13 +442,13 @@ export class ScriptManager {
   }> {
     const { maxDepth = 3, maxSize = 500, includeComments = true } = options;
 
-    // 获取脚本源码
+    // Get script source code
     const script = await this.getScriptSource(scriptId);
     if (!script || !script.source) {
       throw new Error(`Script not found: ${scriptId}`);
     }
 
-    // 🔧 修复：为 Babel 动态 import 添加错误处理
+    // 🔧 Fix: Add error handling for Babel dynamic imports
     let parser: any, traverse: any, generate: any, t: any;
 
     try {
@@ -486,7 +486,7 @@ export class ScriptManager {
     >();
     const callGraph: Record<string, string[]> = {};
 
-    // 提取依赖的辅助函数
+    // Helper function to extract dependencies
     const extractDependencies = (path: any): string[] => {
       const deps = new Set<string>();
       path.traverse({
@@ -499,7 +499,7 @@ export class ScriptManager {
       return Array.from(deps);
     };
 
-    // 收集所有函数定义
+    // Collect all function definitions
     traverse(ast, {
       FunctionDeclaration(path: any) {
         const name = path.node.id?.name;
@@ -543,7 +543,7 @@ export class ScriptManager {
       },
     });
 
-    // BFS 按层级提取依赖
+    // BFS to extract dependencies level by level
     const extracted = new Set<string>();
     let currentLevel = [functionName];
     let currentDepth = 0;
@@ -559,7 +559,7 @@ export class ScriptManager {
 
         extracted.add(current);
 
-        // 收集下一层依赖
+        // Collect next level dependencies
         for (const dep of func.dependencies) {
           if (!extracted.has(dep) && allFunctions.has(dep)) {
             nextLevel.push(dep);
@@ -571,7 +571,7 @@ export class ScriptManager {
       currentDepth++;
     }
 
-    // 生成最终代码
+    // Generate final code
     const functions = Array.from(extracted)
       .map(name => allFunctions.get(name)!)
       .filter(Boolean);
@@ -579,7 +579,7 @@ export class ScriptManager {
     const code = functions.map(f => f.code).join('\n\n');
     const totalSize = code.length;
 
-    // 检查大小限制
+    // Check size limit
     if (totalSize > maxSize * 1024) {
       logger.warn(`Extracted code size (${(totalSize / 1024).toFixed(2)}KB) exceeds limit (${maxSize}KB)`);
     }
@@ -597,7 +597,7 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 清除所有数据（换网站时调用）
+   * 🆕 Clear all data (called when switching websites)
    */
   clear(): void {
     this.scripts.clear();
@@ -608,13 +608,13 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 关闭 ScriptManager 并释放所有资源
+   * 🆕 Close ScriptManager and release all resources
    */
   async close(): Promise<void> {
-    // 清除所有数据
+    // Clear all data
     this.clear();
 
-    // ✅ 修复：移除事件监听器，防止内存泄漏
+    // ✅ Fix: Remove event listener to prevent memory leaks
     if (this.cdpSession && this.scriptParsedListener) {
       try {
         this.cdpSession.off('Debugger.scriptParsed', this.scriptParsedListener);
@@ -625,7 +625,7 @@ export class ScriptManager {
       }
     }
 
-    // Disable Debugger 并 Detach CDP session
+    // Disable Debugger and detach CDP session
     if (this.cdpSession) {
       try {
         await this.cdpSession.send('Debugger.disable');
@@ -637,13 +637,13 @@ export class ScriptManager {
       this.cdpSession = null;
     }
 
-    // 重置初始化状态
+    // Reset initialization state
     this.initialized = false;
     logger.info('✅ ScriptManager closed');
   }
 
   /**
-   * 🆕 获取统计信息
+   * 🆕 Get statistics
    */
   getStats(): {
     totalScripts: number;
@@ -665,7 +665,7 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 建立关键词索引（在获取脚本源码时自动调用）
+   * 🆕 Build keyword index (automatically called when fetching script source)
    */
   private buildKeywordIndex(scriptId: string, url: string, content: string): void {
     const lines = content.split('\n');
@@ -680,7 +680,7 @@ export class ScriptManager {
       for (const match of matches) {
         const keyword = match[0].toLowerCase();
 
-        // 提取上下文（前后3行）
+        // Extract context (3 lines before and after)
         const startLine = Math.max(0, i - 3);
         const endLine = Math.min(lines.length - 1, i + 3);
         const context = lines.slice(startLine, endLine + 1).join('\n');
@@ -704,7 +704,7 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 分片存储脚本（在获取脚本源码时自动调用）
+   * 🆕 Chunk and store script (automatically called when fetching script source)
    */
   private chunkScript(scriptId: string, content: string): void {
     const chunks: ScriptChunk[] = [];
@@ -728,7 +728,7 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 获取脚本片段
+   * 🆕 Get a script chunk
    */
   getScriptChunk(scriptId: string, chunkIndex: number): string | null {
     const chunks = this.scriptChunks.get(scriptId);
@@ -740,7 +740,7 @@ export class ScriptManager {
   }
 
   /**
-   * 🆕 增强的搜索（使用内存索引，避免重复加载脚本源码）
+   * 🆕 Enhanced search (uses in-memory index, avoids reloading script sources)
    */
   async searchInScriptsEnhanced(
     keyword: string,
@@ -776,7 +776,7 @@ export class ScriptManager {
     }> = [];
 
     if (!isRegex) {
-      // 使用索引快速查找 - O(1)
+      // Use index for fast lookup - O(1)
       for (const [indexedKeyword, entries] of this.keywordIndex.entries()) {
         if (indexedKeyword.includes(searchTerm)) {
           for (const entry of entries) {
@@ -809,7 +809,7 @@ export class ScriptManager {
         searchMethod: 'indexed',
       };
     } else {
-      // 正则搜索（降级到原始方法）
+      // Regex search (falls back to the original method)
       const result = await this.searchInScripts(keyword, options);
       return {
         ...result,

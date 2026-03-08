@@ -1,11 +1,11 @@
-# 输出契约
-必须包含：
-- 目标接口与字段
-- 函数路径
-- 运行时证据（hook 记录 + request 关联）
-- 输入输出样例
-- 补丁与回滚步骤
-- 置信度与不确定性
-- task artifact 路径
-- targetContext（至少包含 `targetActionDescription` 或其他目标边界）
-- 本地补环境状态（已补/未补）
+# Output Contract
+Must include:
+- Target API endpoint and fields
+- Function path
+- Runtime evidence (hook records + request correlation)
+- Input/output examples
+- Patch and rollback steps
+- Confidence level and uncertainties
+- Task artifact path
+- targetContext (must include at least `targetActionDescription` or other target boundaries)
+- Local environment rebuild status (completed / not completed)

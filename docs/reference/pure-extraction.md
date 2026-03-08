@@ -1,32 +1,32 @@
 # Pure Extraction
 
-这份文档是 **补环境通过后进入纯算法提纯阶段的执行协议**。
+This document is the **execution protocol for entering the pure algorithm extraction phase after environment patching passes**.
 
-它不回答“怎么补环境”，只回答：
-- 什么时候才允许开始提纯
-- 提纯阶段该先做什么
-- 如何把 hook 日志、运行时值和最终纯算代码串起来
+It does not answer “how to patch the environment”, only:
+- When is extraction allowed to begin
+- What should be done first in the extraction phase
+- How to connect hook logs, runtime values, and the final pure algorithm code
 
-## 适用前提
+## Prerequisites
 
-只有满足以下条件，才允许进入 `PureExtraction`：
-- 目标请求、脚本、关键函数已确认
-- 本地 `env rebuild` 已稳定跑通目标链路
-- 已记录至少一条 `first divergence` 及修复路径
-- 已至少一次服务端验收通过
+Entry to `PureExtraction` is only allowed when all of the following conditions are met:
+- Target request, scripts, and key functions have been confirmed
+- Local `env rebuild` stably runs the target chain
+- At least one `first divergence` and its fix path have been recorded
+- At least one server-side validation has passed
 
-若上述任一条件不满足，应返回 `Observe` / `Capture` / `Patch`，而不是继续提纯。
+If any of the above conditions are not met, return to `Observe` / `Capture` / `Patch` instead of continuing extraction.
 
-## 阶段目标
+## Phase Goal
 
-把当前链路拆成三层：
-1. **环境层**：浏览器对象、页面状态、宿主噪音
-2. **运行时层**：当前脚本内部的中间值与装配逻辑
-3. **算法层**：可以用显式输入重放的纯算部分
+Split the current chain into three layers:
+1. **Environment layer**: browser objects, page state, host noise
+2. **Runtime layer**: intermediate values and assembly logic inside the current script
+3. **Algorithm layer**: the pure algorithm portion that can be replayed with explicit inputs
 
-`PureExtraction` 的目标不是“看懂全部页面代码”，而是把运行时层里真正属于算法的部分独立出来。
+The goal of `PureExtraction` is not to “understand all page code”, but to isolate the parts of the runtime layer that truly belong to the algorithm.
 
-## 核心原则
+## Core Principles
 
 - `Freeze-first`
 - `Hook-local-runtime`
@@ -35,118 +35,118 @@
 - `Node-before-Python`
 - `Evidence-first`
 
-## 推荐步骤
+## Recommended Steps
 
 ### Step 1: Freeze
 
-固定一条已通过服务端验收的样本，至少记录：
-- 请求输入
-- 时间相关字段
+Pin one sample that has passed server-side validation, recording at least:
+- Request input
+- Time-related fields
 - token / fingerprint / vk
-- clt / gs / gsd / tail / 最终签名
-- 当轮使用的 cookie / user-agent / 页面状态摘要
+- clt / gs / gsd / tail / final signature
+- The cookie / user-agent / page state summary used in this round
 
-没有固定样本，不允许进入下一步。
+Without a pinned sample, proceeding to the next step is not allowed.
 
 ### Step 2: Hook Local Runtime
 
-在本地补环境成功的 runtime 上继续 hook，不再优先回页面。
+Continue hooking on the locally patched runtime that has passed, rather than going back to the page.
 
-应优先采样：
-- 关键函数输入
-- 关键函数输出
-- 关键中间值
-- 影响分支的布尔判定或版本常量
+Prioritize sampling:
+- Key function inputs
+- Key function outputs
+- Key intermediate values
+- Boolean conditions or version constants that affect branching
 
-目标不是拿更多结果，而是回答：
-- 哪些值是算法输入
-- 哪些值只是由环境驱动的运行时状态
+The goal is not to get more results, but to answer:
+- Which values are algorithm inputs
+- Which values are merely environment-driven runtime state
 
 ### Step 3: Define Boundary
 
-把当前链路切成最小可解释单元。
+Split the current chain into the smallest explainable units.
 
-至少要明确：
-- 哪些字段必须作为显式输入
-- 哪些字段可由前一步推导
-- 哪些字段仍属于环境层，不应塞入纯算实现
-- 哪些分支是 token 族 / 版本常量 / 平台差异
+At minimum, clarify:
+- Which fields must be explicit inputs
+- Which fields can be derived from the previous step
+- Which fields still belong to the environment layer and should not be included in the pure implementation
+- Which branches are token family / version constants / platform differences
 
-如果这一层边界没写清楚，不允许直接开始重写纯算代码。
+If this boundary layer is not clearly documented, directly rewriting pure algorithm code is not allowed.
 
 ### Step 4: Build Fixture
 
-在 task-local `run/` 下固化夹具。
+Solidify fixtures under the task-local `run/` directory.
 
-夹具至少应包含：
-- 输入
-- 中间值
-- 最终输出
-- 版本信息 / 常量边界
+Fixtures should contain at least:
+- Inputs
+- Intermediate values
+- Final output
+- Version info / constant boundaries
 
-夹具目标：
-- 能对齐 runtime 输出
-- 能验证后续 pure implementation
-- 能作为 Python/其他宿主迁移的真值源
+Fixture goals:
+- Can align with runtime output
+- Can verify the subsequent pure implementation
+- Can serve as the source of truth for Python/other host language porting
 
 ### Step 5: Extract Node Pure
 
-先提纯 Node 纯算实现。
+Extract the Node pure algorithm implementation first.
 
-要求：
-- 输入边界显式
-- 输出边界显式
-- 不再依赖大块浏览器宿主对象
-- 不再依赖整页 runtime 调度
-- 必须可用固定夹具对齐 runtime
+Requirements:
+- Explicit input boundaries
+- Explicit output boundaries
+- No longer depends on large browser host objects
+- No longer depends on full-page runtime scheduling
+- Must be alignable with runtime using pinned fixtures
 
 ### Step 6: Verify Node Pure
 
-至少验证：
-- pure implementation 与 runtime fixture 逐段一致
-- 中间值一致或可解释
-- 服务端验收仍通过
+Verify at least:
+- Pure implementation is segment-by-segment consistent with the runtime fixture
+- Intermediate values are consistent or explainable
+- Server-side validation still passes
 
-若这里不一致，应回退到 `Step 2` 或 `Step 3`，而不是直接改 Python。
+If inconsistencies are found, roll back to `Step 2` or `Step 3` instead of directly modifying Python.
 
 ### Step 7: Port
 
-外部语言迁移只能发生在 Node pure 已稳定之后。
+External language porting can only happen after Node pure is stable.
 
-推荐顺序：
+Recommended order:
 - Node pure
 - Python pure
-- 其他宿主 / SDK 封装
+- Other hosts / SDK wrappers
 
-## 必备产物
+## Required Artifacts
 
-建议至少有以下 task-local 产物：
+At minimum, the following task-local artifacts are recommended:
 - `run/exported-runtime.*`
 - `run/pure-*.js`
-- 可选 `run/pure_*.py`
-- `run/fixtures.json` 或等价夹具文件
-- `report.md` 中的 pure extraction 边界说明
+- Optional `run/pure_*.py`
+- `run/fixtures.json` or equivalent fixture file
+- Pure extraction boundary description in `report.md`
 
-## 禁止事项
+## Prohibited Actions
 
-- env rebuild 未通过就开始写 pure Python
-- 没有固定样本就开始提纯
-- 没有 local runtime hook 证据就凭页面大代码手猜算法边界
-- 把整个页面状态对象直接塞进 pure implementation 输入
-- 还没做 Node pure 就直接做 Python port
+- Writing pure Python before env rebuild passes
+- Starting extraction without a pinned sample
+- Guessing algorithm boundaries from large page code without local runtime hook evidence
+- Directly stuffing the entire page state object into the pure implementation input
+- Doing a Python port before Node pure is done
 
-## 完成判据
+## Completion Criteria
 
-`PureExtraction` 完成至少意味着：
-- 已有一份 Node pure implementation
-- 已有固定 fixture
-- Node pure 与 runtime fixture 对齐
-- 已说明已提纯部分与未提纯边界
-- 如有 Python 版本，Python 与 Node pure 已对齐
+`PureExtraction` completion means at least:
+- A Node pure implementation exists
+- Pinned fixtures exist
+- Node pure is aligned with the runtime fixture
+- The boundary between extracted and non-extracted parts has been documented
+- If a Python version exists, Python is aligned with Node pure
 
-## 与其他文档的关系
+## Relationship to Other Documents
 
-- 总阶段协议：`docs/reference/reverse-workflow.md`
-- 补环境规范：`docs/reference/env-patching.md`
-- 产物约束：`docs/reference/reverse-artifacts.md`
-- 升级排查：`docs/reference/algorithm-upgrade-template.md`
+- Overall phase protocol: `docs/reference/reverse-workflow.md`
+- Environment patching specification: `docs/reference/env-patching.md`
+- Artifact constraints: `docs/reference/reverse-artifacts.md`
+- Upgrade troubleshooting: `docs/reference/algorithm-upgrade-template.md`

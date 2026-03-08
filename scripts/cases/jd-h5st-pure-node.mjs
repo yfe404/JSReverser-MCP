@@ -1,6 +1,6 @@
 function printAbstractCaseGuide() {
-  console.log(`Case: 某东 h5st 参数
-Category: 参数签名
+  console.log(`Case: JD h5st parameter
+Category: parameter signing
 Status: abstract-case
 Runtime: pure-node
 Scope: non-runnable

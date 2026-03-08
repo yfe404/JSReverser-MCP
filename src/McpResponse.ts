@@ -477,10 +477,10 @@ export class McpResponse implements Response {
             ),
           );
         }
-        // 提示使用 analyze 工具
+        // Hint to use analyze tool
         response.push(``);
         response.push(
-          `> 提示: 使用 \`analyze_websocket_messages(wsid=N)\` 分析消息模式后再查看具体内容`,
+          `> Hint: Use \`analyze_websocket_messages(wsid=N)\` to analyze message patterns before viewing specific content`,
         );
       } else {
         response.push('<no WebSocket connections found>');

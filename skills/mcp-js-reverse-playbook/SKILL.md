@@ -1,11 +1,11 @@
 ---
 name: mcp-js-reverse-playbook
-description: 在使用 MCP 做前端 JavaScript 逆向时使用，适用于签名链路定位、页面观察取证、本地补环境复现、VMP 类插桩分析、AST 去混淆与证据化输出。
+description: Used when performing front-end JavaScript reverse engineering with MCP. Applicable to signature chain location, page observation and evidence collection, local environment patching and reproduction, VMP-style instrumentation analysis, AST deobfuscation, and evidence-based output.
 ---
 
-# MCP 前端 JS 逆向作业规范
+# MCP Front-End JS Reverse Engineering Playbook
 
-## 核心原则
+## Core Principles
 
 - `Observe-first`
 - `Hook-preferred`
@@ -13,121 +13,121 @@ description: 在使用 MCP 做前端 JavaScript 逆向时使用，适用于签�
 - `Rebuild-oriented`
 - `Evidence-first`
 
-先页面观察，再最小化采样，再做本地补环境，不要跳过取证直接猜环境。
+Observe the page first, then do minimal sampling, then do local environment patching. Do not skip evidence collection and guess the environment directly.
 
-## 目标场景
+## Target Scenarios
 
-默认主场景是：
+The default main scenarios are:
 
-1. 定位接口签名、加密参数、关键请求字段
-2. 在页面里确认哪个请求、哪个脚本、哪个函数参与参数生成
-3. 导出本地复现材料
-4. 在 Node 里按“代理 env log + first divergence + 最小因果单元”补环境跑通
-5. 跑通后再做 AST 去混淆、VMP 插桩或逻辑提纯
+1. Locate API signatures, encrypted parameters, and key request fields
+2. Identify which request, script, and function participate in parameter generation on the page
+3. Export local reproduction materials
+4. Patch the environment in Node using “proxy env log + first divergence + minimal causal unit” until it runs successfully
+5. After successful execution, proceed with AST deobfuscation, VMP instrumentation, or logic extraction
 
-## 五阶段工作流
+## Five-Phase Workflow
 
 ### 1. Observe
 
-目标：
+Goal:
 
-- 先确认目标请求、相关脚本、候选函数，不猜环境。
+- First confirm the target request, related scripts, and candidate functions. Do not guess the environment.
 
-默认入口：
+Default entry points:
 
 - `references/automation-entry.md`
 - `references/mcp-task-template.md`
 
-必须产出：
+Required outputs:
 
-- 目标请求
-- initiator 线索
-- 可疑脚本 URL / scriptId
-- 初始 task artifact
+- Target request
+- Initiator clues
+- Suspicious script URL / scriptId
+- Initial task artifact
 
 ### 2. Capture
 
-目标：
+Goal:
 
-- 对目标请求做最小侵入采样，拿到参数样例、调用顺序、运行时证据。
+- Perform minimally invasive sampling on target requests to obtain parameter samples, call sequences, and runtime evidence.
 
-规则：
+Rules:
 
-- 优先 fetch/xhr hook
-- 如果目标发生在首屏初始化、首个请求前参数装配、页面首次执行阶段，先用 `inject_preload_script` 挂早期采样或补环境脚本
-- 命中后先看 summary，再按需看 raw
-- Hook 不足时再考虑断点
+- Prefer fetch/xhr hooks
+- If the target occurs during first-screen initialization, pre-first-request parameter assembly, or initial page execution, first use `inject_preload_script` to attach early sampling or environment patching scripts
+- After a hit, check the summary first, then view raw data as needed
+- Only consider breakpoints when hooks are insufficient
 
 ### 3. Rebuild
 
-目标：
+Goal:
 
-- 把页面证据导出为本地可迭代的 Node 复现工程。
+- Export page evidence as a locally iterable Node reproduction project.
 
-参考：
+References:
 
 - `references/local-rebuild.md`
 - `references/task-artifacts.md`
 
-规则：
+Rules:
 
-- 本地补环境必须以页面观测证据为依据
-- 不允许空想式补 `window/document/navigator/crypto/storage`
+- Local environment patching must be based on page observation evidence
+- Speculative patching of `window/document/navigator/crypto/storage` without evidence is not allowed
 
 ### 4. Patch
 
-目标：
+Goal:
 
-- 按代理日志和 `first divergence` 驱动补环境，直到本地脚本能稳定跑出目标参数。
+- Drive environment patching using proxy logs and `first divergence` until the local script can reliably produce the target parameters.
 
-规则：
+Rules:
 
-- 先读代理 env log，再记录当前 `first divergence`
-- 一次只做一个补丁决策，不是机械地一次只改一个属性
-- 一个补丁决策对应一个最小因果单元：值 / 函数壳 / 返回对象 / 最小对象契约
-- `diff_env_requirements` 仅作辅助，不替代代理日志
-- 每次补丁后立即复测，并记录 `first divergence` 是否前移
-- 每次补丁都写入 task artifact
+- Read the proxy env log first, then record the current `first divergence`
+- Make only one patch decision at a time -- this does not mean mechanically changing only one property at a time
+- One patch decision corresponds to one minimal causal unit: value / function shell / return object / minimal object contract
+- `diff_env_requirements` is only an aid, not a replacement for proxy logs
+- Re-test immediately after each patch and record whether `first divergence` has advanced
+- Write every patch into the task artifact
 
 ### 5. DeepDive
 
-目标：
+Goal:
 
-- 本地跑通后，再做去混淆、VMP、控制流还原、业务逻辑提纯。
+- After local execution succeeds, proceed with deobfuscation, VMP analysis, control flow restoration, and business logic extraction.
 
-规则：
+Rules:
 
-- 如果当前任务只是出签名，这一阶段可以降级
-- 如果要长期复用算法链路，这一阶段必须做
+- If the current task only requires producing a signature, this phase can be downgraded
+- If the algorithm chain needs to be reused long-term, this phase is mandatory
 
-## 执行要求
+## Execution Requirements
 
-- 所有重要步骤都要写入本地 task artifact
-- 如果无法解释为什么调用某个工具，就不要调用
-- 输出必须满足 `references/output-contract.md`
-- 失败时按照 `references/fallbacks.md` 回退
-- 参数默认值按 `references/tool-defaults.md`
-- `skills/references/cases/*` 只允许抽象 case（映射/判定口径）
-- 站点级可复用流程统一维护在 `scripts/cases/*`，不要把实操工作流写回 `skills/references/cases/*`
-- 新增正式文档时遵循仓库分层：规则/模板放 `docs/reference/`，人类教程放 `docs/guides/`，公开参数索引更新 `scripts/cases/README.md`
+- All important steps must be written into the local task artifact
+- Do not call a tool if you cannot explain why it is being called
+- Output must comply with `references/output-contract.md`
+- On failure, fall back according to `references/fallbacks.md`
+- Parameter defaults follow `references/tool-defaults.md`
+- `skills/references/cases/*` only allows abstract cases (mapping / judgment criteria)
+- Site-level reusable workflows are maintained in `scripts/cases/*`; do not write operational workflows back into `skills/references/cases/*`
+- When adding formal documentation, follow the repository layering: rules/templates go in `docs/reference/`, human tutorials go in `docs/guides/`, and public parameter indexes are updated in `scripts/cases/README.md`
 
-## 必读引用
+## Required References
 
-- 自动化入口：`references/automation-entry.md`
-- 参数默认值：`references/tool-defaults.md`
-- 任务输入模板：`references/task-input-template.md`
-- MCP 专用任务编排：`references/mcp-task-template.md`
-- 任务产物：`references/task-artifacts.md`
-- 本地复现：`references/local-rebuild.md`
-- 补环境：`references/env-patching.md`、`references/node-env-rebuild.md`
-- 插桩：`references/instrumentation.md`
-- AST 去混淆：`references/ast-deobfuscation.md`
-- 回退：`references/fallbacks.md`
-- 输出契约：`references/output-contract.md`
-- 案例库：`references/cases/`
+- Automation entry: `references/automation-entry.md`
+- Parameter defaults: `references/tool-defaults.md`
+- Task input template: `references/task-input-template.md`
+- MCP-specific task orchestration: `references/mcp-task-template.md`
+- Task artifacts: `references/task-artifacts.md`
+- Local reproduction: `references/local-rebuild.md`
+- Environment patching: `references/env-patching.md`, `references/node-env-rebuild.md`
+- Instrumentation: `references/instrumentation.md`
+- AST deobfuscation: `references/ast-deobfuscation.md`
+- Fallbacks: `references/fallbacks.md`
+- Output contract: `references/output-contract.md`
+- Case library: `references/cases/`
 
-## 配套模板
+## Companion Templates
 
-- 更新提示词：`docs/reference/reverse-update-prompt-template.md`
-- 报告模板：`docs/reference/reverse-report-template.md`
-- 算法升级 / first divergence：`docs/reference/algorithm-upgrade-template.md`
+- Update prompt: `docs/reference/reverse-update-prompt-template.md`
+- Report template: `docs/reference/reverse-report-template.md`
+- Algorithm upgrade / first divergence: `docs/reference/algorithm-upgrade-template.md`

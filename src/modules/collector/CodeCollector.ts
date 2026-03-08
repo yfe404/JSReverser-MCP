@@ -1,13 +1,13 @@
 /**
- * 代码收集模块 - 完整实现
+ * Code collection module - full implementation
  *
- * 功能:
- * - 收集页面内联脚本
- * - 收集外部脚本文件
- * - 收集动态加载的脚本
- * - 收集Service Worker和Web Worker
- * - CDP会话控制和网络监控
- * - 反检测和资源拦截
+ * Features:
+ * - Collect page inline scripts
+ * - Collect external script files
+ * - Collect dynamically loaded scripts
+ * - Collect Service Workers and Web Workers
+ * - CDP session control and network monitoring
+ * - Anti-detection and resource interception
  */
 
 import type { Browser, Page, CDPSession } from 'puppeteer';
@@ -22,7 +22,7 @@ import { logger } from '../../utils/logger.js';
 import { CodeCache } from './CodeCache.js';
 import { SmartCodeCollector, type SmartCollectOptions } from './SmartCodeCollector.js';
 import { CodeCompressor } from './CodeCompressor.js';
-// import { StreamingCollector } from './StreamingCollector.js'; // 暂不使用
+// import { StreamingCollector } from './StreamingCollector.js'; // Not used yet
 import { BrowserModeManager } from '../browser/BrowserModeManager.js';
 
 export class CodeCollector {
@@ -30,30 +30,30 @@ export class CodeCollector {
   private readonly browserManager: BrowserModeManager;
   private browser: Browser | null = null;
   private browserListenerAttached = false;
-  private collectedUrls: Set<string> = new Set(); // 防止重复收集
+  private collectedUrls: Set<string> = new Set(); // Prevent duplicate collection
 
-  // 🔧 重新设计：支持大型网站完整收集
-  // 策略：收集所有文件到缓存，返回时按需限制
+  // 🔧 Redesigned: support full collection for large websites
+  // Strategy: collect all files to cache, apply limits only when returning
   private readonly MAX_COLLECTED_URLS: number;
-  private readonly MAX_FILES_PER_COLLECT: number;  // 保留，但只在返回时使用
-  private readonly MAX_RESPONSE_SIZE: number;      // 🆕 单次响应最大大小（而非收集大小）
+  private readonly MAX_FILES_PER_COLLECT: number;  // Retained, but only used when returning
+  private readonly MAX_RESPONSE_SIZE: number;      // 🆕 Max size per response (not collection size)
   private readonly MAX_SINGLE_FILE_SIZE: number;
-  private readonly MAX_FILES_CACHE_SIZE: number;   // 🆕 文件缓存最大数量（防止内存泄漏）
+  private readonly MAX_FILES_CACHE_SIZE: number;   // 🆕 Max file cache count (prevent memory leaks)
   private RESPONSE_BODY_TIMEOUT_MS: number;
   private readonly userAgent: string;
 
-  // 🆕 收集的完整数据存储（支持大型网站）
+  // 🆕 Complete collected data storage (supports large websites)
   private collectedFilesCache: Map<string, CodeFile> = new Map();
 
-  // ✅ 缓存
+  // ✅ Cache
   private cache: CodeCache;
   private cacheEnabled: boolean = true;
 
-  // 🆕 智能收集、压缩
+  // 🆕 Smart collection, compression
   private smartCollector: SmartCodeCollector;
   private compressor: CodeCompressor;
 
-  // 🆕 CDP 会话管理（防止内存泄漏）
+  // 🆕 CDP session management (prevent memory leaks)
   private cdpSession: CDPSession | null = null;
   private cdpListeners: {
     responseReceived?: (params: any) => void;
@@ -64,20 +64,20 @@ export class CodeCollector {
     this.config = config;
     this.browserManager = browserManager;
 
-    // 🔧 重新设计的限制策略
-    // 收集阶段：可以收集大量文件（支持大型网站）
-    // 返回阶段：限制单次响应大小（防止 MCP token 溢出）
+    // 🔧 Redesigned limiting strategy
+    // Collection phase: can collect a large number of files (supports large websites)
+    // Return phase: limit single response size (prevent MCP token overflow)
     this.MAX_COLLECTED_URLS = config.maxCollectedUrls ?? 10000;
-    this.MAX_FILES_PER_COLLECT = config.maxFilesPerCollect ?? 200;     // 提高到200（原50）
-    this.MAX_RESPONSE_SIZE = config.maxTotalContentSize ?? 512 * 1024; // 单次响应512KB
-    this.MAX_SINGLE_FILE_SIZE = config.maxSingleFileSize ?? 200 * 1024; // 提高到200KB
-    this.MAX_FILES_CACHE_SIZE = 1000;  // 🆕 文件缓存最大1000个（防止内存泄漏）
+    this.MAX_FILES_PER_COLLECT = config.maxFilesPerCollect ?? 200;     // Increased to 200 (was 50)
+    this.MAX_RESPONSE_SIZE = config.maxTotalContentSize ?? 512 * 1024; // Single response 512KB
+    this.MAX_SINGLE_FILE_SIZE = config.maxSingleFileSize ?? 200 * 1024; // Increased to 200KB
+    this.MAX_FILES_CACHE_SIZE = 1000;  // 🆕 Max file cache 1000 entries (prevent memory leaks)
     this.RESPONSE_BODY_TIMEOUT_MS = 3000;
 
     this.userAgent = config.userAgent ??
       'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
 
-    // 初始化所有模块
+    // Initialize all modules
     this.cache = new CodeCache();
     this.smartCollector = new SmartCodeCollector();
     this.compressor = new CodeCompressor();
@@ -87,7 +87,7 @@ export class CodeCollector {
   }
 
   /**
-   * 启用/禁用缓存
+   * Enable/disable cache
    */
   setCacheEnabled(enabled: boolean): void {
     this.cacheEnabled = enabled;
@@ -95,38 +95,38 @@ export class CodeCollector {
   }
 
   /**
-   * 清空文件缓存
+   * Clear file cache
    */
   async clearFileCache(): Promise<void> {
     await this.cache.clear();
   }
 
   /**
-   * 获取文件缓存统计
+   * Get file cache statistics
    */
   async getFileCacheStats() {
     return await this.cache.getStats();
   }
 
   /**
-   * 🆕 清除所有收集数据（换网站时调用）
+   * 🆕 Clear all collected data (called when switching websites)
    */
   async clearAllData(): Promise<void> {
     logger.info('🧹 Clearing all collected data...');
 
-    // 清除文件缓存
+    // Clear file cache
     await this.cache.clear();
 
-    // 清除压缩缓存
+    // Clear compression cache
     this.compressor.clearCache();
 
-    // 重置压缩统计
+    // Reset compression statistics
     this.compressor.resetStats();
 
-    // 清除已收集的 URL
+    // Clear collected URLs
     this.collectedUrls.clear();
 
-    // 清除文件缓存（内存）
+    // Clear file cache (in-memory)
     this.collectedFilesCache.clear();
 
     logger.success('✅ All data cleared');
@@ -151,7 +151,7 @@ export class CodeCollector {
   }
 
   /**
-   * 🆕 获取所有统计信息
+   * 🆕 Get all statistics
    */
   async getAllStats() {
     const cacheStats = await this.cache.getStats();
@@ -171,33 +171,33 @@ export class CodeCollector {
   }
 
   /**
-   * 🆕 获取缓存实例（用于 UnifiedCacheManager）
+   * 🆕 Get cache instance (for UnifiedCacheManager)
    */
   public getCache(): CodeCache {
     return this.cache;
   }
 
   /**
-   * 🆕 获取压缩器实例（用于 UnifiedCacheManager）
+   * 🆕 Get compressor instance (for UnifiedCacheManager)
    */
   public getCompressor(): CodeCompressor {
     return this.compressor;
   }
 
   /**
-   * 使用外部上下文提供当前页面，优先级高于内部浏览器管理状态。
+   * Use an external context to provide the current page, taking priority over internal browser management state.
    */
   setPageResolver(resolver?: () => Page | null | undefined): void {
     this.pageResolver = resolver;
   }
 
   /**
-   * 清理收集的URL（防止内存泄漏）
+   * Clean up collected URLs (prevent memory leaks)
    */
   private cleanupCollectedUrls(): void {
     if (this.collectedUrls.size > this.MAX_COLLECTED_URLS) {
       logger.warn(`Collected URLs exceeded ${this.MAX_COLLECTED_URLS}, clearing...`);
-      // 保留最近的一半
+      // Keep the most recent half
       const urls = Array.from(this.collectedUrls);
       this.collectedUrls.clear();
       urls.slice(-Math.floor(this.MAX_COLLECTED_URLS / 2)).forEach(url =>
@@ -207,7 +207,7 @@ export class CodeCollector {
   }
 
   /**
-   * 等待动态脚本基本稳定，优先使用 Puppeteer 的网络空闲能力
+   * Wait for dynamic scripts to stabilize, preferring Puppeteer's network idle capability
    */
   private async waitForDynamicScripts(page: Page, waitMs: number): Promise<void> {
     if (waitMs <= 0) {
@@ -234,7 +234,7 @@ export class CodeCollector {
   }
 
   /**
-   * 初始化浏览器 - 统一由 BrowserModeManager 管理
+   * Initialize browser - managed uniformly by BrowserModeManager
    */
   async init(): Promise<void> {
     if (this.browser && this.browser.isConnected()) {
@@ -261,20 +261,20 @@ export class CodeCollector {
       this.browserListenerAttached = true;
     }
 
-    // 🆕 初始化缓存目录
+    // 🆕 Initialize cache directory
     await this.cache.init();
 
     logger.success('Browser initialized via BrowserModeManager');
   }
 
   /**
-   * 关闭浏览器并清理所有数据
+   * Close browser and clean up all data
    */
   async close(): Promise<void> {
-    // 🆕 先清理数据
+    // 🆕 Clean up data first
     await this.clearAllData();
 
-    // 再关闭浏览器
+    // Then close the browser
     if (this.browser) {
       await this.browserManager.close();
       this.browser = null;
@@ -284,7 +284,7 @@ export class CodeCollector {
   }
 
   /**
-   * 🆕 获取当前活动的Page实例
+   * 🆕 Get the currently active Page instance
    */
   async getActivePage(): Promise<Page> {
     if (!this.browser || !this.browser.isConnected()) {
@@ -316,7 +316,7 @@ export class CodeCollector {
   }
 
   /**
-   * 🆕 创建新页面
+   * 🆕 Create a new page
    */
   async createPage(url?: string): Promise<Page> {
     if (!this.browser || !this.browser.isConnected()) {
@@ -325,10 +325,10 @@ export class CodeCollector {
 
     const page = await this.browserManager.newPage();
 
-    // 🆕 设置User-Agent（使用配置）
+    // 🆕 Set User-Agent (using config)
     await page.setUserAgent(this.userAgent);
 
-    // BrowserModeManager已在newPage()时自动注入反检测脚本，无需重复注入
+    // BrowserModeManager already injects anti-detection scripts automatically in newPage(), no need to inject again
 
     if (url) {
       await page.goto(url, {
@@ -342,10 +342,10 @@ export class CodeCollector {
   }
 
   /**
-   * 🆕 获取浏览器状态
+   * 🆕 Get browser status
    *
-   * ✅ 修复：移除 isConnected() 的使用，使用 try-catch 检测浏览器状态
-   * 原因：isConnected() 已弃用，且在页面导航时可能误判
+   * ✅ Fix: removed usage of isConnected(), using try-catch to detect browser state
+   * Reason: isConnected() is deprecated and may give false results during page navigation
    */
   async getStatus(): Promise<{
     running: boolean;
@@ -364,7 +364,7 @@ export class CodeCollector {
       }
     }
 
-    // ✅ 修复：使用 try-catch 而不是 isConnected()
+    // ✅ Fix: use try-catch instead of isConnected()
     if (!this.browser) {
       return {
         running: false,
@@ -373,7 +373,7 @@ export class CodeCollector {
     }
 
     try {
-      // 尝试获取 pages，如果浏览器已关闭会抛出异常
+      // Try to get pages; if the browser is closed, an exception will be thrown
       const pages = await this.browser.pages();
       const version = await this.browser.version();
 
@@ -383,7 +383,7 @@ export class CodeCollector {
         version,
       };
     } catch (error) {
-      // 浏览器已关闭或连接断开
+      // Browser is closed or connection is lost
       logger.debug('Browser not running or disconnected:', error);
       return {
         running: false,
@@ -393,20 +393,20 @@ export class CodeCollector {
   }
 
   /**
-   * 收集代码 - 完整增强版
+   * Collect code - fully enhanced version
    *
-   * 增强功能:
-   * 1. CDP网络拦截 - 更底层的脚本收集
-   * 2. 反检测技术 - 绕过webdriver检测
-   * 3. 动态脚本监控 - MutationObserver监听DOM变化
-   * 4. 内存泄漏防护 - 自动清理收集的URL
-   * 5. 错误恢复 - 异常处理和资源释放
+   * Enhanced features:
+   * 1. CDP network interception - lower-level script collection
+   * 2. Anti-detection techniques - bypass webdriver detection
+   * 3. Dynamic script monitoring - MutationObserver listening for DOM changes
+   * 4. Memory leak protection - automatic cleanup of collected URLs
+   * 5. Error recovery - exception handling and resource cleanup
    */
   async collect(options: CollectCodeOptions): Promise<CollectCodeResult> {
     const startTime = Date.now();
     logger.info(`Collecting code from: ${options.url}`);
 
-    // ✅ 检查缓存
+    // ✅ Check cache
     if (this.cacheEnabled) {
       const cached = await this.cache.get(options.url, options as any);
       if (cached) {
@@ -422,32 +422,32 @@ export class CodeCollector {
     }
 
     const page = await this.browserManager.newPage();
-    // ✅ 修复：不再每次清空，依赖 cleanupCollectedUrls() 自动管理
-    // this.collectedUrls.clear(); // 移除
+    // ✅ Fix: no longer clearing every time, relying on cleanupCollectedUrls() for automatic management
+    // this.collectedUrls.clear(); // Removed
 
     try {
-      // 设置超时
+      // Set timeout
       page.setDefaultTimeout(options.timeout || this.config.timeout);
 
-      // ✅ 修复：使用配置的 User-Agent，而非硬编码
+      // ✅ Fix: use configured User-Agent instead of hardcoded one
       await page.setUserAgent(this.userAgent);
 
-      // BrowserModeManager已在newPage()时自动注入反检测脚本，无需重复注入
+      // BrowserModeManager already injects anti-detection scripts automatically in newPage(), no need to inject again
 
-      // 收集的代码文件（完整收集，不限制总大小）
+      // Collected code files (full collection, no total size limit)
       const files: CodeFile[] = [];
 
-      // ✅ 修复：使用新的 API，避免弃用警告
+      // ✅ Fix: use the new API to avoid deprecation warnings
       this.cdpSession = await page.createCDPSession();
       await this.cdpSession.send('Network.enable');
       await this.cdpSession.send('Runtime.enable');
 
-      // ✅ 修复：保存监听器引用，便于移除
+      // ✅ Fix: save listener references for easy removal
       this.cdpListeners.responseReceived = async (params: any) => {
         const { response, requestId, type } = params;
         const url = response.url;
 
-        // 🔧 修复：只限制文件数量，不限制总大小（支持大型网站完整收集）
+        // 🔧 Fix: only limit file count, not total size (supports full collection for large websites)
         if (files.length >= this.MAX_FILES_PER_COLLECT) {
           if (files.length === this.MAX_FILES_PER_COLLECT) {
             logger.warn(`⚠️  Reached max files limit (${this.MAX_FILES_PER_COLLECT}), will skip remaining files`);
@@ -455,23 +455,23 @@ export class CodeCollector {
           return;
         }
 
-        // 定期清理收集的URL（防止内存泄漏）
+        // Periodically clean up collected URLs (prevent memory leaks)
         this.cleanupCollectedUrls();
 
-        // 过滤JavaScript资源
+        // Filter JavaScript resources
         if (
           type === 'Script' ||
           response.mimeType?.includes('javascript') ||
           url.endsWith('.js')
         ) {
           try {
-            // ✅ 修复：检查 cdpSession 是否存在
+            // ✅ Fix: check if cdpSession exists
             if (!this.cdpSession) {
               logger.warn(`[CDP] Session not available for: ${url}`);
               return;
             }
 
-            // 获取响应体
+            // Get response body
             const { body, base64Encoded } = await this.withTimeout(
               this.cdpSession.send('Network.getResponseBody', {
                 requestId,
@@ -482,20 +482,20 @@ export class CodeCollector {
 
             const content = base64Encoded ? Buffer.from(body, 'base64').toString('utf-8') : body;
 
-            // 🔧 限制单文件大小（防止单个文件过大）
+            // 🔧 Limit single file size (prevent individual files from being too large)
             const contentSize = content.length;
 
             let finalContent = content;
             let truncated = false;
 
             if (contentSize > this.MAX_SINGLE_FILE_SIZE) {
-              // 截断超大文件，保留前面部分
+              // Truncate oversized file, keeping the beginning portion
               finalContent = content.substring(0, this.MAX_SINGLE_FILE_SIZE);
               truncated = true;
               logger.warn(`[CDP] Large file truncated: ${url} (${(contentSize / 1024).toFixed(2)} KB -> ${(this.MAX_SINGLE_FILE_SIZE / 1024).toFixed(2)} KB)`);
             }
 
-            // 防止重复收集
+            // Prevent duplicate collection
             if (!this.collectedUrls.has(url)) {
               this.collectedUrls.add(url);
               const file: CodeFile = {
@@ -511,9 +511,9 @@ export class CodeCollector {
               };
               files.push(file);
 
-              // ✅ 修复：检查缓存大小限制，防止内存泄漏
+              // ✅ Fix: check cache size limit to prevent memory leaks
               if (this.collectedFilesCache.size >= this.MAX_FILES_CACHE_SIZE) {
-                // 删除最早添加的文件（FIFO策略）
+                // Remove the oldest added file (FIFO strategy)
                 const firstKey = this.collectedFilesCache.keys().next().value;
                 if (firstKey) {
                   this.collectedFilesCache.delete(firstKey);
@@ -521,7 +521,7 @@ export class CodeCollector {
                 }
               }
 
-              // 🆕 同时存储到缓存，供后续按需获取
+              // 🆕 Also store in cache for subsequent on-demand retrieval
               this.collectedFilesCache.set(url, file);
 
               logger.debug(`[CDP] Collected (${files.length}/${this.MAX_FILES_PER_COLLECT}): ${url} (${(finalContent.length / 1024).toFixed(2)} KB)${truncated ? ' [TRUNCATED]' : ''}`);
@@ -532,61 +532,61 @@ export class CodeCollector {
         }
       };
 
-      // ✅ 注册监听器
+      // ✅ Register listener
       this.cdpSession.on('Network.responseReceived', this.cdpListeners.responseReceived);
 
-      // 访问页面
+      // Navigate to the page
       logger.info(`Navigating to: ${options.url}`);
       await page.goto(options.url, {
         waitUntil: 'networkidle2',
         timeout: options.timeout || this.config.timeout,
       });
 
-      // 收集内联脚本
+      // Collect inline scripts
       if (options.includeInline !== false) {
         logger.info('Collecting inline scripts...');
         const inlineScripts = await this.collectInlineScripts(page);
         files.push(...inlineScripts);
       }
 
-      // 收集Service Worker
+      // Collect Service Workers
       if (options.includeServiceWorker !== false) {
         logger.info('Collecting Service Workers...');
         const serviceWorkers = await this.collectServiceWorkers(page);
         files.push(...serviceWorkers);
       }
 
-      // 收集Web Worker
+      // Collect Web Workers
       if (options.includeWebWorker !== false) {
         logger.info('Collecting Web Workers...');
         const webWorkers = await this.collectWebWorkers(page);
         files.push(...webWorkers);
       }
 
-      // 收集动态加载的脚本
+      // Collect dynamically loaded scripts
       if (options.includeDynamic) {
         const dynamicWaitMs = options.dynamicWaitMs ?? Math.min(3000, options.timeout ?? this.config.timeout);
         logger.info(`Waiting for dynamic scripts (up to ${dynamicWaitMs}ms)...`);
         await this.waitForDynamicScripts(page, dynamicWaitMs);
       }
 
-      // CDP会话清理已移至finally块，确保资源正确释放
+      // CDP session cleanup moved to the finally block to ensure proper resource release
 
       const collectTime = Date.now() - startTime;
       const totalSize = files.reduce((sum, file) => sum + file.size, 0);
 
-      // ✅ 统计截断的文件
+      // ✅ Count truncated files
       const truncatedFiles = files.filter(f => f.metadata?.truncated);
       if (truncatedFiles.length > 0) {
         logger.warn(`⚠️  ${truncatedFiles.length} files were truncated due to size limits`);
         truncatedFiles.forEach(f => {
-          // ✅ 修复：安全地访问 originalSize
+          // ✅ Fix: safely access originalSize
           const originalSize = typeof f.metadata?.originalSize === 'number' ? f.metadata.originalSize : f.size;
           logger.warn(`  - ${f.url}: ${(originalSize / 1024).toFixed(2)} KB -> ${(f.size / 1024).toFixed(2)} KB`);
         });
       }
 
-      // 🆕 智能收集处理
+      // 🆕 Smart collection processing
       let processedFiles = files;
 
       if (options.smartMode && options.smartMode !== 'full') {
@@ -602,14 +602,14 @@ export class CodeCollector {
 
           const smartResult = await this.smartCollector.smartCollect(page, files, smartOptions);
 
-          // 如果是摘要模式，返回摘要而不是完整文件
+          // If in summary mode, return summaries instead of full files
           if (options.smartMode === 'summary') {
             logger.info(`📊 Returning ${smartResult.length} code summaries`);
 
-            // ✅ 类型安全：summary 模式返回 CodeSummary[]
+            // ✅ Type safe: summary mode returns CodeSummary[]
             if (Array.isArray(smartResult) && smartResult.length > 0 && smartResult[0] && 'hasEncryption' in smartResult[0]) {
               return {
-                files: [], // 摘要模式不返回完整文件
+                files: [], // Summary mode does not return full files
                 summaries: smartResult as Array<{
                   url: string;
                   size: number;
@@ -628,7 +628,7 @@ export class CodeCollector {
             }
           }
 
-          // ✅ 类型安全：priority/incremental 模式返回 CodeFile[]
+          // ✅ Type safe: priority/incremental mode returns CodeFile[]
           if (Array.isArray(smartResult) && (smartResult.length === 0 || (smartResult[0] && 'content' in smartResult[0]))) {
             processedFiles = smartResult as CodeFile[];
           } else {
@@ -641,12 +641,12 @@ export class CodeCollector {
         }
       }
 
-      // 🆕 压缩处理（增强版 - 使用批量压缩和智能级别选择）
+      // 🆕 Compression processing (enhanced - using batch compression and smart level selection)
       if (options.compress) {
         try {
           logger.info(`🗜️  Compressing ${processedFiles.length} files with enhanced compressor...`);
 
-          // 准备需要压缩的文件
+          // Prepare files that need compression
           const filesToCompress = processedFiles
             .filter(file => this.compressor.shouldCompress(file.content))
             .map(file => ({
@@ -657,9 +657,9 @@ export class CodeCollector {
           if (filesToCompress.length === 0) {
             logger.info('No files need compression (all below threshold)');
           } else {
-            // 使用批量压缩（并发优化）
+            // Use batch compression (concurrency optimized)
             const compressedResults = await this.compressor.compressBatch(filesToCompress, {
-              level: undefined, // 自动选择级别
+              level: undefined, // Auto-select level
               useCache: true,
               maxRetries: 3,
               concurrency: 5,
@@ -670,7 +670,7 @@ export class CodeCollector {
               },
             });
 
-            // 更新文件元数据
+            // Update file metadata
             const compressedMap = new Map(
               compressedResults.map(r => [r.url, r])
             );
@@ -688,7 +688,7 @@ export class CodeCollector {
               }
             }
 
-            // 获取压缩统计
+            // Get compression statistics
             const stats = this.compressor.getStats();
             logger.info(`✅ Compressed ${compressedResults.length}/${processedFiles.length} files`);
             logger.info(`📊 Compression stats: ${(stats.totalOriginalSize / 1024).toFixed(2)} KB -> ${(stats.totalCompressedSize / 1024).toFixed(2)} KB (${stats.averageRatio.toFixed(1)}% reduction)`);
@@ -696,11 +696,11 @@ export class CodeCollector {
           }
         } catch (error) {
           logger.error('Compression failed:', error);
-          // 继续执行，不影响主流程
+          // Continue execution without affecting the main flow
         }
       }
 
-      // 分析依赖关系
+      // Analyze dependencies
       const dependencies = this.analyzeDependencies(processedFiles);
 
       logger.success(
@@ -714,7 +714,7 @@ export class CodeCollector {
         collectTime,
       };
 
-      // ✅ 保存到缓存
+      // ✅ Save to cache
       if (this.cacheEnabled) {
         await this.cache.set(options.url, result, options as any);
         logger.debug(`💾 Saved to cache: ${options.url}`);
@@ -725,14 +725,14 @@ export class CodeCollector {
       logger.error('Code collection failed', error);
       throw error;
     } finally {
-      // ✅ 修复：在finally块中清理CDP会话，确保无论是否异常都能正确清理
+      // ✅ Fix: clean up CDP session in the finally block to ensure proper cleanup regardless of exceptions
       if (this.cdpSession) {
         try {
-          // 先移除监听器
+          // Remove listeners first
           if (this.cdpListeners.responseReceived) {
             this.cdpSession.off('Network.responseReceived', this.cdpListeners.responseReceived);
           }
-          // 再detach
+          // Then detach
           await this.cdpSession.detach();
         } catch (cleanupError) {
           logger.warn('Failed to cleanup CDP session', cleanupError);
@@ -742,15 +742,15 @@ export class CodeCollector {
         }
       }
 
-      // 最后关闭页面
+      // Finally close the page
       await page.close();
     }
   }
 
   /**
-   * 收集内联脚本 - 增强版
+   * Collect inline scripts - enhanced version
    *
-   * 🔧 修复：添加大小限制和数量限制，防止超大内联脚本导致 token 溢出
+   * 🔧 Fix: added size and count limits to prevent oversized inline scripts from causing token overflow
    */
   private async collectInlineScripts(page: Page): Promise<CodeFile[]> {
     const scripts = await page.evaluate((maxSingleSize: number) => {
@@ -762,7 +762,7 @@ export class CodeCollector {
           const originalSize = content.length;
           let truncated = false;
 
-          // 🔧 限制单个内联脚本大小
+          // 🔧 Limit single inline script size
           if (content.length > maxSingleSize) {
             content = content.substring(0, maxSingleSize);
             truncated = true;
@@ -773,7 +773,7 @@ export class CodeCollector {
             content,
             size: content.length,
             type: 'inline' as const,
-            // 额外元数据
+            // Additional metadata
             metadata: {
               scriptType: script.type || 'text/javascript',
               async: script.async,
@@ -786,7 +786,7 @@ export class CodeCollector {
         });
     }, this.MAX_SINGLE_FILE_SIZE);
 
-    // 🔧 限制内联脚本数量
+    // 🔧 Limit inline script count
     const limitedScripts = scripts.slice(0, this.MAX_FILES_PER_COLLECT);
 
     if (scripts.length > limitedScripts.length) {
@@ -803,7 +803,7 @@ export class CodeCollector {
   }
 
   /**
-   * 收集Service Worker脚本
+   * Collect Service Worker scripts
    */
   private async collectServiceWorkers(page: Page): Promise<CodeFile[]> {
     try {
@@ -831,10 +831,10 @@ export class CodeCollector {
 
       const files: CodeFile[] = [];
 
-      // ✅ 修复：使用 fetch 而不是 page.goto()，避免破坏页面状态
+      // ✅ Fix: use fetch instead of page.goto() to avoid disrupting page state
       for (const worker of serviceWorkers) {
         try {
-          // 使用 page.evaluate 中的 fetch，在页面上下文中执行
+          // Use fetch inside page.evaluate, executing in the page context
           const content = await page.evaluate(async (url) => {
             const response = await fetch(url);
             return await response.text();
@@ -862,11 +862,11 @@ export class CodeCollector {
   }
 
   /**
-   * 收集Web Worker脚本
+   * Collect Web Worker scripts
    */
   private async collectWebWorkers(page: Page): Promise<CodeFile[]> {
     try {
-      // 注入拦截代码到当前页面（而非 evaluateOnNewDocument，后者仅对后续导航生效）
+      // Inject interception code into the current page (not evaluateOnNewDocument, which only applies to subsequent navigations)
       await page.evaluate(() => {
         if ((window as any).__workerIntercepted) return;
         (window as any).__workerIntercepted = true;
@@ -879,22 +879,22 @@ export class CodeCollector {
           workerUrls.push(scriptURL);
           return new originalWorker(scriptURL, options);
         };
-        // 保持原型链
+        // Maintain prototype chain
         (window as any).Worker.prototype = originalWorker.prototype;
       });
 
-      // 获取已创建的Worker URL（拦截注入后新创建的 + 无法捕获注入前已创建的）
+      // Get created Worker URLs (newly created after interception injection + cannot capture those created before injection)
       const workerUrls = (await page.evaluate(() => (window as any).__workerUrls || [])) as string[];
 
       const files: CodeFile[] = [];
 
-      // ✅ 修复：使用 fetch 而不是 page.goto()，避免破坏页面状态
+      // ✅ Fix: use fetch instead of page.goto() to avoid disrupting page state
       for (const url of workerUrls) {
         try {
-          // 如果是相对路径，转换为绝对路径
+          // If relative path, convert to absolute path
           const absoluteUrl = new URL(url, page.url()).href;
 
-          // 使用 page.evaluate 中的 fetch，在页面上下文中执行
+          // Use fetch inside page.evaluate, executing in the page context
           const content = await page.evaluate(async (workerUrl) => {
             const response = await fetch(workerUrl);
             return await response.text();
@@ -922,13 +922,13 @@ export class CodeCollector {
   }
 
   /**
-   * 分析文件依赖关系
+   * Analyze file dependencies
    */
   private analyzeDependencies(files: CodeFile[]): DependencyGraph {
     const nodes: DependencyGraph['nodes'] = [];
     const edges: DependencyGraph['edges'] = [];
 
-    // 为每个文件创建节点
+    // Create a node for each file
     files.forEach((file) => {
       nodes.push({
         id: file.url,
@@ -937,12 +937,12 @@ export class CodeCollector {
       });
     });
 
-    // 分析import/require依赖
+    // Analyze import/require dependencies
     files.forEach((file) => {
       const dependencies = this.extractDependencies(file.content);
 
       dependencies.forEach((dep) => {
-        // 尝试匹配到实际文件
+        // Try to match to an actual file
         const targetFile = files.find((f) =>
           f.url.includes(dep) || f.url.endsWith(dep) || f.url.endsWith(`${dep}.js`)
         );
@@ -962,7 +962,7 @@ export class CodeCollector {
   }
 
   /**
-   * 从代码中提取依赖
+   * Extract dependencies from code
    */
   private extractDependencies(code: string): string[] {
     const dependencies: string[] = [];
@@ -986,18 +986,18 @@ export class CodeCollector {
       if (match[1]) dependencies.push(match[1]);
     }
 
-    return [...new Set(dependencies)]; // 去重
+    return [...new Set(dependencies)]; // Deduplicate
   }
 
   /**
-   * 检查URL是否应该被收集（过滤规则）
+   * Check if a URL should be collected (filter rules)
    */
   shouldCollectUrl(url: string, filterRules?: string[]): boolean {
     if (!filterRules || filterRules.length === 0) {
       return true;
     }
 
-    // 支持简单的通配符匹配
+    // Support simple wildcard matching
     for (const rule of filterRules) {
       const regex = new RegExp(rule.replace(/\*/g, '.*'));
       if (regex.test(url)) {
@@ -1009,7 +1009,7 @@ export class CodeCollector {
   }
 
   /**
-   * 带重试的页面导航
+   * Page navigation with retry
    */
   async navigateWithRetry(
     page: Page,
@@ -1036,7 +1036,7 @@ export class CodeCollector {
   }
 
   /**
-   * 获取页面性能指标
+   * Get page performance metrics
    */
   async getPerformanceMetrics(page: Page): Promise<Record<string, number>> {
     try {
@@ -1057,7 +1057,7 @@ export class CodeCollector {
   }
 
   /**
-   * 收集页面元数据
+   * Collect page metadata
    */
   async collectPageMetadata(page: Page): Promise<Record<string, unknown>> {
     try {
@@ -1083,14 +1083,14 @@ export class CodeCollector {
   }
 
   /**
-   * 获取浏览器实例
+   * Get browser instance
    */
   getBrowser(): Browser | null {
     return this.browser;
   }
 
   /**
-   * 获取收集统计信息
+   * Get collection statistics
    */
   getCollectionStats(): {
     totalCollected: number;
@@ -1103,19 +1103,19 @@ export class CodeCollector {
   }
 
   /**
-   * 清除收集缓存
+   * Clear collection cache
    */
   clearCache(): void {
     this.collectedUrls.clear();
     logger.info('Collection cache cleared');
   }
 
-  // ==================== 🆕 按需获取接口（支持大型网站逆向） ====================
+  // ==================== 🆕 On-demand retrieval interface (supports large website reverse engineering) ====================
 
   /**
-   * 获取已收集文件的摘要列表（轻量级，不包含文件内容）
+   * Get summary list of collected files (lightweight, without file content)
    *
-   * 🎯 用途：先返回文件列表，让 AI 决定需要哪些文件
+   * 🎯 Purpose: return the file list first, letting AI decide which files are needed
    */
   getCollectedFilesSummary(): Array<{
     url: string;
@@ -1137,10 +1137,10 @@ export class CodeCollector {
   }
 
   /**
-   * 按 URL 获取单个文件内容
+   * Get a single file's content by URL
    *
-   * @param url 文件 URL
-   * @returns 文件内容，如果不存在返回 null
+   * @param url File URL
+   * @returns File content, or null if not found
    */
   getFileByUrl(url: string): CodeFile | null {
     const file = this.collectedFilesCache.get(url);
@@ -1153,11 +1153,11 @@ export class CodeCollector {
   }
 
   /**
-   * 按 URL 模式批量获取文件
+   * Get files in batch by URL pattern
    *
-   * @param pattern 正则表达式模式
-   * @param limit 最大返回数量（默认20）
-   * @param maxTotalSize 最大总大小（默认512KB，防止 MCP token 溢出）
+   * @param pattern Regular expression pattern
+   * @param limit Maximum number of results (default 20)
+   * @param maxTotalSize Maximum total size (default 512KB, to prevent MCP token overflow)
    */
   getFilesByPattern(
     pattern: string,
@@ -1170,7 +1170,7 @@ export class CodeCollector {
     returned: number;
     truncated: boolean;
   } {
-    // ✅ 修复：添加错误处理，防止无效正则表达式导致崩溃
+    // ✅ Fix: add error handling to prevent crashes from invalid regular expressions
     let regex: RegExp;
     try {
       regex = new RegExp(pattern);
@@ -1187,14 +1187,14 @@ export class CodeCollector {
 
     const matched: CodeFile[] = [];
 
-    // 查找所有匹配的文件
+    // Find all matching files
     for (const file of this.collectedFilesCache.values()) {
       if (regex.test(file.url)) {
         matched.push(file);
       }
     }
 
-    // 应用限制
+    // Apply limits
     const returned: CodeFile[] = [];
     let totalSize = 0;
     let truncated = false;
@@ -1226,10 +1226,10 @@ export class CodeCollector {
   }
 
   /**
-   * 按优先级获取前 N 个文件
+   * Get top N files by priority
    *
-   * @param topN 返回前N个文件（默认10）
-   * @param maxTotalSize 最大总大小（默认512KB）
+   * @param topN Return top N files (default 10)
+   * @param maxTotalSize Maximum total size (default 512KB)
    */
   getTopPriorityFiles(
     topN: number = 10,
@@ -1241,16 +1241,16 @@ export class CodeCollector {
   } {
     const allFiles = Array.from(this.collectedFilesCache.values());
 
-    // 计算优先级（复用 SmartCodeCollector 的逻辑）
+    // Calculate priority (reusing SmartCodeCollector's logic)
     const scoredFiles = allFiles.map(file => ({
       file,
       score: this.calculatePriorityScore(file),
     }));
 
-    // 按分数排序
+    // Sort by score
     scoredFiles.sort((a, b) => b.score - a.score);
 
-    // 选取前N个，但不超过总大小限制
+    // Select top N, but do not exceed total size limit
     const selected: CodeFile[] = [];
     let totalSize = 0;
 
@@ -1274,28 +1274,28 @@ export class CodeCollector {
   }
 
   /**
-   * 计算文件优先级分数（私有方法）
+   * Calculate file priority score (private method)
    */
   private calculatePriorityScore(file: CodeFile): number {
     let score = 0;
 
-    // 文件类型加分
+    // File type bonus
     if (file.type === 'inline') score += 10;
     else if (file.type === 'external') score += 5;
 
-    // 文件大小：小文件优先（更可能是核心逻辑）
+    // File size: smaller files first (more likely to be core logic)
     if (file.size < 10 * 1024) score += 15;      // < 10KB
     else if (file.size < 50 * 1024) score += 10; // < 50KB
     else if (file.size > 200 * 1024) score -= 10; // > 200KB
 
-    // URL 特征匹配（关键词加分）
+    // URL feature matching (keyword bonus)
     const url = file.url.toLowerCase();
     if (url.includes('main') || url.includes('index') || url.includes('app')) score += 20;
     if (url.includes('crypto') || url.includes('encrypt') || url.includes('sign')) score += 30;
     if (url.includes('api') || url.includes('request') || url.includes('ajax')) score += 25;
     if (url.includes('core') || url.includes('common') || url.includes('util')) score += 15;
 
-    // 第三方库降分
+    // Third-party library penalty
     if (url.includes('vendor') || url.includes('lib') || url.includes('jquery') || url.includes('react')) score -= 20;
     if (url.includes('node_modules') || url.includes('bundle')) score -= 30;
 
@@ -1303,7 +1303,7 @@ export class CodeCollector {
   }
 
   /**
-   * 清除文件缓存
+   * Clear collected files cache
    */
   clearCollectedFilesCache(): void {
     const count = this.collectedFilesCache.size;

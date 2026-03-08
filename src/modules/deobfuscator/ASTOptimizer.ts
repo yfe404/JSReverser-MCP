@@ -1,15 +1,15 @@
 /**
- * AST优化器 - 基于Babel的高级反混淆转换
- * 
- * 实现的转换:
- * 1. 常量折叠 (Constant Folding)
- * 2. 常量传播 (Constant Propagation)
- * 3. 死代码消除 (Dead Code Elimination)
- * 4. 表达式简化 (Expression Simplification)
- * 5. 变量内联 (Variable Inlining)
- * 6. 对象属性展开 (Object Property Unfolding)
- * 7. 计算属性名还原 (Computed Property Name Resolution)
- * 8. 序列表达式展开 (Sequence Expression Expansion)
+ * AST Optimizer - Advanced deobfuscation transformations based on Babel
+ *
+ * Implemented transformations:
+ * 1. Constant Folding
+ * 2. Constant Propagation
+ * 3. Dead Code Elimination
+ * 4. Expression Simplification
+ * 5. Variable Inlining
+ * 6. Object Property Unfolding
+ * 7. Computed Property Name Resolution
+ * 8. Sequence Expression Expansion
  */
 
 import * as parser from '@babel/parser';
@@ -22,7 +22,7 @@ import { logger } from '../../utils/logger.js';
 
 export class ASTOptimizer {
   /**
-   * 优化代码
+   * Optimize code
    */
   optimize(code: string): string {
     try {
@@ -31,7 +31,7 @@ export class ASTOptimizer {
         plugins: ['jsx', 'typescript'],
       });
 
-      // 执行多轮优化
+      // Run multiple optimization passes
       for (let i = 0; i < 3; i++) {
         logger.debug(`AST optimization pass ${i + 1}`);
         
@@ -58,8 +58,8 @@ export class ASTOptimizer {
   }
 
   /**
-   * 常量折叠
-   * 例如: 1 + 2 -> 3
+   * Constant Folding
+   * Example: 1 + 2 -> 3
    */
   private constantFolding(ast: t.File): void {
     traverse(ast, {
@@ -95,7 +95,7 @@ export class ASTOptimizer {
           path.replaceWith(t.numericLiteral(result));
         }
 
-        // 字符串拼接
+        // String concatenation
         if (t.isStringLiteral(left) && t.isStringLiteral(right) && operator === '+') {
           path.replaceWith(t.stringLiteral(left.value + right.value));
         }
@@ -122,8 +122,8 @@ export class ASTOptimizer {
   }
 
   /**
-   * 常量传播
-   * 例如: const a = 5; const b = a; -> const b = 5;
+   * Constant Propagation
+   * Example: const a = 5; const b = a; -> const b = 5;
    */
   private constantPropagation(ast: t.File): void {
     const constants = new Map<string, t.Expression>();
@@ -149,8 +149,8 @@ export class ASTOptimizer {
   }
 
   /**
-   * 死代码消除
-   * 例如: if (false) { ... } -> 删除
+   * Dead Code Elimination
+   * Example: if (false) { ... } -> removed
    */
   private deadCodeElimination(ast: t.File): void {
     traverse(ast, {
@@ -159,10 +159,10 @@ export class ASTOptimizer {
 
         if (t.isBooleanLiteral(test)) {
           if (test.value) {
-            // if (true) -> 保留consequent
+            // if (true) -> keep consequent
             path.replaceWith(consequent);
           } else {
-            // if (false) -> 保留alternate或删除
+            // if (false) -> keep alternate or remove
             if (alternate) {
               path.replaceWith(alternate);
             } else {
@@ -195,7 +195,7 @@ export class ASTOptimizer {
   }
 
   /**
-   * 表达式简化
+   * Expression Simplification
    */
   private expressionSimplification(ast: t.File): void {
     traverse(ast, {
@@ -236,13 +236,13 @@ export class ASTOptimizer {
   }
 
   /**
-   * 变量内联
-   * 例如: const a = 5; console.log(a); -> console.log(5);
+   * Variable Inlining
+   * Example: const a = 5; console.log(a); -> console.log(5);
    */
   private variableInlining(ast: t.File): void {
     const inlineCandidates = new Map<string, { value: t.Expression; usageCount: number }>();
 
-    // 第一遍：收集候选变量
+    // First pass: collect candidate variables
     traverse(ast, {
       VariableDeclarator(path) {
         const { id, init } = path.node;
@@ -262,7 +262,7 @@ export class ASTOptimizer {
       },
     });
 
-    // 第二遍：内联使用次数少的变量
+    // Second pass: inline variables with few usages
     traverse(ast, {
       Identifier(path: any) {
         const name = path.node.name;
@@ -276,8 +276,8 @@ export class ASTOptimizer {
   }
 
   /**
-   * 对象属性展开
-   * 例如: obj['prop'] -> obj.prop
+   * Object Property Unfolding
+   * Example: obj['prop'] -> obj.prop
    */
   private objectPropertyUnfolding(ast: t.File): void {
     traverse(ast, {
@@ -285,7 +285,7 @@ export class ASTOptimizer {
         const { object, property, computed } = path.node;
 
         if (computed && t.isStringLiteral(property)) {
-          // 检查属性名是否是有效的标识符
+          // Check if the property name is a valid identifier
           if (/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(property.value)) {
             path.replaceWith(
               t.memberExpression(object, t.identifier(property.value), false)
@@ -297,7 +297,7 @@ export class ASTOptimizer {
   }
 
   /**
-   * 计算属性名还原
+   * Computed Property Name Resolution
    */
   private computedPropertyResolution(ast: t.File): void {
     traverse(ast, {
@@ -315,20 +315,20 @@ export class ASTOptimizer {
   }
 
   /**
-   * 序列表达式展开
-   * 例如: (a, b, c) -> c (在某些情况下)
+   * Sequence Expression Expansion
+   * Example: (a, b, c) -> c (in certain cases)
    */
   private sequenceExpressionExpansion(ast: t.File): void {
     traverse(ast, {
       SequenceExpression(path: any) {
         const { expressions } = path.node;
 
-        // 如果序列表达式只有一个元素，直接替换
+        // If the sequence expression has only one element, replace directly
         if (expressions.length === 1 && expressions[0]) {
           path.replaceWith(expressions[0]);
         }
 
-        // 如果在表达式语句中，展开为多个语句
+        // If inside an expression statement, expand into multiple statements
         if (path.parentPath.isExpressionStatement()) {
           const statements = expressions.map((expr: t.Expression) => t.expressionStatement(expr));
           path.parentPath.replaceWithMultiple(statements);

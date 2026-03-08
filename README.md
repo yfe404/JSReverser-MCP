@@ -1,11 +1,11 @@
 # JS Reverse MCP
 
-一个把前端 JavaScript 逆向流程标准化的 MCP 服务。  
-目标不是只做页面调试，而是把页面观察、运行时采样、本地复现、补环境和证据沉淀串成一套可复用工作流。
+An MCP server that standardizes the frontend JavaScript reverse engineering workflow.
+The goal is not just page debugging, but chaining page observation, runtime sampling, local reproduction, environment patching, and evidence archiving into a reusable workflow.
 
-## 核心方法论
+## Core Methodology
 
-本项目默认遵循以下方法论：
+This project follows these methodologies by default:
 
 - `Observe-first`
 - `Hook-preferred`
@@ -14,144 +14,144 @@
 - `Evidence-first`
 - `Pure-extraction-after-pass`
 
-这意味着：
+This means:
 
-1. 先在浏览器里确认请求、脚本、函数和依赖来源
-2. 再做最小化 Hook 采样
-3. 再导出 local rebuild
-4. 再在 Node 里逐项补环境
-5. 每一步都沉淀为 task artifact，而不是只留在对话里
+1. First confirm requests, scripts, functions, and dependency sources in the browser
+2. Then perform minimal Hook sampling
+3. Then export for local rebuild
+4. Then patch the environment item by item in Node
+5. Every step is archived as a task artifact, not just left in conversation
 
-## 已沉淀链路
+## Archived Pipelines
 
-以下参数链路已有公开索引，可作为仓库内复用入口：
+The following parameter pipelines have public indexes and can serve as reusable entry points within the repository:
 
-- 某东 `h5st` 参数
-  - 索引：[scripts/cases/README.md](scripts/cases/README.md)
-  - Case：[scripts/cases/jd-h5st-pure-node.mjs](scripts/cases/jd-h5st-pure-node.mjs)
+- JD `h5st` parameter
+  - Index: [scripts/cases/README.md](scripts/cases/README.md)
+  - Case: [scripts/cases/jd-h5st-pure-node.mjs](scripts/cases/jd-h5st-pure-node.mjs)
 
-- 某手 `falcon` 风控参数
-  - 索引：[scripts/cases/README.md](scripts/cases/README.md)
-  - Case：[scripts/cases/ks-hxfalcon-pure-node.mjs](scripts/cases/ks-hxfalcon-pure-node.mjs)
+- Kuaishou `falcon` risk control parameter
+  - Index: [scripts/cases/README.md](scripts/cases/README.md)
+  - Case: [scripts/cases/ks-hxfalcon-pure-node.mjs](scripts/cases/ks-hxfalcon-pure-node.mjs)
 
-- 某音 `a-bogus` 参数
-  - 索引：[scripts/cases/README.md](scripts/cases/README.md)
-  - Case：[scripts/cases/douyin-a-bogus-pure-node.mjs](scripts/cases/douyin-a-bogus-pure-node.mjs)
+- Douyin `a-bogus` parameter
+  - Index: [scripts/cases/README.md](scripts/cases/README.md)
+  - Case: [scripts/cases/douyin-a-bogus-pure-node.mjs](scripts/cases/douyin-a-bogus-pure-node.mjs)
 
-说明：
+Notes:
 
-- README 首页只展示脱敏后的参数类型和公开入口
-- 真实 `artifacts/tasks/<task-id>/` 默认视为本地私有任务目录
-- Git 默认只提交 `artifacts/tasks/_TEMPLATE/`
+- The README homepage only displays anonymized parameter types and public entry points
+- The actual `artifacts/tasks/<task-id>/` directories are treated as local private task directories by default
+- Git only commits `artifacts/tasks/_TEMPLATE/` by default
 
-## 支持的能力
+## Supported Capabilities
 
-### 页面观察与脚本定位
+### Page Observation and Script Location
 
-先回答“页面里有哪些脚本、目标代码大概在哪”。
+First answer “what scripts are on the page and where is the target code.”
 
-- `list_scripts`：列出当前页面已加载的脚本，先建立脚本范围。
-- `get_script_source`：查看指定脚本源码，适合继续阅读具体实现。
-- `find_in_script`：在单个脚本里定位字符串、变量名或特征片段。
-- `search_in_scripts`：在已采集脚本缓存中批量搜索，适合缩小候选脚本范围。
+- `list_scripts`: List scripts loaded on the current page to establish the script scope.
+- `get_script_source`: View the source code of a specified script, suitable for reading specific implementations.
+- `find_in_script`: Locate strings, variable names, or characteristic snippets within a single script.
+- `search_in_scripts`: Batch search across collected script cache, suitable for narrowing down candidate scripts.
 
-### Hook 与运行时采样
+### Hook and Runtime Sampling
 
-先做最小侵入式观测，确认运行时到底调用了什么。
+Perform minimal-intrusion observation first to confirm what is actually called at runtime.
 
-- `create_hook`：创建可复用的 hook 定义，用于后续注入页面。
-- `inject_hook`：把已有 hook 注入当前页面，开始采样目标行为。
-- `get_hook_data`：读取 hook 采集到的调用记录和摘要结果。
-- `hook_function`：直接 hook 全局函数或对象方法，记录参数和返回值。
-- `trace_function`：按源码函数名做调用追踪，适合跟调用链。
+- `create_hook`: Create a reusable hook definition for later injection into the page.
+- `inject_hook`: Inject an existing hook into the current page to start sampling target behavior.
+- `get_hook_data`: Read the call records and summary results collected by hooks.
+- `hook_function`: Directly hook global functions or object methods, recording arguments and return values.
+- `trace_function`: Trace calls by source function name, suitable for following call chains.
 
-### 断点与调试控制
+### Breakpoint and Debug Control
 
-当 hook 不够时，再进入暂停式调试。
+When hooks are not enough, enter pause-based debugging.
 
-- `set_breakpoint`：按脚本 URL 和行号设置断点。
-- `set_breakpoint_on_text`：按代码文本自动定位并设置断点。
-- `resume`：继续执行到下一个断点或执行结束。
-- `pause`：手动暂停当前页面的 JavaScript 执行。
-- `step_over` / `step_into` / `step_out`：单步控制执行路径，分别对应跳过、进入、跳出函数。
+- `set_breakpoint`: Set a breakpoint by script URL and line number.
+- `set_breakpoint_on_text`: Automatically locate and set a breakpoint by code text.
+- `resume`: Continue execution to the next breakpoint or end of execution.
+- `pause`: Manually pause JavaScript execution on the current page.
+- `step_over` / `step_into` / `step_out`: Single-step execution control, corresponding to skipping over, entering, and exiting functions.
 
-### 请求链路与网络分析
+### Request Pipeline and Network Analysis
 
-定位目标请求，确认是谁发起、带了什么参数。
+Locate the target request and confirm who initiated it and what parameters were sent.
 
-- `list_network_requests`：列出当前页面的网络请求，先找到目标请求。
-- `get_network_request`：查看单个请求的详细内容，包括请求头、响应和载荷。
-- `get_request_initiator`：追溯某个请求是谁触发的，帮助定位调用链。
-- `break_on_xhr`：在目标请求发出时中断，适合抓参数生成前的现场。
+- `list_network_requests`: List network requests on the current page to find the target request.
+- `get_network_request`: View the detailed content of a single request, including headers, response, and payload.
+- `get_request_initiator`: Trace back who triggered a specific request to help locate the call chain.
+- `break_on_xhr`: Break when the target request is sent, suitable for capturing the state before parameter generation.
 
-### 页面状态与运行前检查
+### Page State and Pre-run Checks
 
-补看页面运行状态、控制台输出和本地状态依赖。
+Review page runtime state, console output, and local state dependencies.
 
-- `check_browser_health`：检查浏览器连接和当前页是否可控，适合作为起手验证。
-- `list_console_messages`：查看当前页面 console 输出，适合回看 hook 和 trace 日志。
-- `get_storage`：读取 cookie、`localStorage`、`sessionStorage`，确认状态依赖。
-- `evaluate_script`：在当前选中 frame 内执行一段函数，做小范围运行时验证。
-- `search_in_sources`：在所有已加载源码中搜索关键字，快速缩小可疑代码范围。
+- `check_browser_health`: Check browser connection and whether the current page is controllable, suitable as an initial verification step.
+- `list_console_messages`: View console output of the current page, suitable for reviewing hook and trace logs.
+- `get_storage`: Read cookies, `localStorage`, `sessionStorage` to confirm state dependencies.
+- `evaluate_script`: Execute a function within the currently selected frame for small-scope runtime verification.
+- `search_in_sources`: Search for keywords across all loaded source code to quickly narrow down suspicious code.
 
-### WebSocket 观察与消息分组
+### WebSocket Observation and Message Grouping
 
-处理长连接、直播流或二进制帧时，用这组工具先分流再细看。
+When dealing with persistent connections, live streams, or binary frames, use these tools to categorize first and then examine details.
 
-- `list_websocket_connections`：列出当前页面的 WebSocket 连接，先拿到目标 `wsid`。
-- `analyze_websocket_messages`：按帧特征做消息分组，适合先识别不同消息类型。
-- `get_websocket_messages`：查看某个连接或某个分组下的消息摘要和内容。
+- `list_websocket_connections`: List WebSocket connections on the current page to get the target `wsid`.
+- `analyze_websocket_messages`: Group messages by frame characteristics, suitable for identifying different message types first.
+- `get_websocket_messages`: View message summaries and content for a specific connection or group.
 
-### 本地复现与补环境
+### Local Reproduction and Environment Patching
 
-把页面证据带回本地，逐步补齐 Node 运行环境。
+Bring page evidence back locally and progressively patch the Node runtime environment.
 
-- `export_rebuild_bundle`：导出本地复现工程所需的入口、补环境和证据材料。
-- `diff_env_requirements`：根据报错和观测能力比对当前缺失的环境能力。
-- `record_reverse_evidence`：把关键观察结果写入 task artifact，避免证据只留在对话里。
+- `export_rebuild_bundle`: Export the entry point, environment patches, and evidence materials needed for local reproduction.
+- `diff_env_requirements`: Compare currently missing environment capabilities based on errors and observed capabilities.
+- `record_reverse_evidence`: Write key observations into task artifacts to avoid evidence being left only in conversation.
 
-### 页面自动化
+### Page Automation
 
-做最小必要的页面操作，复现触发条件并辅助取证。
+Perform minimal necessary page operations to reproduce trigger conditions and assist with evidence collection.
 
-- `navigate_page`：跳转、回退、刷新当前页面。
-- `query_dom`：查询页面元素，确认选择器和节点状态。
-- `click_element`：按选择器触发点击，复现页面动作。
-- `type_text`：向输入框写入文本，驱动表单交互。
-- `take_screenshot`：截取页面当前状态，保留可视化证据。
+- `navigate_page`: Navigate, go back, or refresh the current page.
+- `query_dom`: Query page elements to confirm selectors and node states.
+- `click_element`: Trigger a click by selector to reproduce page actions.
+- `type_text`: Write text into input fields to drive form interactions.
+- `take_screenshot`: Capture the current page state to preserve visual evidence.
 
-### 深度分析
+### Deep Analysis
 
-在拿到代码和运行时证据后，继续做结构理解与去混淆。
+After obtaining code and runtime evidence, continue with structural understanding and deobfuscation.
 
-- `collect_code`：采集页面代码，支持按优先级或范围控制采样量。
-- `understand_code`：结合静态分析和 AI 做代码结构、业务逻辑与风险理解。
-- `deobfuscate_code`：对混淆代码做清理、还原和辅助分析。
-- `risk_panel`：聚合代码分析、加密检测和 hook 信号，输出综合风险视图。
+- `collect_code`: Collect page code, with support for controlling sampling volume by priority or scope.
+- `understand_code`: Combine static analysis and AI for code structure, business logic, and risk understanding.
+- `deobfuscate_code`: Clean up, restore, and assist in analyzing obfuscated code.
+- `risk_panel`: Aggregate code analysis, encryption detection, and hook signals to output a comprehensive risk view.
 
-### 会话与登录态复用
+### Session and Login State Reuse
 
-- `save_session_state`：保存当前页面的 cookie 和存储状态到内存快照。
-- `restore_session_state`：把快照恢复到当前页面，复用登录态和现场。
-- `dump_session_state`：把会话快照导出为 JSON 文件，便于持久化。
-- `load_session_state`：从已有 JSON 或字符串重新载入会话快照。
+- `save_session_state`: Save the current page's cookies and storage state to an in-memory snapshot.
+- `restore_session_state`: Restore a snapshot to the current page, reusing login state and context.
+- `dump_session_state`: Export the session snapshot as a JSON file for persistence.
+- `load_session_state`: Reload a session snapshot from an existing JSON file or string.
 
-完整参数说明见 [docs/reference/tool-reference.md](docs/reference/tool-reference.md)。
-按逆向流程选工具可继续看 [docs/reference/reverse-workflow.md](docs/reference/reverse-workflow.md)。
+For complete parameter documentation, see [docs/reference/tool-reference.md](docs/reference/tool-reference.md).
+To select tools by reverse engineering workflow, see [docs/reference/reverse-workflow.md](docs/reference/reverse-workflow.md).
 
 
-### 外部 AI 怎么配置
+### How to Configure External AI
 
-这个项目支持把外部 LLM 作为“分析增强层”接进来，当前支持：
+This project supports integrating external LLMs as an “analysis enhancement layer.” Currently supported:
 
 - `openai`
 - `anthropic`
 - `gemini`
 
-配置入口本质上是进程环境变量。  
-通过 MCP 客户端启动时，优先在 MCP server 配置里的 `env` 传入；`.env` 只适合你直接本地运行 `node build/src/index.js` 或 `npm run start` 的场景。
+The configuration entry point is essentially process environment variables.
+When launching via an MCP client, pass them preferably through the `env` field in the MCP server configuration; `.env` is only suitable when you directly run `node build/src/index.js` or `npm run start` locally.
 
-推荐方式示例：
+Recommended configuration example:
 
 ```toml
 [mcp_servers.js-reverse]
@@ -164,10 +164,10 @@ ANTHROPIC_API_KEY = "your_key"
 ANTHROPIC_MODEL = "claude-3-5-sonnet-20241022"
 ```
 
-如果你是直接在项目目录本地启动，也可以使用 `.env`：
+If you are launching directly from the project directory locally, you can also use `.env`:
 
 ```bash
-# 三选一：openai / anthropic / gemini
+# Choose one: openai / anthropic / gemini
 DEFAULT_LLM_PROVIDER=gemini
 
 # OpenAI
@@ -184,61 +184,61 @@ ANTHROPIC_BASE_URL=
 GEMINI_API_KEY=your_key
 GEMINI_MODEL=gemini-2.0-flash-exp
 
-# 如果不用 API，也可以走本地 CLI
+# If not using API, you can also use the local CLI
 GEMINI_CLI_PATH=gemini-cli
 ```
 
-说明：
+Notes:
 
-- `DEFAULT_LLM_PROVIDER` 决定默认走哪个 provider
-- `gemini` 支持两种模式：有 `GEMINI_API_KEY` 时走 API；没有时会尝试走 `GEMINI_CLI_PATH`
-- `openai` 和 `anthropic` 需要对应 API key
-- 如果你配了多个 provider，实际使用哪个，仍由 `DEFAULT_LLM_PROVIDER` 决定
+- `DEFAULT_LLM_PROVIDER` determines which provider is used by default
+- `gemini` supports two modes: uses the API when `GEMINI_API_KEY` is set; otherwise attempts to use `GEMINI_CLI_PATH`
+- `openai` and `anthropic` require their corresponding API keys
+- If you configure multiple providers, the one actually used is still determined by `DEFAULT_LLM_PROVIDER`
 
-### 哪些功能依赖外部 AI
+### Which Features Depend on External AI
 
-强依赖外部 AI 的功能：
+Features that strongly depend on external AI:
 
 - `understand_code`
-  - 内部会调用 LLM 做代码语义理解、业务逻辑提取、安全风险补充
+  - Internally calls LLM for code semantic understanding, business logic extraction, and security risk supplementation
 
-可选启用外部 AI 的功能：
+Features with optional external AI:
 
 - `detect_crypto`
-  - 只有传 `useAI=true` 时才会额外调用 LLM；不传时主要依赖本地规则和 AST 分析
+  - Only calls LLM additionally when `useAI=true` is passed; otherwise relies primarily on local rules and AST analysis
 - `analyze_target`
-  - 传 `useAI=true` 时会在一站式分析里启用更深的 AI 辅助分析
+  - When `useAI=true` is passed, enables deeper AI-assisted analysis in the all-in-one analysis
 - `risk_panel`
-  - 参数里有 `useAI`，但当前实现主体仍以本地分析结果聚合为主
+  - Has a `useAI` parameter, but the current implementation primarily relies on local analysis result aggregation
 
-有 AI 时效果更好，但不配也能运行的功能：
+Features that work better with AI but can run without it:
 
 - `deobfuscate_code`
-  - 本地规则、AST 优化、专项反混淆管线始终可用；配置外部 AI 后，复杂语义清理、VM 结构理解、部分编码型混淆降级分析会更完整
+  - Local rules, AST optimization, and dedicated deobfuscation pipelines are always available; with external AI configured, complex semantic cleanup, VM structure understanding, and some encoding-type obfuscation degradation analysis will be more comprehensive
 
-完全不依赖外部 AI 的功能：
+Features that do not depend on external AI at all:
 
-- 浏览器接管
-- Hook / 断点 / Console / Storage / Network / WebSocket
+- Browser takeover
+- Hook / Breakpoint / Console / Storage / Network / WebSocket
 - `collect_code`
 - `export_rebuild_bundle`
 - `diff_env_requirements`
 - `record_reverse_evidence`
 
-如果没配外部 AI，典型影响是：
+If external AI is not configured, the typical impact is:
 
-- `understand_code` 会直接报 provider 未配置
-- `detect_crypto(useAI=true)` 会退回本地分析或忽略 AI 增强
-- `deobfuscate_code` 仍可跑，但某些高难度混淆的解释和清理质量会下降
+- `understand_code` will directly report that the provider is not configured
+- `detect_crypto(useAI=true)` will fall back to local analysis or skip AI enhancement
+- `deobfuscate_code` can still run, but the quality of explanation and cleanup for some highly obfuscated code will decrease
 
-## 标准任务结构
+## Standard Task Structure
 
-任务目录统一使用：
+Task directories use a unified structure:
 
 - `artifacts/tasks/_TEMPLATE/`
 - `artifacts/tasks/<task-id>/`
 
-推荐目录结构：
+Recommended directory structure:
 
 - `task.json`
 - `runtime-evidence.jsonl`
@@ -251,84 +251,84 @@ GEMINI_CLI_PATH=gemini-cli
 - `run/`
 - `report.md`
 
-职责边界：
+Responsibility boundaries:
 
 - `env.js`
-  - 基础宿主对象和最小 shim
+  - Basic host objects and minimal shims
 - `polyfills.js`
-  - 代理诊断层、`watch`、`safeFunction`、`makeFunction`
+  - Proxy diagnostic layer, `watch`, `safeFunction`, `makeFunction`
 - `entry.js`
-  - 运行入口、目标脚本加载、first divergence 输出
+  - Run entry point, target script loading, first divergence output
 
-## 标准执行流程
+## Standard Execution Flow
 
-推荐流程：
+Recommended flow:
 
-1. 页面观察
-2. 运行时采样
-3. 证据入库
-4. local rebuild
-5. 逐项补环境
-6. first divergence 定位
-7. `env-pass` 后再进入纯算法 / 风控逻辑提纯
+1. Page observation
+2. Runtime sampling
+3. Evidence archiving
+4. Local rebuild
+5. Incremental environment patching
+6. First divergence location
+7. After `env-pass`, proceed to pure algorithm / risk control logic extraction
 
-默认原则：
+Default principles:
 
-- 不要跳过页面证据直接猜环境
-- 不要一次性全量模拟浏览器
-- 不要把真实任务目录直接提交 Git
+- Do not skip page evidence and guess the environment directly
+- Do not simulate the entire browser all at once
+- Do not commit real task directories directly to Git
 
-## 参数沉淀与安全边界
+## Parameter Archiving and Security Boundaries
 
-参数链路沉淀遵循以下规则：
+Parameter pipeline archiving follows these rules:
 
-1. 先读本地 task artifact
+1. First read local task artifacts
 - `artifacts/tasks/<task-id>/`
 
-2. 本地没有时再读抽象 case
+2. If not available locally, read abstract cases
 - `scripts/cases/*`
 
-3. 仍不足时按模板新建
+3. If still insufficient, create new ones from templates
 - `docs/reference/parameter-methodology-template.md`
 - `docs/reference/parameter-site-mapping-template.md`
 
-安全边界：
+Security boundaries:
 
-- case 只保留抽象方法和流程
-- 真实任务目录默认本地保留
-- 敏感值必须脱敏后才允许共享
-- Git 默认只提交 `_TEMPLATE`
+- Cases only retain abstract methods and processes
+- Real task directories are kept locally by default
+- Sensitive values must be anonymized before sharing
+- Git only commits `_TEMPLATE` by default
 
-详见：
+See also:
 
 - [docs/reference/case-safety-policy.md](docs/reference/case-safety-policy.md)
 - [docs/reference/reverse-artifacts.md](docs/reference/reverse-artifacts.md)
 - [docs/reference/env-patching.md](docs/reference/env-patching.md)
 
-## 3 分钟快速开始
+## 3-Minute Quick Start
 
-### 1) 安装依赖并构建
+### 1) Install Dependencies and Build
 
 ```bash
 npm install
 npm run build
 ```
 
-构建入口：
+Build entry point:
 
 ```bash
 build/src/index.js
 ```
 
-### 2) 最简单启动方式
+### 2) Simplest Way to Start
 
 ```bash
 npm run start
 ```
 
-### 3) 配置客户端
+### 3) Configure the Client
 
-最小配置示例：
+Minimal configuration examples:
 
 #### Claude Code
 
@@ -349,39 +349,39 @@ command = "node"
 args = ["/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js"]
 ```
 
-如果你需要接管已经打开的浏览器，请继续看：
+If you need to take over an already open browser, see:
 
 - [docs/guides/browser-connection.md](docs/guides/browser-connection.md)
 - [docs/guides/client-configuration.md](docs/guides/client-configuration.md)
 
-完整可直接复制的 MCP 配置实例，包括：
+Complete copy-paste-ready MCP configuration examples, including:
 
-- `mcpServers` JSON 结构示例
-- Codex `config.toml` 示例
-- `--browserUrl` 接管浏览器示例
-- Gemini / Claude / OpenAI 的 API `env` 示例
+- `mcpServers` JSON structure example
+- Codex `config.toml` example
+- `--browserUrl` browser takeover example
+- Gemini / Claude / OpenAI API `env` examples
 
-都放在 [docs/guides/client-configuration.md](docs/guides/client-configuration.md)。
+All available in [docs/guides/client-configuration.md](docs/guides/client-configuration.md).
 
-## 文档入口
+## Documentation Entry Points
 
-逆向相关任务开场先读：`docs/reference/reverse-bootstrap.md`。该入口会继续要求模型读取 `docs/reference/case-safety-policy.md`、`docs/reference/reverse-workflow.md`；若已进入 `env-pass` 后的提纯阶段，再读 `docs/reference/pure-extraction.md`。
+For reverse engineering tasks, start by reading: `docs/reference/reverse-bootstrap.md`. That entry point will further direct the model to read `docs/reference/case-safety-policy.md` and `docs/reference/reverse-workflow.md`; if already in the post-`env-pass` extraction phase, also read `docs/reference/pure-extraction.md`.
 
 ### Guides
 
-- 快速开始：[docs/guides/getting-started.md](docs/guides/getting-started.md)
-- 浏览器连接：[docs/guides/browser-connection.md](docs/guides/browser-connection.md)
-- 客户端配置：[docs/guides/client-configuration.md](docs/guides/client-configuration.md)
-- 逆向工作流：[docs/reference/reverse-workflow.md](docs/reference/reverse-workflow.md)
-- 补环境规范：[docs/reference/env-patching.md](docs/reference/env-patching.md)
+- Getting Started: [docs/guides/getting-started.md](docs/guides/getting-started.md)
+- Browser Connection: [docs/guides/browser-connection.md](docs/guides/browser-connection.md)
+- Client Configuration: [docs/guides/client-configuration.md](docs/guides/client-configuration.md)
+- Reverse Engineering Workflow: [docs/reference/reverse-workflow.md](docs/reference/reverse-workflow.md)
+- Environment Patching Guide: [docs/reference/env-patching.md](docs/reference/env-patching.md)
 
 ### Reference
 
-- 模型首读入口：[docs/reference/reverse-bootstrap.md](docs/reference/reverse-bootstrap.md)
-- 逆向任务索引：[docs/reference/reverse-task-index.md](docs/reference/reverse-task-index.md)
-- 工具参数总表：[docs/reference/tool-reference.md](docs/reference/tool-reference.md)
-- 工具读写契约：[docs/reference/tool-io-contract.md](docs/reference/tool-io-contract.md)
-- 任务产物说明：[docs/reference/reverse-artifacts.md](docs/reference/reverse-artifacts.md)
+- Model Bootstrap Entry: [docs/reference/reverse-bootstrap.md](docs/reference/reverse-bootstrap.md)
+- Reverse Task Index: [docs/reference/reverse-task-index.md](docs/reference/reverse-task-index.md)
+- Tool Parameter Reference: [docs/reference/tool-reference.md](docs/reference/tool-reference.md)
+- Tool I/O Contract: [docs/reference/tool-io-contract.md](docs/reference/tool-io-contract.md)
+- Task Artifact Documentation: [docs/reference/reverse-artifacts.md](docs/reference/reverse-artifacts.md)
 
 ### Templates And Supporting Docs
 
@@ -391,7 +391,7 @@ args = ["/ABSOLUTE/PATH/JSReverser-MCP/build/src/index.js"]
 - [docs/reference/parameter-methodology-template.md](docs/reference/parameter-methodology-template.md)
 - [docs/reference/parameter-site-mapping-template.md](docs/reference/parameter-site-mapping-template.md)
 
-## 开发与测试
+## Development and Testing
 
 ```bash
 npm run build
@@ -400,15 +400,15 @@ npm run test:property
 npm run coverage:full
 ```
 
-## 故障排查
+## Troubleshooting
 
-更多问题排查请看：
+For more troubleshooting, see:
 
 - [docs/guides/browser-connection.md](docs/guides/browser-connection.md)
 
-## 参考项目
+## Referenced Projects
 
-本项目在设计和实现过程中参考了以下项目，具体协议声明（如 MIT 等）以对应上游仓库为准：
+This project referenced the following projects during design and implementation. Specific license declarations (e.g., MIT) are subject to their respective upstream repositories:
 
 - https://github.com/wuji66dde/jshook-skill
 - https://github.com/zhizhuodemao/js-reverse-mcp

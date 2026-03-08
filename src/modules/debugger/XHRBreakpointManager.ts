@@ -1,22 +1,22 @@
 /**
- * XHRBreakpointManager - XHR/Fetch 断点管理
- * 
- * 功能：
- * 1. 设置 XHR/Fetch 断点（URL 模式匹配）
- * 2. 在网络请求发送前暂停执行
- * 3. 追踪请求参数和响应
- * 
- * 设计原则：
- * - 使用 CDP DOMDebugger.setXHRBreakpoint
- * - 支持通配符模式匹配
- * - 提供断点命中统计
+ * XHRBreakpointManager - XHR/Fetch breakpoint management
+ *
+ * Features:
+ * 1. Set XHR/Fetch breakpoints (URL pattern matching)
+ * 2. Pause execution before network requests are sent
+ * 3. Track request parameters and responses
+ *
+ * Design principles:
+ * - Uses CDP DOMDebugger.setXHRBreakpoint
+ * - Supports wildcard pattern matching
+ * - Provides breakpoint hit statistics
  */
 
 import type { CDPSession } from 'puppeteer';
 import { logger } from '../../utils/logger.js';
 
 /**
- * XHR 断点信息
+ * XHR breakpoint information
  */
 export interface XHRBreakpoint {
   id: string;
@@ -27,35 +27,35 @@ export interface XHRBreakpoint {
 }
 
 /**
- * XHR 断点管理器
+ * XHR breakpoint manager
  *
- * 🔧 重构：使用共享的 CDP session，不再创建独立 session
+ * Refactored: uses shared CDP session instead of creating a separate session
  */
 export class XHRBreakpointManager {
   private xhrBreakpoints: Map<string, XHRBreakpoint> = new Map();
   private breakpointCounter = 0;
 
   /**
-   * @param cdpSession 共享的 CDP Session（由 DebuggerManager 提供）
+   * @param cdpSession Shared CDP Session (provided by DebuggerManager)
    */
   constructor(private cdpSession: CDPSession) {
     logger.info('XHRBreakpointManager initialized with shared CDP session');
   }
 
   /**
-   * 设置 XHR 断点
+   * Set an XHR breakpoint
    *
-   * @param urlPattern URL 模式（支持通配符 *）
-   * @returns 断点 ID
+   * @param urlPattern URL pattern (supports wildcard *)
+   * @returns Breakpoint ID
    */
   async setXHRBreakpoint(urlPattern: string): Promise<string> {
     try {
-      // 调用 CDP API 设置 XHR 断点
+      // Call CDP API to set XHR breakpoint
       await this.cdpSession.send('DOMDebugger.setXHRBreakpoint', {
         url: urlPattern,
       });
 
-      // 创建断点信息
+      // Create breakpoint info
       const breakpointId = `xhr_${++this.breakpointCounter}`;
       this.xhrBreakpoints.set(breakpointId, {
         id: breakpointId,
@@ -74,7 +74,7 @@ export class XHRBreakpointManager {
   }
 
   /**
-   * 删除 XHR 断点
+   * Remove an XHR breakpoint
    */
   async removeXHRBreakpoint(breakpointId: string): Promise<boolean> {
     const breakpoint = this.xhrBreakpoints.get(breakpointId);
@@ -83,7 +83,7 @@ export class XHRBreakpointManager {
     }
 
     try {
-      // 调用 CDP API 删除 XHR 断点
+      // Call CDP API to remove XHR breakpoint
       await this.cdpSession.send('DOMDebugger.removeXHRBreakpoint', {
         url: breakpoint.urlPattern,
       });
@@ -98,21 +98,21 @@ export class XHRBreakpointManager {
   }
 
   /**
-   * 获取所有 XHR 断点
+   * Get all XHR breakpoints
    */
   getAllXHRBreakpoints(): XHRBreakpoint[] {
     return Array.from(this.xhrBreakpoints.values());
   }
 
   /**
-   * 获取特定 XHR 断点
+   * Get a specific XHR breakpoint
    */
   getXHRBreakpoint(breakpointId: string): XHRBreakpoint | undefined {
     return this.xhrBreakpoints.get(breakpointId);
   }
 
   /**
-   * 清除所有 XHR 断点
+   * Clear all XHR breakpoints
    */
   async clearAllXHRBreakpoints(): Promise<void> {
     const breakpoints = Array.from(this.xhrBreakpoints.values());
@@ -132,7 +132,7 @@ export class XHRBreakpointManager {
   }
 
   /**
-   * 🆕 关闭并清理资源
+   * Close and clean up resources
    */
   async close(): Promise<void> {
     try {

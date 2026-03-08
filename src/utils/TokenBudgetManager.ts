@@ -1,18 +1,18 @@
 /**
- * TokenBudgetManager - 全局 Token 预算管理器
- * 
- * 核心功能：
- * 1. 追踪每次工具调用的 Token 使用
- * 2. 维护会话级别的 Token 累计
- * 3. 提供三级预警机制（80%、90%、95%）
- * 4. 自动触发数据清理
- * 5. 提供智能优化建议
- * 
- * 设计原则：
- * - 单例模式 - 全局唯一实例
- * - 实时监控 - 每次工具调用后更新
- * - 主动预警 - 不等待溢出错误
- * - 自动清理 - 90% 时自动触发
+ * TokenBudgetManager - Global Token Budget Manager
+ *
+ * Core features:
+ * 1. Track token usage for each tool call
+ * 2. Maintain session-level token accumulation
+ * 3. Provide three-tier warning mechanism (80%, 90%, 95%)
+ * 4. Auto-trigger data cleanup
+ * 5. Provide smart optimization suggestions
+ *
+ * Design principles:
+ * - Singleton pattern - single global instance
+ * - Real-time monitoring - update after each tool call
+ * - Proactive warnings - don't wait for overflow errors
+ * - Auto cleanup - triggered at 90%
  */
 
 import { logger } from './logger.js';
@@ -20,7 +20,7 @@ import { DetailedDataManager } from './detailedDataManager.js';
 import { safeStringify } from './safeJson.js';
 
 /**
- * 工具调用记录
+ * Tool call record
  */
 export interface ToolCallRecord {
   toolName: string;
@@ -32,7 +32,7 @@ export interface ToolCallRecord {
 }
 
 /**
- * Token 预算统计
+ * Token budget statistics
  */
 export interface TokenBudgetStats {
   currentUsage: number;
@@ -46,27 +46,27 @@ export interface TokenBudgetStats {
 }
 
 /**
- * 全局 Token 预算管理器
+ * Global Token Budget Manager
  */
 export class TokenBudgetManager {
   private static instance: TokenBudgetManager;
 
-  // ==================== 配置 ====================
-  
-  private readonly MAX_TOKENS = 200000; // Claude 上下文窗口
-  private readonly WARNING_THRESHOLDS = [0.8, 0.9, 0.95]; // 预警阈值
-  private readonly BYTES_PER_TOKEN = 4; // 1 token ≈ 4 bytes (经验值)
-  private readonly AUTO_CLEANUP_THRESHOLD = 0.9; // 自动清理阈值
-  private readonly HISTORY_RETENTION = 5 * 60 * 1000; // 保留最近 5 分钟的历史
+  // ==================== Configuration ====================
 
-  // ==================== 状态 ====================
-  
-  private currentUsage = 0; // 当前 Token 使用量
-  private toolCallHistory: ToolCallRecord[] = []; // 工具调用历史
-  private warnings = new Set<number>(); // 已触发的预警
-  private sessionStartTime = Date.now(); // 会话开始时间
+  private readonly MAX_TOKENS = 200000; // Claude context window
+  private readonly WARNING_THRESHOLDS = [0.8, 0.9, 0.95]; // Warning thresholds
+  private readonly BYTES_PER_TOKEN = 4; // 1 token ~ 4 bytes (empirical value)
+  private readonly AUTO_CLEANUP_THRESHOLD = 0.9; // Auto cleanup threshold
+  private readonly HISTORY_RETENTION = 5 * 60 * 1000; // Retain last 5 minutes of history
 
-  // ==================== 单例模式 ====================
+  // ==================== State ====================
+
+  private currentUsage = 0; // Current token usage
+  private toolCallHistory: ToolCallRecord[] = []; // Tool call history
+  private warnings = new Set<number>(); // Triggered warnings
+  private sessionStartTime = Date.now(); // Session start time
+
+  // ==================== Singleton ====================
 
   private constructor() {
     logger.info('TokenBudgetManager initialized');
@@ -79,27 +79,27 @@ export class TokenBudgetManager {
     return this.instance;
   }
 
-  // ==================== 核心功能 ====================
+  // ==================== Core features ====================
 
   /**
-   * 记录工具调用
-   * 
-   * @param toolName 工具名称
-   * @param request 请求参数
-   * @param response 响应数据
+   * Record a tool call
+   *
+   * @param toolName Tool name
+   * @param request Request parameters
+   * @param response Response data
    */
   recordToolCall(toolName: string, request: any, response: any): void {
     try {
-      // 计算大小
+      // Calculate size
       const requestSize = this.calculateSize(request);
       const responseSize = this.calculateSize(response);
       const totalSize = requestSize + responseSize;
       const estimatedTokens = this.estimateTokens(totalSize);
 
-      // 累计使用量
+      // Accumulate usage
       this.currentUsage += estimatedTokens;
 
-      // 记录历史
+      // Record history
       const record: ToolCallRecord = {
         toolName,
         timestamp: Date.now(),
@@ -110,16 +110,16 @@ export class TokenBudgetManager {
       };
       this.toolCallHistory.push(record);
 
-      // 日志
+      // Log
       logger.debug(
         `Token usage: ${this.currentUsage}/${this.MAX_TOKENS} (${this.getUsagePercentage()}%) | ` +
         `Tool: ${toolName} | Size: ${(totalSize / 1024).toFixed(1)}KB | Tokens: ${estimatedTokens}`
       );
 
-      // 检查预警
+      // Check warnings
       this.checkWarnings();
 
-      // 自动清理
+      // Auto cleanup
       if (this.shouldAutoCleanup()) {
         this.autoCleanup();
       }
@@ -129,7 +129,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 计算数据大小（字节）
+   * Calculate data size (bytes)
    */
   private calculateSize(data: any): number {
     try {
@@ -141,24 +141,24 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 估算 Token 数量
-   * 
-   * 经验公式：1 token ≈ 4 bytes
-   * 这是一个保守估计，实际可能更少
+   * Estimate token count
+   *
+   * Empirical formula: 1 token ~ 4 bytes
+   * This is a conservative estimate; actual count may be lower
    */
   private estimateTokens(bytes: number): number {
     return Math.ceil(bytes / this.BYTES_PER_TOKEN);
   }
 
   /**
-   * 获取使用百分比
+   * Get usage percentage
    */
   getUsagePercentage(): number {
     return Math.round((this.currentUsage / this.MAX_TOKENS) * 100);
   }
 
   /**
-   * 检查预警
+   * Check warnings
    */
   private checkWarnings(): void {
     const ratio = this.currentUsage / this.MAX_TOKENS;
@@ -172,7 +172,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 发出预警
+   * Emit warning
    */
   private emitWarning(threshold: number): void {
     const percentage = Math.round(threshold * 100);
@@ -183,7 +183,7 @@ export class TokenBudgetManager {
       `(${this.currentUsage}/${this.MAX_TOKENS}, ${remaining} tokens remaining)`
     );
 
-    // 提供建议
+    // Provide suggestions
     if (threshold >= 0.95) {
       logger.warn('🚨 CRITICAL: Consider clearing caches or starting a new session!');
     } else if (threshold >= 0.9) {
@@ -194,7 +194,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 是否应该自动清理
+   * Whether auto cleanup should be triggered
    */
   private shouldAutoCleanup(): boolean {
     const ratio = this.currentUsage / this.MAX_TOKENS;
@@ -202,19 +202,19 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 自动清理
+   * Auto cleanup
    */
   private autoCleanup(): void {
     logger.info('🧹 Auto-cleanup triggered at 90% usage...');
 
     const beforeUsage = this.currentUsage;
 
-    // 1. 清理 DetailedDataManager
+    // 1. Clear DetailedDataManager
     const detailedDataManager = DetailedDataManager.getInstance();
     detailedDataManager.clear();
     logger.info('✅ Cleared DetailedDataManager cache');
 
-    // 2. 清理旧的工具调用记录（保留最近 5 分钟）
+    // 2. Clean old tool call records (retain last 5 minutes)
     const cutoff = Date.now() - this.HISTORY_RETENTION;
     const beforeCount = this.toolCallHistory.length;
     this.toolCallHistory = this.toolCallHistory.filter(
@@ -223,7 +223,7 @@ export class TokenBudgetManager {
     const removedCount = beforeCount - this.toolCallHistory.length;
     logger.info(`✅ Removed ${removedCount} old tool call records`);
 
-    // 3. 重新计算使用量
+    // 3. Recalculate usage
     this.recalculateUsage();
 
     const afterUsage = this.currentUsage;
@@ -235,7 +235,7 @@ export class TokenBudgetManager {
       `Usage: ${afterUsage}/${this.MAX_TOKENS} (${this.getUsagePercentage()}%)`
     );
 
-    // 重置预警（如果使用率降低）
+    // Reset warnings (if usage decreased)
     const newRatio = afterUsage / this.MAX_TOKENS;
     this.warnings = new Set(
       Array.from(this.warnings).filter(threshold => newRatio >= threshold)
@@ -243,7 +243,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 重新计算使用量
+   * Recalculate usage
    */
   private recalculateUsage(): void {
     this.currentUsage = this.toolCallHistory.reduce(
@@ -253,17 +253,17 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 获取统计信息
+   * Get statistics
    */
   getStats(): TokenBudgetStats & { sessionStartTime: number } {
-    // 计算每个工具的使用量
+    // Calculate usage per tool
     const toolUsage = new Map<string, number>();
     for (const call of this.toolCallHistory) {
       const current = toolUsage.get(call.toolName) || 0;
       toolUsage.set(call.toolName, current + call.estimatedTokens);
     }
 
-    // 排序并取前 10
+    // Sort and take top 10
     const topTools = Array.from(toolUsage.entries())
       .map(([tool, tokens]) => ({
         tool,
@@ -273,10 +273,10 @@ export class TokenBudgetManager {
       .sort((a, b) => b.tokens - a.tokens)
       .slice(0, 10);
 
-    // 生成建议
+    // Generate suggestions
     const suggestions = this.generateSuggestions(topTools);
 
-    // 最近的调用（最多 20 条）
+    // Recent calls (up to 20)
     const recentCalls = this.toolCallHistory.slice(-20);
 
     return {
@@ -293,13 +293,13 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 生成优化建议
+   * Generate optimization suggestions
    */
   private generateSuggestions(topTools: Array<{ tool: string; tokens: number; percentage: number }>): string[] {
     const suggestions: string[] = [];
     const ratio = this.currentUsage / this.MAX_TOKENS;
 
-    // 基于使用率的建议
+    // Usage-based suggestions
     if (ratio >= 0.95) {
       suggestions.push('🚨 CRITICAL: Clear all caches immediately or start a new session');
     } else if (ratio >= 0.9) {
@@ -308,7 +308,7 @@ export class TokenBudgetManager {
       suggestions.push('ℹ️  MODERATE: Monitor usage closely. Use summary modes for large data');
     }
 
-    // 基于工具使用的建议
+    // Tool usage-based suggestions
     for (const { tool, percentage } of topTools) {
       if (percentage > 30) {
         if (tool.includes('collect_code')) {
@@ -323,7 +323,7 @@ export class TokenBudgetManager {
       }
     }
 
-    // 通用建议
+    // General suggestions
     if (suggestions.length === 0) {
       suggestions.push('✅ Token usage is healthy. Continue monitoring.');
     }
@@ -332,7 +332,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 手动清理
+   * Manual cleanup
    */
   manualCleanup(): void {
     logger.info('🧹 Manual cleanup requested...');
@@ -340,7 +340,7 @@ export class TokenBudgetManager {
   }
 
   /**
-   * 重置会话
+   * Reset session
    */
   reset(): void {
     logger.info('🔄 Resetting token budget...');

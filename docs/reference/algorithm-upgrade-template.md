@@ -1,82 +1,82 @@
 # Algorithm Upgrade And First Divergence Template
 
-这份模板用于“算法升级、混淆升级、版本切换”场景，目标是快速找到 `first divergence`，而不是重新从零逆。
+This template is used for "algorithm upgrade, obfuscation upgrade, version switch" scenarios. The goal is to quickly find the `first divergence`, rather than reverse-engineering from scratch.
 
-## 开场必读
+## Required Reading Before Starting
 
-开始前先读：
+Read the following before starting:
 
 1. `docs/reference/reverse-bootstrap.md`
 2. `docs/reference/case-safety-policy.md`
 3. `docs/reference/reverse-workflow.md`
-4. 若当前问题已处于 `env-pass` 后的提纯阶段，再读 `docs/reference/pure-extraction.md`
+4. If the current issue is already in the purification phase after `env-pass`, also read `docs/reference/pure-extraction.md`
 
-升级模板也必须遵守仓库边界：
+The upgrade template must also comply with repository boundaries:
 
-- 仓库 case 只保留抽象结论与方法
-- 可执行升级实现、临时验证脚本、真实任务证据统一放 `artifacts/tasks/<task-id>/`
+- Repository cases only retain abstract conclusions and methods
+- Executable upgrade implementations, temporary verification scripts, and real task evidence go uniformly in `artifacts/tasks/<task-id>/`
 
-## 适用范围
+## Applicable Scope
 
-- 签名算法换版本
-- 本地纯算法结果和浏览器结果开始不一致
-- `env rebuild` 还能跑，但最终参数失配
-- VMP / AST / helper 名称发生迁移
+- Signature algorithm version change
+- Local pure algorithm results start diverging from browser results
+- `env rebuild` still runs, but final parameters mismatch
+- VMP / AST / helper names have migrated
 
-## 输入建议
+## Input Recommendations
 
-- 旧版本结论或旧版本产物
-- 新版本 JS 文件或新页面证据
+- Old version conclusions or old version artifacts
+- New version JS files or new page evidence
 - `targetKeywords`
 - `targetUrlPatterns`
 - `targetFunctionNames`
 - `targetActionDescription`
-- 旧版与新版的关键样本输入
-- portable runtime 的关键样本输出
-- pure algorithm 的关键样本输出
-- 固定夹具（若已有）
+- Key sample inputs from old and new versions
+- Key sample outputs from portable runtime
+- Key sample outputs from pure algorithm
+- Fixed fixtures (if available)
 
-## 推荐顺序
+## Recommended Order
 
-1. 先做结构归一化
-2. 再做目标驱动采样
-3. 再看 `first divergence`
-4. 先判断当前应该继续补 `env rebuild`、修 `portable runtime`，还是转 pure algorithm
-5. 最后才改实现
+1. First perform structure normalization
+2. Then perform target-driven sampling
+3. Then check `first divergence`
+4. First determine whether to continue with `env rebuild`, fix `portable runtime`, or switch to pure algorithm
+5. Only then modify the implementation
 
-## `first divergence` 检查表
+## `first divergence` Checklist
 
-优先看哪一层先分叉：
+Prioritize which layer diverges first:
 
-1. 目标请求
-2. hook 命中的关键函数输出
-3. token / nonce / sign 中间值
+1. Target request
+2. Key function output matched by hook
+3. token / nonce / sign intermediate values
 4. crypto helper
 5. env collect / storage / fingerprint
-6. 最终拼接
+6. Final assembly
 
-如果参数名很怪，不要卡在字段名本身，优先看：
+If parameter names look unusual, do not get stuck on the field names themselves. Prioritize checking:
 
-- 哪个请求先变化
-- 哪个函数先输出不同值
-- 哪个页面动作触发了这段链路
-- 哪个时间窗内出现关键证据
+- Which request changed first
+- Which function first outputs a different value
+- Which page action triggered this pipeline
+- Within which time window the key evidence appeared
 
-## 产物要求
+## Deliverable Requirements
 
-- 一份更新后的 task artifact
-- 一份差异摘要
-- 一份本地 `env rebuild` 现状
-- 一份纯算法候选实现或明确说明为何暂时不能纯化
-- 一份夹具对齐结果
-- 一份服务端验收结果
+- One updated task artifact
+- One divergence summary
+- One current `env rebuild` status report
+- One pure algorithm candidate implementation, or a clear explanation of why purification is not yet possible
+- One fixture alignment result
+- One server-side acceptance result
 
-## 输出模板
+## Output Template
 
-1. 本次升级的 `first divergence`
-2. 已确认未变化的部分
-3. 已确认发生变化的部分
-4. 当前是继续补 `env rebuild`、修 `portable runtime`，还是转 pure algorithm / 去混淆更合适
-5. 当前夹具是否稳定，跨语言是否已可对齐
-6. 当前服务端验收是否通过
-7. 下一步最小行动
+1. The `first divergence` from this upgrade
+2. Confirmed unchanged parts
+3. Confirmed changed parts
+4. Whether to continue with `env rebuild`, fix `portable runtime`, or switch to pure algorithm / deobfuscation
+5. Whether current fixtures are stable and cross-language alignment is achievable
+6. Whether server-side acceptance passes
+7. Next minimum action

@@ -61,7 +61,7 @@ export function formatWebSocketConnectionShort(
     f => f.direction === 'received',
   ).length;
 
-  // 检测是否有二进制消息
+  // Detect whether there are binary messages
   const hasBinary = ws.frames.some(f => f.opcode === 2);
   const binaryHint = hasBinary ? ' [binary]' : '';
 

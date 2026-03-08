@@ -1,6 +1,6 @@
 function printAbstractCaseGuide() {
-  console.log(`Case: 某手 falcon 风控参数
-Category: 风控参数
+  console.log(`Case: Kuaishou falcon risk control parameter
+Category: risk control parameter
 Status: abstract-case
 Runtime: pure-node
 Scope: non-runnable

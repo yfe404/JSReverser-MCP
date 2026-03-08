@@ -1,6 +1,6 @@
 /**
- * JSVMP反混淆器
- * 识别和破解JavaScript虚拟机保护（JSVMP）混淆
+ * JSVMP Deobfuscator
+ * Identifies and cracks JavaScript Virtual Machine Protection (JSVMP) obfuscation
  */
 
 import * as parser from '@babel/parser';
@@ -22,7 +22,7 @@ import { logger } from '../../utils/logger.js';
 import type { LLMService } from '../../services/LLMService.js';
 
 /**
- * JSVMP反混淆器
+ * JSVMP Deobfuscator
  */
 export class JSVMPDeobfuscator {
   private llm?: LLMService;
@@ -32,7 +32,7 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * 反混淆JSVMP代码
+   * Deobfuscate JSVMP code
    */
   async deobfuscate(options: JSVMPDeobfuscatorOptions): Promise<JSVMPDeobfuscatorResult> {
     const startTime = Date.now();
@@ -44,38 +44,38 @@ export class JSVMPDeobfuscator {
       maxIterations = 100,
     } = options;
 
-    logger.info('🔍 开始JSVMP反混淆分析...');
+    logger.info('Starting JSVMP deobfuscation analysis...');
 
     try {
-      // 1. 检测是否为JSVMP混淆
+      // 1. Detect whether it is JSVMP obfuscation
       const vmFeatures = this.detectJSVMP(code);
       if (!vmFeatures) {
-        logger.info('未检测到JSVMP混淆');
+        logger.info('No JSVMP obfuscation detected');
         return {
           isJSVMP: false,
           deobfuscatedCode: code,
           confidence: 0,
-          warnings: ['未检测到JSVMP特征'],
+          warnings: ['No JSVMP features detected'],
         };
       }
 
-      logger.info(`✅ 检测到JSVMP混淆，复杂度: ${vmFeatures.complexity}`);
-      logger.info(`📊 指令数量: ${vmFeatures.instructionCount}`);
+      logger.info(`JSVMP obfuscation detected, complexity: ${vmFeatures.complexity}`);
+      logger.info(`Instruction count: ${vmFeatures.instructionCount}`);
 
-      // 2. 识别虚拟机类型
+      // 2. Identify VM type
       const vmType = this.identifyVMType(code, vmFeatures);
-      logger.info(`🔧 虚拟机类型: ${vmType}`);
+      logger.info(`VM type: ${vmType}`);
 
-      // 3. 提取指令集（如果需要）
+      // 3. Extract instruction set (if needed)
       let instructions: VMInstruction[] | undefined;
       if (extractInstructions) {
-        logger.info('📝 正在提取虚拟机指令集...');
+        logger.info('Extracting VM instruction set...');
         instructions = this.extractInstructions(code, vmFeatures);
-        logger.info(`✅ 提取到 ${instructions.length} 条指令`);
+        logger.info(`Extracted ${instructions.length} instructions`);
       }
 
-      // 4. 尝试还原代码
-      logger.info('🔧 正在还原代码...');
+      // 4. Attempt to restore code
+      logger.info('Restoring code...');
       const deobfuscationResult = await this.restoreCode(
         code,
         vmFeatures,
@@ -104,24 +104,24 @@ export class JSVMPDeobfuscator {
         },
       };
 
-      logger.info(`✅ JSVMP反混淆完成，耗时 ${processingTime}ms`);
-      logger.info(`📊 还原置信度: ${(result.confidence * 100).toFixed(1)}%`);
+      logger.info(`JSVMP deobfuscation complete, took ${processingTime}ms`);
+      logger.info(`Restoration confidence: ${(result.confidence * 100).toFixed(1)}%`);
 
       return result;
     } catch (error) {
-      logger.error('JSVMP反混淆失败', error);
+      logger.error('JSVMP deobfuscation failed', error);
       return {
         isJSVMP: false,
         deobfuscatedCode: code,
         confidence: 0,
-        warnings: [`反混淆失败: ${error}`],
+        warnings: [`Deobfuscation failed: ${error}`],
       };
     }
   }
 
   /**
-   * 检测JSVMP特征（完整实现 - 基于实战案例）
-   * 参考：抖音bdms.js、头条acrawler.js等JSVMP混淆代码
+   * Detect JSVMP features (full implementation - based on real-world cases)
+   * Reference: Douyin bdms.js, Toutiao acrawler.js and other JSVMP obfuscated code
    */
   private detectJSVMP(code: string): VMFeatures | null {
     try {
@@ -138,14 +138,14 @@ export class JSVMPDeobfuscator {
       let interpreterLocation = '';
       let maxSwitchCases = 0;
 
-      // 额外的JSVMP特征检测
-      let hasBytecodeArray = false; // 字节码数组：var j = parseInt("" + b[O] + b[O + 1], 16);
-      let hasApplyCall = false; // apply调用：s.apply(b, u)
-      let hasWhileLoop = false; // 大循环
-      let bytecodePattern = false; // 字节码模式
+      // Additional JSVMP feature detection
+      let hasBytecodeArray = false; // Bytecode array: var j = parseInt("" + b[O] + b[O + 1], 16);
+      let hasApplyCall = false; // apply call: s.apply(b, u)
+      let hasWhileLoop = false; // Main loop
+      let bytecodePattern = false; // Bytecode pattern
 
       traverse(ast, {
-        // 1. 检测大型switch语句（VM解释器的核心特征）
+        // 1. Detect large switch statements (core feature of VM interpreters)
         SwitchStatement(path) {
           const caseCount = path.node.cases.length;
           if (caseCount > 10) {
@@ -158,14 +158,14 @@ export class JSVMPDeobfuscator {
           }
         },
 
-        // 2. 检测指令数组（字节码数组）
+        // 2. Detect instruction arrays (bytecode arrays)
         ArrayExpression(path) {
           if (path.node.elements.length > 50) {
             hasInstructionArray = true;
           }
         },
 
-        // 3. 检测程序计数器（PC寄存器）
+        // 3. Detect program counter (PC register)
         UpdateExpression(path) {
           if (path.node.operator === '++' || path.node.operator === '--') {
             const arg = path.node.argument;
@@ -175,21 +175,21 @@ export class JSVMPDeobfuscator {
           }
         },
 
-        // 4. 检测字节码解析模式：parseInt("" + b[O] + b[O + 1], 16)
+        // 4. Detect bytecode parsing pattern: parseInt("" + b[O] + b[O + 1], 16)
         CallExpression(path) {
           if (
             t.isIdentifier(path.node.callee, { name: 'parseInt' }) &&
             path.node.arguments.length >= 2
           ) {
             const firstArg = path.node.arguments[0];
-            // 检测字符串拼接模式
+            // Detect string concatenation pattern
             if (t.isBinaryExpression(firstArg) && firstArg.operator === '+') {
               bytecodePattern = true;
               hasBytecodeArray = true;
             }
           }
 
-          // 检测apply调用模式：s.apply(b, u)
+          // Detect apply call pattern: s.apply(b, u)
           if (
             t.isMemberExpression(path.node.callee) &&
             t.isIdentifier(path.node.callee.property, { name: 'apply' })
@@ -198,9 +198,9 @@ export class JSVMPDeobfuscator {
           }
         },
 
-        // 5. 检测大循环（VM主循环）
+        // 5. Detect main loop (VM main loop)
         WhileStatement(path) {
-          // 检测while(true)或while(1)模式
+          // Detect while(true) or while(1) pattern
           if (
             t.isBooleanLiteral(path.node.test, { value: true }) ||
             t.isNumericLiteral(path.node.test, { value: 1 })
@@ -209,16 +209,16 @@ export class JSVMPDeobfuscator {
           }
         },
 
-        // 6. 检测for循环中的VM模式
+        // 6. Detect VM patterns in for loops
         ForStatement(path) {
-          // 检测for(;;)无限循环
+          // Detect for(;;) infinite loop
           if (!path.node.test) {
             hasWhileLoop = true;
           }
         },
       });
 
-      // 综合判断是否为JSVMP（更严格的条件）
+      // Comprehensive check for JSVMP (stricter conditions)
       const isJSVMP =
         hasSwitch &&
         (hasInstructionArray || hasProgramCounter) &&
@@ -228,14 +228,14 @@ export class JSVMPDeobfuscator {
         const complexity: ComplexityLevel =
           instructionCount > 100 ? 'high' : instructionCount > 50 ? 'medium' : 'low';
 
-        logger.info('🔍 JSVMP特征检测结果:');
-        logger.info(`  - Switch语句: ${hasSwitch} (${maxSwitchCases} cases)`);
-        logger.info(`  - 指令数组: ${hasInstructionArray}`);
-        logger.info(`  - 程序计数器: ${hasProgramCounter}`);
-        logger.info(`  - 字节码数组: ${hasBytecodeArray}`);
-        logger.info(`  - Apply调用: ${hasApplyCall}`);
-        logger.info(`  - 大循环: ${hasWhileLoop}`);
-        logger.info(`  - 字节码模式: ${bytecodePattern}`);
+        logger.info('JSVMP feature detection results:');
+        logger.info(`  - Switch statement: ${hasSwitch} (${maxSwitchCases} cases)`);
+        logger.info(`  - Instruction array: ${hasInstructionArray}`);
+        logger.info(`  - Program counter: ${hasProgramCounter}`);
+        logger.info(`  - Bytecode array: ${hasBytecodeArray}`);
+        logger.info(`  - Apply call: ${hasApplyCall}`);
+        logger.info(`  - Main loop: ${hasWhileLoop}`);
+        logger.info(`  - Bytecode pattern: ${bytecodePattern}`);
 
         return {
           instructionCount,
@@ -249,32 +249,32 @@ export class JSVMPDeobfuscator {
 
       return null;
     } catch (error) {
-      logger.warn('JSVMP检测失败，尝试使用正则表达式检测', error);
+      logger.warn('JSVMP detection failed, attempting regex-based detection', error);
 
-      // 回退到正则表达式检测
+      // Fall back to regex-based detection
       return this.detectJSVMPWithRegex(code);
     }
   }
 
   /**
-   * 使用正则表达式检测JSVMP（回退方案）
+   * Detect JSVMP using regex (fallback method)
    */
   private detectJSVMPWithRegex(code: string): VMFeatures | null {
-    // 检测switch语句
+    // Detect switch statements
     const switchMatches = code.match(/switch\s*\(/g);
     const hasSwitch = (switchMatches?.length || 0) > 0;
 
-    // 检测字节码模式
+    // Detect bytecode pattern
     const bytecodePattern = /parseInt\s*\(\s*["']?\s*\+\s*\w+\[/g.test(code);
 
-    // 检测apply调用
+    // Detect apply calls
     const applyPattern = /\.apply\s*\(/g.test(code);
 
-    // 检测大循环
+    // Detect main loop
     const whilePattern = /while\s*\(\s*(true|1)\s*\)/g.test(code);
 
     if (hasSwitch && (bytecodePattern || applyPattern || whilePattern)) {
-      logger.info('✅ 通过正则表达式检测到JSVMP特征');
+      logger.info('JSVMP features detected via regex');
       return {
         instructionCount: 0,
         interpreterLocation: 'Unknown',
@@ -289,20 +289,20 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * 识别虚拟机类型
+   * Identify VM type
    */
   private identifyVMType(code: string, _features: VMFeatures): VMType {
-    // 检测obfuscator.io特征
+    // Detect obfuscator.io features
     if (code.includes('_0x') && code.includes('function(_0x')) {
       return 'obfuscator.io';
     }
 
-    // 检测JSFuck特征
+    // Detect JSFuck features
     if (/^\s*\[\s*\]\s*\[\s*\(/.test(code)) {
       return 'jsfuck';
     }
 
-    // 检测JJEncode特征
+    // Detect JJEncode features
     if (code.includes('$=~[];')) {
       return 'jjencode';
     }
@@ -311,7 +311,7 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * 提取虚拟机指令集
+   * Extract VM instruction set
    */
   private extractInstructions(code: string, features: VMFeatures): VMInstruction[] {
     const instructions: VMInstruction[] = [];
@@ -322,7 +322,7 @@ export class JSVMPDeobfuscator {
         plugins: ['jsx', 'typescript'],
       });
 
-      // 查找switch语句并提取case
+      // Find switch statements and extract cases
       const self = this;
       traverse(ast, {
         SwitchStatement(path) {
@@ -336,7 +336,7 @@ export class JSVMPDeobfuscator {
                   : index
                 : index;
 
-              // 推断指令类型
+              // Infer instruction type
               const type = self.inferInstructionType(caseNode);
 
               instructions.push({
@@ -350,29 +350,29 @@ export class JSVMPDeobfuscator {
         },
       });
     } catch (error) {
-      logger.warn('指令提取失败', error);
+      logger.warn('Instruction extraction failed', error);
     }
 
     return instructions;
   }
 
   /**
-   * 推断指令类型（完整实现 - 基于实战中的操作码模式）
-   * 参考：JSVMP常见操作码
-   * - 0x01: PUSH (压栈)
-   * - 0x02: ADD (加法)
-   * - 0x03: CALL (调用函数)
-   * - 0x04: LOAD (加载变量)
-   * - 0x05: STORE (存储变量)
-   * - 0x06: JMP (跳转)
-   * - 0x07: CMP (比较)
-   * - 0x08: RET (返回)
+   * Infer instruction type (full implementation - based on real-world opcode patterns)
+   * Reference: Common JSVMP opcodes
+   * - 0x01: PUSH (push to stack)
+   * - 0x02: ADD (addition)
+   * - 0x03: CALL (call function)
+   * - 0x04: LOAD (load variable)
+   * - 0x05: STORE (store variable)
+   * - 0x06: JMP (jump)
+   * - 0x07: CMP (compare)
+   * - 0x08: RET (return)
    */
   private inferInstructionType(caseNode: t.SwitchCase): VMInstruction['type'] {
     const code = generate(caseNode).code;
     const consequent = caseNode.consequent;
 
-    // 分析AST节点类型
+    // Analyze AST node types
     let hasAssignment = false;
     let hasArrayAccess = false;
     let hasFunctionCall = false;
@@ -383,22 +383,22 @@ export class JSVMPDeobfuscator {
       if (t.isExpressionStatement(stmt)) {
         const expr = stmt.expression;
 
-        // 检测赋值操作
+        // Detect assignment operations
         if (t.isAssignmentExpression(expr)) {
           hasAssignment = true;
         }
 
-        // 检测数组访问
+        // Detect array access
         if (t.isMemberExpression(expr) && t.isNumericLiteral(expr.property)) {
           hasArrayAccess = true;
         }
 
-        // 检测函数调用
+        // Detect function calls
         if (t.isCallExpression(expr)) {
           hasFunctionCall = true;
         }
 
-        // 检测算术运算
+        // Detect arithmetic operations
         if (t.isBinaryExpression(expr)) {
           if (['+', '-', '*', '/', '%', '**'].includes(expr.operator)) {
             hasArithmetic = true;
@@ -406,7 +406,7 @@ export class JSVMPDeobfuscator {
         }
       }
 
-      // 检测控制流语句
+      // Detect control flow statements
       if (
         t.isIfStatement(stmt) ||
         t.isWhileStatement(stmt) ||
@@ -418,8 +418,8 @@ export class JSVMPDeobfuscator {
       }
     }
 
-    // 基于代码模式推断指令类型
-    // 1. LOAD指令：从栈或数组中加载数据
+    // Infer instruction type based on code patterns
+    // 1. LOAD instruction: load data from stack or array
     if (
       (code.includes('push') || code.includes('.push(')) &&
       (hasArrayAccess || code.includes('['))
@@ -427,32 +427,32 @@ export class JSVMPDeobfuscator {
       return 'load';
     }
 
-    // 2. STORE指令：存储数据到栈或变量
+    // 2. STORE instruction: store data to stack or variable
     if (hasAssignment && !hasArithmetic && !hasFunctionCall) {
       return 'store';
     }
 
-    // 3. ARITHMETIC指令：算术运算
+    // 3. ARITHMETIC instruction: arithmetic operations
     if (hasArithmetic || code.match(/[+\-*/%]/)) {
       return 'arithmetic';
     }
 
-    // 4. CONTROL指令：控制流（跳转、条件判断）
+    // 4. CONTROL instruction: control flow (jumps, conditionals)
     if (hasControlFlow || code.includes('break') || code.includes('continue')) {
       return 'control';
     }
 
-    // 5. CALL指令：函数调用
+    // 5. CALL instruction: function calls
     if (hasFunctionCall || code.includes('.apply(') || code.includes('.call(')) {
       return 'call';
     }
 
-    // 6. 默认为unknown
+    // 6. Default to unknown
     return 'unknown';
   }
 
   /**
-   * 还原代码
+   * Restore code
    */
   private async restoreCode(
     code: string,
@@ -470,7 +470,7 @@ export class JSVMPDeobfuscator {
     const warnings: string[] = [];
     const unresolvedParts: UnresolvedPart[] = [];
 
-    // 根据VM类型选择还原策略
+    // Select restoration strategy based on VM type
     if (vmType === 'obfuscator.io') {
       return await this.restoreObfuscatorIO(code, aggressive, warnings, unresolvedParts);
     } else if (vmType === 'jsfuck') {
@@ -478,14 +478,14 @@ export class JSVMPDeobfuscator {
     } else if (vmType === 'jjencode') {
       return await this.restoreJJEncode(code, warnings);
     } else {
-      // 自定义VM，使用LLM辅助
+      // Custom VM, use LLM assistance
       return await this.restoreCustomVM(code, aggressive, warnings, unresolvedParts);
     }
   }
 
   /**
-   * 还原obfuscator.io混淆（完整实现）
-   * 参考：obfuscator.io的VM保护模式
+   * Restore obfuscator.io obfuscation (full implementation)
+   * Reference: obfuscator.io VM protection patterns
    */
   private async restoreObfuscatorIO(
     code: string,
@@ -502,23 +502,23 @@ export class JSVMPDeobfuscator {
     let confidence = 0.5;
 
     try {
-      // 1. 提取字符串数组
+      // 1. Extract string array
       const stringArrayMatch = code.match(/var\s+(_0x[a-f0-9]+)\s*=\s*(\[.*?\]);/s);
       if (stringArrayMatch) {
         const arrayName = stringArrayMatch[1];
         const arrayContent = stringArrayMatch[2];
 
-        logger.info(`🔍 发现字符串数组: ${arrayName}`);
+        logger.info(`Found string array: ${arrayName}`);
 
         try {
-          // 尝试解析字符串数组（使用Function构造器更安全）
+          // Try to parse string array (using Function constructor for safety)
           const arrayFunc = new Function(`return ${arrayContent || '[]'};`);
           const stringArray = arrayFunc();
 
           if (Array.isArray(stringArray)) {
-            logger.info(`✅ 成功解析字符串数组，包含 ${stringArray.length} 个字符串`);
+            logger.info(`Successfully parsed string array, containing ${stringArray.length} strings`);
 
-            // 替换所有对字符串数组的引用
+            // Replace all references to the string array
             const refPattern = new RegExp(`${arrayName}\\[(\\d+)\\]`, 'g');
             restored = restored.replace(refPattern, (_match, index) => {
               const idx = parseInt(index, 10);
@@ -531,12 +531,12 @@ export class JSVMPDeobfuscator {
             confidence += 0.2;
           }
         } catch (e) {
-          warnings.push(`字符串数组解析失败: ${e}`);
+          warnings.push(`String array parsing failed: ${e}`);
 
-          // LLM 辅助提取字符串数组
+          // LLM-assisted string array extraction
           if (this.llm) {
             try {
-              logger.info('🤖 使用LLM辅助提取字符串数组...');
+              logger.info('Using LLM to assist with string array extraction...');
               const snippet = (arrayContent || '').substring(0, 3000);
               const response = await this.llm.chat([
                 { role: 'system', content: 'You are a JavaScript reverse engineer. Extract and decode the string array from obfuscator.io protected code. Return ONLY a valid JSON array of decoded strings.' },
@@ -547,7 +547,7 @@ export class JSVMPDeobfuscator {
               if (jsonMatch) {
                 const llmArray = JSON.parse(jsonMatch[0]);
                 if (Array.isArray(llmArray) && llmArray.length > 0) {
-                  logger.info(`✅ LLM提取到 ${llmArray.length} 个字符串`);
+                  logger.info(`LLM extracted ${llmArray.length} strings`);
                   const refPattern = new RegExp(`${arrayName}\\[(\\d+)\\]`, 'g');
                   restored = restored.replace(refPattern, (_match, index) => {
                     const idx = parseInt(index, 10);
@@ -555,45 +555,45 @@ export class JSVMPDeobfuscator {
                     return _match;
                   });
                   confidence += 0.15;
-                  warnings.push('字符串数组由AI辅助提取，准确性需验证');
+                  warnings.push('String array extracted with AI assistance, accuracy needs verification');
                 }
               }
             } catch (llmErr) {
-              logger.warn('LLM辅助提取字符串数组失败', llmErr);
+              logger.warn('LLM-assisted string array extraction failed', llmErr);
             }
           }
 
           unresolvedParts.push({
             location: 'String Array',
-            reason: '无法解析字符串数组',
-            suggestion: this.llm ? 'AI已尝试辅助提取，结果可能不完整' : '配置LLM服务以启用AI辅助提取',
+            reason: 'Unable to parse string array',
+            suggestion: this.llm ? 'AI has attempted assisted extraction, results may be incomplete' : 'Configure LLM service to enable AI-assisted extraction',
           });
         }
       }
 
-      // 2. 移除字符串数组旋转函数
+      // 2. Remove string array rotation function
       restored = restored.replace(
         /\(function\s*\(_0x[a-f0-9]+,\s*_0x[a-f0-9]+\)\s*\{[\s\S]*?\}\(_0x[a-f0-9]+,\s*0x[a-f0-9]+\)\);?/g,
         ''
       );
 
-      // 3. 简化函数包装器
+      // 3. Simplify function wrappers
       if (aggressive) {
-        // 移除IIFE包装
+        // Remove IIFE wrappers
         restored = restored.replace(/\(function\s*\(\)\s*\{([\s\S]*)\}\(\)\);?/g, '$1');
         confidence += 0.1;
       }
 
-      // 4. 还原十六进制数字
+      // 4. Restore hexadecimal numbers
       restored = restored.replace(/0x([0-9a-f]+)/gi, (_match, hex) => {
         return String(parseInt(hex, 16));
       });
 
-      // 5. 清理空语句
+      // 5. Clean up empty statements
       restored = restored.replace(/;\s*;/g, ';');
       restored = restored.replace(/\{\s*\}/g, '{}');
 
-      warnings.push('obfuscator.io还原完成，部分复杂逻辑可能需要AI进一步分析');
+      warnings.push('obfuscator.io restoration complete, some complex logic may require further AI analysis');
 
       return {
         code: restored,
@@ -602,7 +602,7 @@ export class JSVMPDeobfuscator {
         unresolvedParts: unresolvedParts.length > 0 ? unresolvedParts : undefined,
       };
     } catch (error) {
-      warnings.push(`obfuscator.io还原失败: ${error}`);
+      warnings.push(`obfuscator.io restoration failed: ${error}`);
       return {
         code,
         confidence: 0.2,
@@ -613,9 +613,9 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * 还原JSFuck混淆（完整实现 + LLM降级）
-   * JSFuck原理：只使用6个字符 []()!+ 来编写JavaScript
-   * 例如：false = ![] , true = !![] , undefined = [][[]] , NaN = +[![]]
+   * Restore JSFuck obfuscation (full implementation + LLM fallback)
+   * JSFuck principle: uses only 6 characters []()!+ to write JavaScript
+   * Examples: false = ![] , true = !![] , undefined = [][[]] , NaN = +[![]]
    */
   private async restoreJSFuck(code: string, warnings: string[]): Promise<{
     code: string;
@@ -623,38 +623,38 @@ export class JSVMPDeobfuscator {
     warnings: string[];
   }> {
     try {
-      logger.info('🔍 检测到JSFuck混淆，尝试还原...');
+      logger.info('JSFuck obfuscation detected, attempting restoration...');
 
-      // JSFuck代码通常非常长，直接执行可能会超时
-      // 我们尝试使用Function构造器执行它
+      // JSFuck code is usually very long, direct execution may timeout
+      // We try using the Function constructor to execute it
       try {
-        // 限制代码长度避免执行超时
+        // Limit code length to avoid execution timeout
         if (code.length > 100000) {
-          warnings.push('JSFuck代码过长，本地执行可能超时，尝试AI分析...');
+          warnings.push('JSFuck code too long, local execution may timeout, attempting AI analysis...');
           return await this.llmDecodeEncoding(code, 'JSFuck', warnings);
         }
 
-        // 尝试执行JSFuck代码获取原始代码
+        // Try executing JSFuck code to get the original code
         const func = new Function(`return ${code};`);
         const result = func();
 
         if (typeof result === 'string') {
-          logger.info('✅ JSFuck还原成功');
+          logger.info('JSFuck restoration successful');
           return {
             code: result,
             confidence: 0.9,
-            warnings: ['JSFuck已成功还原'],
+            warnings: ['JSFuck successfully restored'],
           };
         } else {
-          warnings.push('JSFuck执行结果不是字符串，尝试AI分析...');
+          warnings.push('JSFuck execution result is not a string, attempting AI analysis...');
           return await this.llmDecodeEncoding(code, 'JSFuck', warnings);
         }
       } catch (execError) {
-        warnings.push(`JSFuck本地执行失败: ${execError}`);
+        warnings.push(`JSFuck local execution failed: ${execError}`);
         return await this.llmDecodeEncoding(code, 'JSFuck', warnings);
       }
     } catch (error) {
-      warnings.push(`JSFuck还原失败: ${error}`);
+      warnings.push(`JSFuck restoration failed: ${error}`);
       return {
         code,
         confidence: 0.1,
@@ -664,9 +664,9 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * 还原JJEncode混淆（完整实现 + LLM降级）
-   * JJEncode原理：使用日文字符和特殊符号编码JavaScript
-   * 特征：$=~[]; $={___:++$,$$$$:(![]+"")[$]...
+   * Restore JJEncode obfuscation (full implementation + LLM fallback)
+   * JJEncode principle: uses Japanese characters and special symbols to encode JavaScript
+   * Signature: $=~[]; $={___:++$,$$$$:(![]+"")[$]...
    */
   private async restoreJJEncode(code: string, warnings: string[]): Promise<{
     code: string;
@@ -674,42 +674,42 @@ export class JSVMPDeobfuscator {
     warnings: string[];
   }> {
     try {
-      logger.info('🔍 检测到JJEncode混淆，尝试还原...');
+      logger.info('JJEncode obfuscation detected, attempting restoration...');
 
-      // JJEncode的还原方法：直接执行代码
+      // JJEncode restoration method: directly execute the code
       try {
-        // 提取JJEncode的核心代码（通常在最后一行）
+        // Extract the core JJEncode code (usually on the last line)
         const lines = code.split('\n').filter((line) => line.trim());
         const lastLine = lines.length > 0 ? lines[lines.length - 1] : '';
 
-        // JJEncode通常以 $$$$ 结尾
+        // JJEncode usually ends with $$$$
         if (lastLine && lastLine.includes('$$$$')) {
-          // 尝试执行获取原始代码
+          // Try executing to get the original code
           const func = new Function(`${code}; return $$$$()`);
           const result = func();
 
           if (typeof result === 'string') {
-            logger.info('✅ JJEncode还原成功');
+            logger.info('JJEncode restoration successful');
             return {
               code: result,
               confidence: 0.9,
-              warnings: ['JJEncode已成功还原'],
+              warnings: ['JJEncode successfully restored'],
             };
           }
         }
 
-        // 如果上面的方法失败，尝试直接执行整个代码
+        // If the above method fails, try executing the entire code directly
         const func2 = new Function(code);
         func2();
 
-        warnings.push('JJEncode本地执行完成但无法提取原始代码，尝试AI分析...');
+        warnings.push('JJEncode local execution completed but unable to extract original code, attempting AI analysis...');
         return await this.llmDecodeEncoding(code, 'JJEncode', warnings);
       } catch (execError) {
-        warnings.push(`JJEncode本地执行失败: ${execError}`);
+        warnings.push(`JJEncode local execution failed: ${execError}`);
         return await this.llmDecodeEncoding(code, 'JJEncode', warnings);
       }
     } catch (error) {
-      warnings.push(`JJEncode还原失败: ${error}`);
+      warnings.push(`JJEncode restoration failed: ${error}`);
       return {
         code,
         confidence: 0.1,
@@ -719,8 +719,8 @@ export class JSVMPDeobfuscator {
   }
 
   /**
-   * LLM辅助解码编码型混淆（JSFuck/JJEncode/AAEncode等）
-   * 当本地执行失败时，利用AI分析混淆代码并尝试还原
+   * LLM-assisted decoding of encoding-based obfuscation (JSFuck/JJEncode/AAEncode etc.)
+   * When local execution fails, use AI to analyze obfuscated code and attempt restoration
    */
   private async llmDecodeEncoding(
     code: string,
@@ -732,15 +732,15 @@ export class JSVMPDeobfuscator {
     warnings: string[];
   }> {
     if (!this.llm) {
-      warnings.push(`未配置LLM服务，${encodingType}本地还原失败后无法进行AI辅助分析`);
-      warnings.push('建议：配置DeepSeek/OpenAI API以启用AI辅助反混淆');
+      warnings.push(`LLM service not configured, unable to perform AI-assisted analysis after ${encodingType} local restoration failed`);
+      warnings.push('Suggestion: configure DeepSeek/OpenAI API to enable AI-assisted deobfuscation');
       return { code, confidence: 0.1, warnings };
     }
 
     try {
-      logger.info(`🤖 使用LLM辅助分析${encodingType}混淆...`);
+      logger.info(`Using LLM to assist with ${encodingType} obfuscation analysis...`);
 
-      // 截取代码片段，避免token超限
+      // Truncate code snippet to avoid token limit
       const snippet = code.length > 5000 ? code.substring(0, 5000) + '\n\n// ... (code truncated)' : code;
 
       const response = await this.llm.chat([
@@ -778,24 +778,24 @@ Return a JSON object:
         },
       ], { temperature: 0.1, maxTokens: 4000 });
 
-      // 解析LLM返回
+      // Parse LLM response
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         try {
           const result = JSON.parse(jsonMatch[0]);
 
           if (result.decoded && result.decoded !== code && result.decoded.length > 0) {
-            logger.info(`✅ AI辅助${encodingType}解码完成`);
-            warnings.push(`${encodingType}由AI辅助解码，准确性: ${Math.round((result.confidence || 0.5) * 100)}%`);
+            logger.info(`AI-assisted ${encodingType} decoding complete`);
+            warnings.push(`${encodingType} decoded with AI assistance, accuracy: ${Math.round((result.confidence || 0.5) * 100)}%`);
 
             if (result.mechanism) {
-              warnings.push(`编码机制: ${result.mechanism}`);
+              warnings.push(`Encoding mechanism: ${result.mechanism}`);
             }
             if (result.keyFindings && Array.isArray(result.keyFindings)) {
-              result.keyFindings.forEach((f: string) => warnings.push(`发现: ${f}`));
+              result.keyFindings.forEach((f: string) => warnings.push(`Finding: ${f}`));
             }
             if (result.manualSteps && Array.isArray(result.manualSteps) && result.manualSteps.length > 0) {
-              warnings.push(`需手动完成: ${result.manualSteps.join('; ')}`);
+              warnings.push(`Manual steps required: ${result.manualSteps.join('; ')}`);
             }
 
             return {
@@ -805,18 +805,18 @@ Return a JSON object:
             };
           }
 
-          // LLM返回了分析但没有成功解码
+          // LLM returned analysis but did not successfully decode
           if (result.mechanism || result.keyFindings) {
-            warnings.push(`AI分析了${encodingType}编码机制但未能完全解码`);
-            if (result.mechanism) warnings.push(`机制: ${result.mechanism}`);
-            if (result.keyFindings) result.keyFindings.forEach((f: string) => warnings.push(`发现: ${f}`));
-            if (result.manualSteps) result.manualSteps.forEach((s: string) => warnings.push(`建议: ${s}`));
+            warnings.push(`AI analyzed ${encodingType} encoding mechanism but could not fully decode`);
+            if (result.mechanism) warnings.push(`Mechanism: ${result.mechanism}`);
+            if (result.keyFindings) result.keyFindings.forEach((f: string) => warnings.push(`Finding: ${f}`));
+            if (result.manualSteps) result.manualSteps.forEach((s: string) => warnings.push(`Suggestion: ${s}`));
           }
         } catch {
-          // JSON解析失败，尝试直接使用LLM文本输出
+          // JSON parsing failed, try using LLM text output directly
           const codeBlockMatch = response.content.match(/```(?:javascript|js)?\s*([\s\S]*?)```/);
           if (codeBlockMatch && codeBlockMatch[1].trim().length > 10) {
-            warnings.push(`${encodingType}由AI辅助解码（从文本响应提取），需验证准确性`);
+            warnings.push(`${encodingType} decoded with AI assistance (extracted from text response), accuracy needs verification`);
             return {
               code: codeBlockMatch[1].trim(),
               confidence: 0.4,
@@ -826,18 +826,18 @@ Return a JSON object:
         }
       }
 
-      warnings.push(`AI未能成功解码${encodingType}，返回原始代码`);
+      warnings.push(`AI failed to successfully decode ${encodingType}, returning original code`);
       return { code, confidence: 0.15, warnings };
     } catch (error) {
-      logger.warn(`LLM辅助${encodingType}解码失败`, error);
-      warnings.push(`AI辅助分析失败: ${error}`);
+      logger.warn(`LLM-assisted ${encodingType} decoding failed`, error);
+      warnings.push(`AI-assisted analysis failed: ${error}`);
       return { code, confidence: 0.1, warnings };
     }
   }
 
   /**
-   * 还原自定义VM（使用LLM辅助 - 完整实现）
-   * 基于实战经验：抖音、头条等自定义JSVMP
+   * Restore custom VM (using LLM assistance - full implementation)
+   * Based on real-world experience: Douyin, Toutiao and other custom JSVMPs
    */
   private async restoreCustomVM(
     code: string,
@@ -851,61 +851,61 @@ Return a JSON object:
     unresolvedParts?: UnresolvedPart[];
   }> {
     if (!this.llm) {
-      warnings.push('未配置LLM服务，无法进行智能还原');
-      warnings.push('建议：配置DeepSeek/OpenAI API以启用AI辅助反混淆');
+      warnings.push('LLM service not configured, unable to perform intelligent restoration');
+      warnings.push('Suggestion: configure DeepSeek/OpenAI API to enable AI-assisted deobfuscation');
 
-      // 尝试基础的模式匹配还原（含LLM结构分析降级）
+      // Try basic pattern matching restoration (with LLM structural analysis fallback)
       return await this.restoreCustomVMBasic(code, aggressive, warnings, unresolvedParts);
     }
 
     try {
-      logger.info('🤖 使用LLM辅助分析自定义VM...');
+      logger.info('Using LLM to assist with custom VM analysis...');
 
-      // 1. 提取VM的关键代码片段（限制长度避免token超限）
+      // 1. Extract key VM code snippets (limit length to avoid token overflow)
       const codeSnippet = code.substring(0, 5000);
 
-      // 2. 构建专业的LLM提示词
-      const prompt = `你是一个JavaScript逆向工程专家，专门分析JSVMP（JavaScript Virtual Machine Protection）混淆代码。
+      // 2. Build professional LLM prompt
+      const prompt = `You are a JavaScript reverse engineering expert, specializing in analyzing JSVMP (JavaScript Virtual Machine Protection) obfuscated code.
 
-以下是一段JSVMP混淆的JavaScript代码片段：
+Below is a JSVMP-obfuscated JavaScript code snippet:
 
 \`\`\`javascript
 ${codeSnippet}
 \`\`\`
 
-请分析这段代码并回答以下问题：
+Please analyze this code and answer the following questions:
 
-1. **VM类型识别**：这是什么类型的虚拟机保护？（obfuscator.io / 自定义VM / 其他）
+1. **VM Type Identification**: What type of virtual machine protection is this? (obfuscator.io / custom VM / other)
 
-2. **指令集分析**：
-   - 程序计数器（PC）变量名是什么？
-   - 操作数栈（Stack）变量名是什么？
-   - 寄存器（Registers）变量名是什么？
-   - 字节码数组变量名是什么？
+2. **Instruction Set Analysis**:
+   - What is the program counter (PC) variable name?
+   - What is the operand stack (Stack) variable name?
+   - What is the registers variable name?
+   - What is the bytecode array variable name?
 
-3. **关键函数定位**：
-   - VM解释器函数的位置（函数名或行号）
-   - 指令分发器（switch语句）的位置
-   - 字节码解析函数的位置
+3. **Key Function Location**:
+   - Location of the VM interpreter function (function name or line number)
+   - Location of the instruction dispatcher (switch statement)
+   - Location of the bytecode parsing function
 
-4. **还原建议**：
-   - 如何提取字节码？
-   - 如何还原原始逻辑？
-   - 有哪些需要注意的陷阱？
+4. **Restoration Suggestions**:
+   - How to extract the bytecode?
+   - How to restore the original logic?
+   - What pitfalls should be noted?
 
-请以JSON格式返回分析结果：
+Please return the analysis results in JSON format:
 {
-  "vmType": "类型",
-  "programCounter": "PC变量名",
-  "stack": "栈变量名",
-  "registers": "寄存器变量名",
-  "bytecodeArray": "字节码数组变量名",
-  "interpreterFunction": "解释器函数位置",
-  "restorationSteps": ["步骤1", "步骤2", ...],
-  "warnings": ["警告1", "警告2", ...]
+  "vmType": "type",
+  "programCounter": "PC variable name",
+  "stack": "stack variable name",
+  "registers": "registers variable name",
+  "bytecodeArray": "bytecode array variable name",
+  "interpreterFunction": "interpreter function location",
+  "restorationSteps": ["step1", "step2", ...],
+  "warnings": ["warning1", "warning2", ...]
 }`;
 
-      // 3. 调用LLM分析
+      // 3. Call LLM for analysis
       const response = await this.llm.chat([
         {
           role: 'user',
@@ -915,25 +915,25 @@ ${codeSnippet}
 
       const analysisText = response.content;
 
-      logger.info('✅ LLM分析完成');
-      logger.info(`分析结果: ${analysisText.substring(0, 200)}...`);
+      logger.info('LLM analysis complete');
+      logger.info(`Analysis result: ${analysisText.substring(0, 200)}...`);
 
-      // 4. 解析LLM返回的JSON
+      // 4. Parse JSON returned by LLM
       let vmAnalysis: any;
       try {
-        // 尝试提取JSON
+        // Try to extract JSON
         const jsonMatch = analysisText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
           vmAnalysis = JSON.parse(jsonMatch[0]);
         }
       } catch (e) {
-        warnings.push('LLM返回结果解析失败，使用基础还原方法');
+        warnings.push('LLM response parsing failed, using basic restoration method');
         return await this.restoreCustomVMBasic(code, aggressive, warnings, unresolvedParts);
       }
 
-      // 5. 基于LLM分析结果进行还原
+      // 5. Perform restoration based on LLM analysis results
       if (vmAnalysis) {
-        warnings.push(`LLM识别的VM类型: ${vmAnalysis.vmType || 'Unknown'}`);
+        warnings.push(`LLM identified VM type: ${vmAnalysis.vmType || 'Unknown'}`);
 
         if (vmAnalysis.warnings && Array.isArray(vmAnalysis.warnings)) {
           warnings.push(...vmAnalysis.warnings);
@@ -942,7 +942,7 @@ ${codeSnippet}
         if (vmAnalysis.restorationSteps && Array.isArray(vmAnalysis.restorationSteps)) {
           unresolvedParts.push({
             location: 'VM Restoration',
-            reason: 'LLM建议的还原步骤',
+            reason: 'LLM-suggested restoration steps',
             suggestion: vmAnalysis.restorationSteps.join('\n'),
           });
         }
@@ -957,15 +957,15 @@ ${codeSnippet}
 
       return await this.restoreCustomVMBasic(code, aggressive, warnings, unresolvedParts);
     } catch (error) {
-      logger.error('LLM辅助还原失败', error);
-      warnings.push(`LLM辅助还原失败: ${error}`);
+      logger.error('LLM-assisted restoration failed', error);
+      warnings.push(`LLM-assisted restoration failed: ${error}`);
       return await this.restoreCustomVMBasic(code, aggressive, warnings, unresolvedParts);
     }
   }
 
   /**
-   * 基础的自定义VM还原（无LLM可用时的降级方案）
-   * 在基础模式匹配之外，如果有LLM会尝试请求AI进行结构分析
+   * Basic custom VM restoration (fallback when no LLM is available)
+   * Beyond basic pattern matching, if LLM is available it will attempt AI structural analysis
    */
   private async restoreCustomVMBasic(
     code: string,
@@ -982,30 +982,30 @@ ${codeSnippet}
     let confidence = 0.3;
 
     try {
-      // 1. 移除常见的混淆模式
-      // 移除空的if语句
+      // 1. Remove common obfuscation patterns
+      // Remove empty if statements
       restored = restored.replace(/if\s*\([^)]*\)\s*\{\s*\}/g, '');
 
-      // 2. 简化布尔表达式
+      // 2. Simplify boolean expressions
       restored = restored.replace(/!!\s*\(/g, 'Boolean(');
 
-      // 3. 还原简单的字符串拼接
+      // 3. Restore simple string concatenation
       restored = restored.replace(/""\s*\+\s*/g, '');
 
       if (aggressive) {
-        // 4. 移除debugger语句
+        // 4. Remove debugger statements
         restored = restored.replace(/debugger;?/g, '');
         confidence += 0.1;
 
-        // 5. 简化三元表达式
+        // 5. Simplify ternary expressions
         restored = restored.replace(/\?\s*([^:]+)\s*:\s*\1/g, '$1');
         confidence += 0.05;
       }
 
-      // 6. 尝试LLM结构分析（即使不是完整的VM还原模式，也尝试获取有用信息）
+      // 6. Try LLM structural analysis (even if not full VM restoration mode, try to get useful info)
       if (this.llm) {
         try {
-          logger.info('🤖 使用LLM对自定义VM进行结构分析...');
+          logger.info('Using LLM for structural analysis of custom VM...');
           const snippet = code.length > 4000 ? code.substring(0, 4000) + '\n// ... truncated' : code;
 
           const response = await this.llm.chat([
@@ -1045,51 +1045,51 @@ Return a JSON object:
           const jsonMatch = response.content.match(/\{[\s\S]*\}/);
           if (jsonMatch) {
             const analysis = JSON.parse(jsonMatch[0]);
-            warnings.push('AI结构分析完成');
+            warnings.push('AI structural analysis complete');
 
             if (analysis.vmStructure) {
               const vs = analysis.vmStructure;
-              if (vs.interpreterLoop) warnings.push(`VM解释器位置: ${vs.interpreterLoop}`);
-              if (vs.bytecodeVar) warnings.push(`字节码变量: ${vs.bytecodeVar}`);
-              if (vs.pcVar) warnings.push(`程序计数器: ${vs.pcVar}`);
-              if (vs.stackVar) warnings.push(`栈变量: ${vs.stackVar}`);
+              if (vs.interpreterLoop) warnings.push(`VM interpreter location: ${vs.interpreterLoop}`);
+              if (vs.bytecodeVar) warnings.push(`Bytecode variable: ${vs.bytecodeVar}`);
+              if (vs.pcVar) warnings.push(`Program counter: ${vs.pcVar}`);
+              if (vs.stackVar) warnings.push(`Stack variable: ${vs.stackVar}`);
             }
 
             if (analysis.instructionMap && typeof analysis.instructionMap === 'object') {
               const mapStr = Object.entries(analysis.instructionMap)
                 .map(([k, v]) => `${k}→${v}`)
                 .join(', ');
-              warnings.push(`指令映射: ${mapStr}`);
+              warnings.push(`Instruction mapping: ${mapStr}`);
             }
 
             if (analysis.restorationApproach) {
               unresolvedParts.push({
                 location: 'Custom VM',
-                reason: 'AI结构分析已完成，需要进一步还原',
+                reason: 'AI structural analysis complete, further restoration needed',
                 suggestion: analysis.restorationApproach,
               });
             }
 
             if (analysis.simplifiedLogic && analysis.simplifiedLogic.length > 10) {
-              warnings.push(`AI推断的简化逻辑: ${analysis.simplifiedLogic.substring(0, 500)}`);
+              warnings.push(`AI-inferred simplified logic: ${analysis.simplifiedLogic.substring(0, 500)}`);
             }
 
             confidence += 0.15;
           }
         } catch (llmErr) {
-          logger.warn('LLM结构分析失败', llmErr);
-          warnings.push('AI结构分析失败，使用纯模式匹配结果');
+          logger.warn('LLM structural analysis failed', llmErr);
+          warnings.push('AI structural analysis failed, using pure pattern matching results');
         }
       } else {
-        warnings.push('使用基础模式匹配进行还原，结果可能不完整');
-        warnings.push('建议：配置LLM服务以启用AI辅助分析');
+        warnings.push('Using basic pattern matching for restoration, results may be incomplete');
+        warnings.push('Suggestion: configure LLM service to enable AI-assisted analysis');
       }
 
       if (unresolvedParts.length === 0) {
         unresolvedParts.push({
           location: 'Custom VM',
-          reason: '自定义VM需要深度分析',
-          suggestion: this.llm ? '已通过AI获取结构信息，可结合动态调试进一步还原' : '配置LLM服务或使用插桩技术记录VM执行流程',
+          reason: 'Custom VM requires deep analysis',
+          suggestion: this.llm ? 'Structural info obtained via AI, can be combined with dynamic debugging for further restoration' : 'Configure LLM service or use instrumentation techniques to record VM execution flow',
         });
       }
 
@@ -1100,7 +1100,7 @@ Return a JSON object:
         unresolvedParts: unresolvedParts.length > 0 ? unresolvedParts : undefined,
       };
     } catch (error) {
-      warnings.push(`基础还原失败: ${error}`);
+      warnings.push(`Basic restoration failed: ${error}`);
       return {
         code,
         confidence: 0.1,

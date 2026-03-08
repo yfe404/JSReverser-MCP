@@ -1,14 +1,14 @@
 /**
- * 高级反混淆模块 - 支持2024-2025最新混淆技术
- * 
- * 支持的混淆类型:
- * 1. Invisible Unicode Obfuscation (2025新技术)
- * 2. VM Protection (虚拟机保护)
- * 3. Control Flow Flattening (控制流平坦化)
- * 4. String Array Rotation (字符串数组旋转)
- * 5. Dead Code Injection (死代码注入)
- * 6. Opaque Predicates (不透明谓词)
- * 7. Custom Obfuscators (魔改混淆器)
+ * Advanced Deobfuscation Module - Supports latest 2024-2025 obfuscation techniques
+ *
+ * Supported obfuscation types:
+ * 1. Invisible Unicode Obfuscation (2025 new technique)
+ * 2. VM Protection
+ * 3. Control Flow Flattening
+ * 4. String Array Rotation
+ * 5. Dead Code Injection
+ * 6. Opaque Predicates
+ * 7. Custom Obfuscators
  */
 
 import { logger } from '../../utils/logger.js';
@@ -22,10 +22,10 @@ import * as t from '@babel/types';
 
 export interface AdvancedDeobfuscateOptions {
   code: string;
-  detectOnly?: boolean; // 仅检测混淆类型
-  aggressiveVM?: boolean; // 激进VM反混淆
-  useASTOptimization?: boolean; // 使用AST优化
-  timeout?: number; // 超时时间（毫秒）
+  detectOnly?: boolean; // Only detect obfuscation types
+  aggressiveVM?: boolean; // Aggressive VM deobfuscation
+  useASTOptimization?: boolean; // Use AST optimization
+  timeout?: number; // Timeout in milliseconds
 }
 
 export interface AdvancedDeobfuscateResult {
@@ -33,7 +33,7 @@ export interface AdvancedDeobfuscateResult {
   detectedTechniques: string[];
   confidence: number;
   warnings: string[];
-  astOptimized?: boolean; // AST是否被优化
+  astOptimized?: boolean; // Whether AST was optimized
   vmDetected?: {
     type: string;
     instructions: number;
@@ -49,7 +49,7 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * 高级反混淆入口
+   * Advanced deobfuscation entry point
    */
   async deobfuscate(options: AdvancedDeobfuscateOptions): Promise<AdvancedDeobfuscateResult> {
     logger.info('Starting advanced deobfuscation...');
@@ -62,24 +62,24 @@ export class AdvancedDeobfuscator {
     let astOptimized = false;
 
     try {
-      // 0. 预处理：标准化代码格式
+      // 0. Preprocessing: normalize code format
       code = this.normalizeCode(code);
 
-      // 1. 检测Invisible Unicode混淆
+      // 1. Detect Invisible Unicode obfuscation
       if (this.detectInvisibleUnicode(code)) {
         detectedTechniques.push('invisible-unicode');
         logger.info('Detected: Invisible Unicode Obfuscation (2025)');
         code = this.decodeInvisibleUnicode(code);
       }
 
-      // 2. 检测和移除字符串编码
+      // 2. Detect and remove string encoding
       if (this.detectStringEncoding(code)) {
         detectedTechniques.push('string-encoding');
         logger.info('Detected: String Encoding');
         code = this.decodeStrings(code);
       }
 
-      // 3. 检测VM保护
+      // 3. Detect VM protection
       const vmInfo = this.detectVMProtection(code);
       if (vmInfo.detected) {
         detectedTechniques.push('vm-protection');
@@ -101,35 +101,35 @@ export class AdvancedDeobfuscator {
         }
       }
 
-      // 4. 检测控制流平坦化
+      // 4. Detect control flow flattening
       if (this.detectControlFlowFlattening(code)) {
         detectedTechniques.push('control-flow-flattening');
         logger.info('Detected: Control Flow Flattening');
         code = await this.unflattenControlFlow(code);
       }
 
-      // 5. 检测字符串数组旋转
+      // 5. Detect string array rotation
       if (this.detectStringArrayRotation(code)) {
         detectedTechniques.push('string-array-rotation');
         logger.info('Detected: String Array Rotation');
         code = this.derotateStringArray(code);
       }
 
-      // 6. 检测死代码注入
+      // 6. Detect dead code injection
       if (this.detectDeadCodeInjection(code)) {
         detectedTechniques.push('dead-code-injection');
         logger.info('Detected: Dead Code Injection');
         code = this.removeDeadCode(code);
       }
 
-      // 7. 检测不透明谓词
+      // 7. Detect opaque predicates
       if (this.detectOpaquePredicates(code)) {
         detectedTechniques.push('opaque-predicates');
         logger.info('Detected: Opaque Predicates');
         code = this.removeOpaquePredicates(code);
       }
 
-      // 8. AST优化（常量折叠、表达式简化）
+      // 8. AST optimization (constant folding, expression simplification)
       if (options.useASTOptimization !== false) {
         logger.info('Applying AST optimizations...');
         const optimized = this.applyASTOptimizations(code);
@@ -140,7 +140,7 @@ export class AdvancedDeobfuscator {
         }
       }
 
-      // 9. 使用LLM进行最终清理
+      // 9. Use LLM for final cleanup
       if (this.llm && detectedTechniques.length > 0) {
         logger.info('Using LLM for final cleanup...');
         const llmResult = await this.llmCleanup(code, detectedTechniques);
@@ -169,11 +169,11 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * 检测Invisible Unicode混淆 (2025新技术)
-   * 使用不可见Unicode字符表示二进制数据
+   * Detect Invisible Unicode obfuscation (2025 new technique)
+   * Uses invisible Unicode characters to represent binary data
    */
   private detectInvisibleUnicode(code: string): boolean {
-    // 检测零宽字符
+    // Detect zero-width characters
     const invisibleChars = [
       '\u200B', // Zero Width Space
       '\u200C', // Zero Width Non-Joiner
@@ -186,12 +186,12 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * 解码Invisible Unicode混淆
+   * Decode Invisible Unicode obfuscation
    */
   private decodeInvisibleUnicode(code: string): string {
     logger.info('Decoding invisible unicode...');
 
-    // 映射：不可见字符 -> 二进制位
+    // Mapping: invisible characters -> binary bits
     const charToBit: Record<string, string> = {
       '\u200B': '0',
       '\u200C': '1',
@@ -202,19 +202,19 @@ export class AdvancedDeobfuscator {
 
     let decoded = code;
 
-    // 查找所有不可见字符序列
+    // Find all invisible character sequences
     const invisiblePattern = /[\u200B\u200C\u200D\u2060\uFEFF]+/g;
     const matches = code.match(invisiblePattern);
 
     if (matches) {
       matches.forEach(match => {
-        // 转换为二进制
+        // Convert to binary
         let binary = '';
         for (const char of match) {
           binary += charToBit[char] || '';
         }
 
-        // 二进制转字符串
+        // Binary to string
         if (binary.length % 8 === 0) {
           let text = '';
           for (let i = 0; i < binary.length; i += 8) {
@@ -230,24 +230,24 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * 检测VM保护
+   * Detect VM protection
    */
   private detectVMProtection(code: string): {
     detected: boolean;
     type: string;
     instructionCount: number;
   } {
-    // VM特征：
-    // 1. 大量switch-case语句
-    // 2. 指令数组
-    // 3. 程序计数器(PC)
-    // 4. 栈操作
+    // VM characteristics:
+    // 1. Large number of switch-case statements
+    // 2. Instruction arrays
+    // 3. Program counter (PC)
+    // 4. Stack operations
 
     const vmPatterns = [
-      /while\s*\(\s*true\s*\)\s*\{[\s\S]*?switch\s*\(/i, // 无限循环+switch
-      /var\s+\w+\s*=\s*\[\s*\d+(?:\s*,\s*\d+){10,}\s*\]/i, // 指令数组
-      /\w+\[pc\+\+\]/i, // PC递增
-      /stack\.push|stack\.pop/i, // 栈操作
+      /while\s*\(\s*true\s*\)\s*\{[\s\S]*?switch\s*\(/i, // Infinite loop + switch
+      /var\s+\w+\s*=\s*\[\s*\d+(?:\s*,\s*\d+){10,}\s*\]/i, // Instruction array
+      /\w+\[pc\+\+\]/i, // PC increment
+      /stack\.push|stack\.pop/i, // Stack operations
     ];
 
     const matchCount = vmPatterns.filter(pattern => pattern.test(code)).length;
@@ -264,7 +264,7 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * 统计VM指令数量
+   * Count VM instruction count
    */
   private countVMInstructions(code: string): number {
     const match = code.match(/case\s+\d+:/g);
@@ -272,20 +272,20 @@ export class AdvancedDeobfuscator {
   }
 
   /**
-   * VM反混淆
+   * VM deobfuscation
    *
-   * VM保护是一种高级混淆技术,将JavaScript代码转换为自定义虚拟机指令
-   * 常见的VM混淆器:
+   * VM protection is an advanced obfuscation technique that converts JavaScript code into custom virtual machine instructions
+   * Common VM obfuscators:
    * 1. JScrambler VM Protection
-   * 2. 自定义字节码VM (如TikTok使用的)
+   * 2. Custom bytecode VM (e.g., used by TikTok)
    * 3. Stack-based VM
    *
-   * 反混淆策略:
-   * 1. 识别VM结构 (指令集、解释器、栈/寄存器)
-   * 2. 提取指令序列
-   * 3. 符号执行或动态追踪
-   * 4. 重建原始控制流
-   * 5. LLM辅助理解复杂逻辑
+   * Deobfuscation strategy:
+   * 1. Identify VM structure (instruction set, interpreter, stack/registers)
+   * 2. Extract instruction sequences
+   * 3. Symbolic execution or dynamic tracing
+   * 4. Reconstruct original control flow
+   * 5. LLM-assisted understanding of complex logic
    */
   private async deobfuscateVM(
     code: string,
@@ -294,17 +294,17 @@ export class AdvancedDeobfuscator {
     logger.warn('VM deobfuscation is experimental and may fail');
 
     try {
-      // 第一步: 尝试识别VM结构
+      // Step 1: Try to identify VM structure
       const vmStructure = this.analyzeVMStructure(code);
 
       if (vmStructure.hasInterpreter) {
         logger.info(`Detected VM interpreter with ${vmStructure.instructionTypes.length} instruction types`);
       }
 
-      // 第二步: 提取关键VM组件
+      // Step 2: Extract key VM components
       const vmComponents = this.extractVMComponents(code);
 
-      // 第三步: 使用LLM辅助理解VM逻辑 (优化后的提示词)
+      // Step 3: Use LLM to assist in understanding VM logic (optimized prompt)
       if (this.llm) {
         const prompt = this.buildVMDeobfuscationPrompt(code, vmInfo, vmStructure, vmComponents);
 
@@ -342,11 +342,11 @@ Return clean JavaScript code without any wrapper or formatting.`
           },
           { role: 'user', content: prompt },
         ], {
-          temperature: 0.05, // 极低温度以获得最确定性的输出
+          temperature: 0.05, // Very low temperature for the most deterministic output
           maxTokens: 4000,
         });
 
-        // 验证LLM输出是否是有效的JavaScript
+        // Validate whether LLM output is valid JavaScript
         const deobfuscatedCode = this.extractCodeFromLLMResponse(response.content);
 
         if (this.isValidJavaScript(deobfuscatedCode)) {
@@ -360,7 +360,7 @@ Return clean JavaScript code without any wrapper or formatting.`
         }
       }
 
-      // 第四步: 如果LLM失败,尝试基于规则的简化
+      // Step 4: If LLM fails, try rule-based simplification
       const simplifiedCode = this.simplifyVMCode(code, vmComponents);
 
       return {
@@ -374,7 +374,7 @@ Return clean JavaScript code without any wrapper or formatting.`
   }
 
   /**
-   * 分析VM结构
+   * Analyze VM structure
    */
   private analyzeVMStructure(code: string): {
     hasInterpreter: boolean;
@@ -389,24 +389,24 @@ Return clean JavaScript code without any wrapper or formatting.`
       hasRegisters: false,
     };
 
-    // 检测解释器循环模式
+    // Detect interpreter loop pattern
     if (/while\s*\(\s*true\s*\)|for\s*\(\s*;\s*;\s*\)/.test(code)) {
       structure.hasInterpreter = true;
     }
 
-    // 检测指令分发模式 (switch-case)
+    // Detect instruction dispatch pattern (switch-case)
     const switchMatches = code.match(/case\s+0x[0-9a-f]+:/gi);
     if (switchMatches && switchMatches.length > 10) {
       structure.hasInterpreter = true;
       structure.instructionTypes = switchMatches.map(m => m.replace(/case\s+/i, '').replace(/:/, ''));
     }
 
-    // 检测栈操作
+    // Detect stack operations
     if (/\.push\(|\.pop\(/.test(code)) {
       structure.hasStack = true;
     }
 
-    // 检测寄存器模式
+    // Detect register pattern
     if (/r\d+\s*=|reg\[\d+\]/.test(code)) {
       structure.hasRegisters = true;
     }
@@ -415,7 +415,7 @@ Return clean JavaScript code without any wrapper or formatting.`
   }
 
   /**
-   * 提取VM组件
+   * Extract VM components
    */
   private extractVMComponents(code: string): {
     instructionArray?: string;
@@ -431,7 +431,7 @@ Return clean JavaScript code without any wrapper or formatting.`
       });
 
       traverse(ast, {
-        // 查找大型数组 (可能是指令或数据)
+        // Find large arrays (possibly instructions or data)
         VariableDeclarator(path: any) {
           if (t.isArrayExpression(path.node.init)) {
             const arrayLength = path.node.init.elements.length;
@@ -439,7 +439,7 @@ Return clean JavaScript code without any wrapper or formatting.`
             if (arrayLength > 50) {
               const arrayName = t.isIdentifier(path.node.id) ? path.node.id.name : 'unknown';
 
-              // 检查数组内容类型
+              // Check array content type
               const firstElement = path.node.init.elements[0];
               if (t.isNumericLiteral(firstElement)) {
                 components.instructionArray = arrayName;
@@ -450,7 +450,7 @@ Return clean JavaScript code without any wrapper or formatting.`
           }
         },
 
-        // 查找解释器函数 (包含大型switch语句)
+        // Find interpreter function (contains large switch statement)
         FunctionDeclaration(path: any) {
           let hasBigSwitch = false;
 
@@ -475,7 +475,7 @@ Return clean JavaScript code without any wrapper or formatting.`
   }
 
   /**
-   * 构建VM反混淆提示词
+   * Build VM deobfuscation prompt
    */
   private buildVMDeobfuscationPrompt(
     code: string,
@@ -571,13 +571,13 @@ Return clean JavaScript code starting immediately (no preamble).`;
   }
 
   /**
-   * 从LLM响应中提取代码
+   * Extract code from LLM response
    */
   private extractCodeFromLLMResponse(response: string): string {
-    // 移除markdown代码块标记
+    // Remove markdown code block markers
     let code = response.trim();
 
-    // 移除 ```javascript 或 ```js 标记
+    // Remove ```javascript or ```js markers
     code = code.replace(/^```(?:javascript|js)?\s*\n/i, '');
     code = code.replace(/\n```\s*$/i, '');
 
@@ -585,7 +585,7 @@ Return clean JavaScript code starting immediately (no preamble).`;
   }
 
   /**
-   * 验证是否是有效的JavaScript
+   * Validate whether code is valid JavaScript
    */
   private isValidJavaScript(code: string): boolean {
     try {
@@ -600,19 +600,19 @@ Return clean JavaScript code starting immediately (no preamble).`;
   }
 
   /**
-   * 简化VM代码 (基于规则)
+   * Simplify VM code (rule-based)
    */
   private simplifyVMCode(code: string, vmComponents: any): string {
     try {
       let simplified = code;
 
-      // 移除VM解释器函数 (如果能识别)
+      // Remove VM interpreter function (if identifiable)
       if (vmComponents.interpreterFunction) {
         const regex = new RegExp(`function\\s+${vmComponents.interpreterFunction}\\s*\\([^)]*\\)\\s*\\{[^}]*\\}`, 'g');
         simplified = simplified.replace(regex, '// VM interpreter removed');
       }
 
-      // 移除大型指令数组
+      // Remove large instruction arrays
       if (vmComponents.instructionArray) {
         const regex = new RegExp(`var\\s+${vmComponents.instructionArray}\\s*=\\s*\\[[^\\]]*\\];`, 'g');
         simplified = simplified.replace(regex, '// VM instruction array removed');
@@ -626,24 +626,24 @@ Return clean JavaScript code starting immediately (no preamble).`;
   }
 
   /**
-   * 检测控制流平坦化
+   * Detect control flow flattening
    */
   private detectControlFlowFlattening(code: string): boolean {
-    // 特征：大量连续的switch-case + 状态变量
+    // Characteristics: many consecutive switch-cases + state variable
     const pattern = /while\s*\(\s*!!\s*\[\s*\]\s*\)\s*\{[\s\S]*?switch\s*\(/i;
     return pattern.test(code);
   }
 
   /**
-   * 还原控制流 - 优化版
+   * Restore control flow - optimized version
    *
-   * 控制流平坦化(Control Flow Flattening)是常见的混淆技术
-   * 使用优化的提示词进行LLM辅助反混淆
+   * Control Flow Flattening is a common obfuscation technique
+   * Uses optimized prompts for LLM-assisted deobfuscation
    */
   private async unflattenControlFlow(code: string): Promise<string> {
     logger.info('Unflattening control flow...');
 
-    // 使用LLM辅助 (优化后的提示词)
+    // Use LLM assistance (optimized prompt)
     if (this.llm) {
       try {
         const codeSnippet = code.length > 3000 ? code.substring(0, 3000) + '\n\n// ... (truncated)' : code;
@@ -717,16 +717,16 @@ Output the deobfuscated JavaScript code:`
     return code;
   }
 
-  // 其他检测和反混淆方法的占位符
+  // Placeholder for other detection and deobfuscation methods
   private detectStringArrayRotation(code: string): boolean {
     return /\w+\s*=\s*\w+\s*\+\s*0x[0-9a-f]+/.test(code);
   }
 
   /**
-   * 字符串数组去旋转
-   * 基于CASCADE论文: String Array Rotate Function还原
+   * String array derotation
+   * Based on CASCADE paper: String Array Rotate Function restoration
    *
-   * Obfuscator.IO会生成一个IIFE来旋转字符串数组:
+   * Obfuscator.IO generates an IIFE to rotate the string array:
    * (function(getStringArray, target) {
    *   var stringArray = getStringArray();
    *   while (true) {
@@ -750,9 +750,9 @@ Output the deobfuscated JavaScript code:`
       let derotated = 0;
 
       traverse(ast, {
-        // 查找字符串数组旋转IIFE
+        // Find string array rotation IIFE
         CallExpression(path) {
-          // 检查是否是IIFE调用
+          // Check if it's an IIFE call
           if (!t.isFunctionExpression(path.node.callee) &&
               !t.isArrowFunctionExpression(path.node.callee)) {
             return;
@@ -763,7 +763,7 @@ Output the deobfuscated JavaScript code:`
             return;
           }
 
-          // 检查函数体是否包含while循环和字符串数组操作
+          // Check if function body contains while loop and string array operations
           const hasWhileLoop = func.body.body.some(stmt => t.isWhileStatement(stmt));
           const hasArrayRotation = JSON.stringify(func.body).includes('push') &&
                                    JSON.stringify(func.body).includes('shift');
@@ -771,8 +771,8 @@ Output the deobfuscated JavaScript code:`
           if (hasWhileLoop && hasArrayRotation) {
             logger.debug('Found string array rotation IIFE');
 
-            // 移除这个IIFE,因为它只是用来旋转数组的
-            // 实际的字符串数组已经在运行时被旋转过了
+            // Remove this IIFE since it only serves to rotate the array
+            // The actual string array has already been rotated at runtime
             path.remove();
             derotated++;
           }
@@ -796,13 +796,13 @@ Output the deobfuscated JavaScript code:`
   }
 
   /**
-   * 移除死代码
+   * Remove dead code
    *
-   * 死代码注入是一种常见的混淆技术,包括:
-   * 1. if (false) { ... } - 永远不会执行的代码块
-   * 2. if (!![] ) { ... } - 永远为true的条件
-   * 3. 不可达的代码 - return/throw后的代码
-   * 4. 未使用的变量和函数
+   * Dead code injection is a common obfuscation technique, including:
+   * 1. if (false) { ... } - code blocks that never execute
+   * 2. if (!![] ) { ... } - conditions that are always true
+   * 3. Unreachable code - code after return/throw
+   * 4. Unused variables and functions
    */
   private removeDeadCode(code: string): string {
     logger.info('Removing dead code...');
@@ -816,32 +816,32 @@ Output the deobfuscated JavaScript code:`
       let removed = 0;
 
       traverse(ast, {
-        // 移除 if (false) { ... }
+        // Remove if (false) { ... }
         IfStatement(path: any) {
           const test = path.node.test;
 
-          // 检查 if (false)
+          // Check if (false)
           if (t.isBooleanLiteral(test) && test.value === false) {
             if (path.node.alternate) {
-              // 有else分支,保留else
+              // Has else branch, keep else
               path.replaceWith(path.node.alternate);
             } else {
-              // 没有else,直接移除
+              // No else branch, remove entirely
               path.remove();
             }
             removed++;
             return;
           }
 
-          // 检查 if (true)
+          // Check if (true)
           if (t.isBooleanLiteral(test) && test.value === true) {
-            // 保留then分支
+            // Keep then branch
             path.replaceWith(path.node.consequent);
             removed++;
             return;
           }
 
-          // 检查 if (!![] ) - 永远为true
+          // Check if (!![] ) - always true
           if (t.isUnaryExpression(test) && test.operator === '!' &&
               t.isUnaryExpression(test.argument) && test.argument.operator === '!' &&
               t.isArrayExpression(test.argument.argument)) {
@@ -851,7 +851,7 @@ Output the deobfuscated JavaScript code:`
           }
         },
 
-        // 移除return/throw后的不可达代码
+        // Remove unreachable code after return/throw
         BlockStatement(path: any) {
           const body = path.node.body;
           let foundTerminator = false;
@@ -859,7 +859,7 @@ Output the deobfuscated JavaScript code:`
 
           for (const stmt of body) {
             if (foundTerminator) {
-              // 跳过return/throw后的代码
+              // Skip code after return/throw
               removed++;
               continue;
             }
@@ -894,14 +894,15 @@ Output the deobfuscated JavaScript code:`
   }
 
   /**
-   * 移除不透明谓词
+   * Remove opaque predicates
    *
-   * 不透明谓词是指那些结果在编译时已知但在运行时看起来是动态的条件表达式
-   * 例如:
-   * 1. if (5 > 3) { ... } - 永远为true
-   * 2. if (1 === 2) { ... } - 永远为false
-   * 3. if (x * 0 === 0) { ... } - 永远为true (对于任何数字x)
-   * 4. if ((x | 0) === x) { ... } - 永远为true (对于整数x)
+   * Opaque predicates are conditional expressions whose results are known at compile time
+   * but appear dynamic at runtime.
+   * Examples:
+   * 1. if (5 > 3) { ... } - always true
+   * 2. if (1 === 2) { ... } - always false
+   * 3. if (x * 0 === 0) { ... } - always true (for any number x)
+   * 4. if ((x | 0) === x) { ... } - always true (for integer x)
    */
   private removeOpaquePredicates(code: string): string {
     logger.info('Removing opaque predicates...');
@@ -918,13 +919,13 @@ Output the deobfuscated JavaScript code:`
         IfStatement(path: any) {
           const test = path.node.test;
 
-          // 检查简单的数字比较: if (5 > 3)
+          // Check simple numeric comparisons: if (5 > 3)
           if (t.isBinaryExpression(test)) {
             const left = test.left;
             const right = test.right;
             const operator = test.operator;
 
-            // 两边都是数字字面量
+            // Both sides are numeric literals
             if (t.isNumericLiteral(left) && t.isNumericLiteral(right)) {
               let result: boolean | undefined;
 
@@ -953,10 +954,10 @@ Output the deobfuscated JavaScript code:`
 
               if (result !== undefined) {
                 if (result) {
-                  // 条件永远为true,保留then分支
+                  // Condition is always true, keep then branch
                   path.replaceWith(path.node.consequent);
                 } else {
-                  // 条件永远为false
+                  // Condition is always false
                   if (path.node.alternate) {
                     path.replaceWith(path.node.alternate);
                   } else {
@@ -969,7 +970,7 @@ Output the deobfuscated JavaScript code:`
             }
           }
 
-          // 检查 x * 0 === 0 类型的谓词
+          // Check x * 0 === 0 type predicates
           if (t.isBinaryExpression(test) && (test.operator === '===' || test.operator === '==')) {
             const left = test.left;
             const right = test.right;
@@ -979,7 +980,7 @@ Output the deobfuscated JavaScript code:`
                 t.isNumericLiteral(right) && right.value === 0) {
               if ((t.isNumericLiteral(left.left) && left.left.value === 0) ||
                   (t.isNumericLiteral(left.right) && left.right.value === 0)) {
-                // 永远为true
+                // Always true
                 path.replaceWith(path.node.consequent);
                 removed++;
                 return;
@@ -1002,13 +1003,13 @@ Output the deobfuscated JavaScript code:`
   }
 
   /**
-   * LLM代码清理
+   * LLM code cleanup
    *
-   * 在完成基于规则的反混淆后,使用LLM进行最后的清理和优化:
-   * 1. 改善变量命名
-   * 2. 简化复杂表达式
-   * 3. 添加有意义的注释
-   * 4. 重构冗余代码
+   * After completing rule-based deobfuscation, use LLM for final cleanup and optimization:
+   * 1. Improve variable naming
+   * 2. Simplify complex expressions
+   * 3. Add meaningful comments
+   * 4. Refactor redundant code
    */
   private async llmCleanup(code: string, techniques: string[]): Promise<string | null> {
     if (!this.llm) return null;
@@ -1103,13 +1104,13 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
         },
         { role: 'user', content: prompt },
       ], {
-        temperature: 0.15, // 低温度以保持一致性和确定性
+        temperature: 0.15, // Low temperature to maintain consistency and determinism
         maxTokens: 3000,
       });
 
       const cleanedCode = this.extractCodeFromLLMResponse(response.content);
 
-      // 验证清理后的代码是否有效
+      // Validate whether the cleaned code is valid
       if (this.isValidJavaScript(cleanedCode)) {
         logger.success('LLM cleanup succeeded');
         return cleanedCode;
@@ -1124,33 +1125,33 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
   }
 
   /**
-   * 标准化代码格式
+   * Normalize code format
    */
   private normalizeCode(code: string): string {
-    // 移除多余的空白字符
+    // Remove excess whitespace characters
     code = code.replace(/\s+/g, ' ');
-    // 移除注释中的混淆
+    // Remove obfuscation in comments
     code = code.replace(/\/\*[\s\S]*?\*\//g, '');
     code = code.replace(/\/\/.*/g, '');
     return code.trim();
   }
 
   /**
-   * 检测字符串编码
+   * Detect string encoding
    */
   private detectStringEncoding(code: string): boolean {
-    // 检测常见的字符串编码模式
+    // Detect common string encoding patterns
     const patterns = [
-      /\\x[0-9a-f]{2}/i, // 十六进制编码
-      /\\u[0-9a-f]{4}/i, // Unicode编码
+      /\\x[0-9a-f]{2}/i, // Hexadecimal encoding
+      /\\u[0-9a-f]{4}/i, // Unicode encoding
       /String\.fromCharCode/i, // fromCharCode
-      /atob\(/i, // Base64解码
+      /atob\(/i, // Base64 decoding
     ];
     return patterns.some(p => p.test(code));
   }
 
   /**
-   * 解码字符串
+   * Decode strings
    */
   private decodeStrings(code: string): string {
     logger.info('Decoding strings...');
@@ -1164,14 +1165,14 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
       let decoded = 0;
 
       traverse(ast, {
-        // 解码 String.fromCharCode(...)
+        // Decode String.fromCharCode(...)
         CallExpression(path: any) {
           if (
             t.isMemberExpression(path.node.callee) &&
             t.isIdentifier(path.node.callee.object, { name: 'String' }) &&
             t.isIdentifier(path.node.callee.property, { name: 'fromCharCode' })
           ) {
-            // 检查所有参数是否都是数字
+            // Check if all arguments are numbers
             const allNumbers = path.node.arguments.every((arg: any) => t.isNumericLiteral(arg));
 
             if (allNumbers) {
@@ -1197,7 +1198,7 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
   }
 
   /**
-   * 应用AST优化
+   * Apply AST optimizations
    */
   private applyASTOptimizations(code: string): string {
     logger.info('Applying AST optimizations...');
@@ -1211,7 +1212,7 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
       let optimized = 0;
 
       traverse(ast, {
-        // 常量折叠：计算常量表达式
+        // Constant folding: evaluate constant expressions
         BinaryExpression(path: any) {
           const { left, right, operator } = path.node;
 
@@ -1234,7 +1235,7 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
           }
         },
 
-        // 简化逻辑表达式
+        // Simplify logical expressions
         LogicalExpression(path: any) {
           const { left, right, operator } = path.node;
 
@@ -1251,13 +1252,13 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
           }
         },
 
-        // 移除空语句
+        // Remove empty statements
         EmptyStatement(path: any) {
           path.remove();
           optimized++;
         },
 
-        // 简化三元表达式
+        // Simplify ternary expressions
         ConditionalExpression(path: any) {
           const { test, consequent, alternate } = path.node;
 
@@ -1288,26 +1289,26 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
   }
 
   /**
-   * 计算反混淆置信度
+   * Calculate deobfuscation confidence
    *
-   * 基于多个因素计算置信度分数:
-   * 1. 成功检测和处理的混淆技术数量
-   * 2. 警告和错误数量
-   * 3. 代码复杂度变化
-   * 4. AST节点数量变化
+   * Calculates confidence score based on multiple factors:
+   * 1. Number of successfully detected and processed obfuscation techniques
+   * 2. Number of warnings and errors
+   * 3. Code complexity change
+   * 4. AST node count change
    */
   private calculateConfidence(techniques: string[], warnings: string[], code: string): number {
-    let confidence = 0.3; // 基础置信度
+    let confidence = 0.3; // Base confidence
 
-    // 每成功处理一种混淆技术,增加置信度
+    // Increase confidence for each successfully processed obfuscation technique
     const techniqueBonus = Math.min(techniques.length * 0.12, 0.5);
     confidence += techniqueBonus;
 
-    // 每个警告降低置信度
+    // Each warning reduces confidence
     const warningPenalty = warnings.length * 0.08;
     confidence -= warningPenalty;
 
-    // 特定技术的额外置信度
+    // Extra confidence for specific techniques
     const highConfidenceTechniques = [
       'invisible-unicode',
       'string-array-rotation',
@@ -1323,30 +1324,30 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
 
     confidence += highConfidenceCount * 0.05;
 
-    // VM反混淆的置信度较低
+    // VM deobfuscation has lower confidence
     if (techniques.some(t => t.includes('vm-protection'))) {
       confidence -= 0.15;
     }
 
-    // 控制流平坦化的置信度中等
+    // Control flow flattening has medium confidence
     if (techniques.some(t => t.includes('control-flow-flattening'))) {
       confidence -= 0.05;
     }
 
-    // 根据代码复杂度调整置信度
+    // Adjust confidence based on code complexity
     const complexity = this.estimateCodeComplexity(code);
     if (complexity < 10) {
-      confidence += 0.1; // 简单代码更容易反混淆
+      confidence += 0.1; // Simple code is easier to deobfuscate
     } else if (complexity > 100) {
-      confidence -= 0.1; // 复杂代码更难反混淆
+      confidence -= 0.1; // Complex code is harder to deobfuscate
     }
 
-    // 确保置信度在0-1之间
+    // Ensure confidence is between 0 and 1
     return Math.max(0.1, Math.min(0.95, confidence));
   }
 
   /**
-   * 估算代码复杂度
+   * Estimate code complexity
    */
   private estimateCodeComplexity(code: string): number {
     try {
@@ -1358,28 +1359,28 @@ Return ONLY the cleaned JavaScript code (no markdown, no explanations).`
       let complexity = 0;
 
       traverse(ast, {
-        // 每个函数增加复杂度
+        // Each function increases complexity
         FunctionDeclaration() { complexity += 2; },
         FunctionExpression() { complexity += 2; },
         ArrowFunctionExpression() { complexity += 2; },
 
-        // 每个条件语句增加复杂度
+        // Each conditional statement increases complexity
         IfStatement() { complexity += 1; },
         SwitchStatement() { complexity += 2; },
         ConditionalExpression() { complexity += 1; },
 
-        // 每个循环增加复杂度
+        // Each loop increases complexity
         WhileStatement() { complexity += 2; },
         ForStatement() { complexity += 2; },
         DoWhileStatement() { complexity += 2; },
 
-        // 每个try-catch增加复杂度
+        // Each try-catch increases complexity
         TryStatement() { complexity += 3; },
       });
 
       return complexity;
     } catch {
-      // 如果解析失败，返回高复杂度
+      // If parsing fails, return high complexity
       return 100;
     }
   }

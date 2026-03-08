@@ -1,21 +1,21 @@
-# 浏览器连接指南
+# Browser Connection Guide
 
-这份指南解决两个问题：
+This guide addresses two questions:
 
-- 怎么让 MCP 直接接管你已经打开的 Chrome
-- 怎么判断它到底有没有真正连上浏览器
+- How to have MCP directly take over your already-open Chrome
+- How to determine whether it has actually connected to the browser
 
-## 为什么要直连浏览器
+## Why Connect Directly to the Browser
 
-如果你已经手动登录、过了验证码或完成了复杂交互，直接接管当前 Chrome 比重新打开一个干净实例更实用。
+If you have already logged in manually, passed a CAPTCHA, or completed complex interactions, taking over the current Chrome is more practical than opening a fresh instance.
 
-常见收益：
+Common benefits:
 
-- 复用登录态
-- 复用 Cookie / Storage
-- 保留手动操作后的页面状态
+- Reuse login sessions
+- Reuse Cookies / Storage
+- Preserve page state after manual operations
 
-## 第一步：启动带 remote debugging 的 Chrome
+## Step 1: Launch Chrome with Remote Debugging
 
 ### Windows
 
@@ -35,66 +35,66 @@
 google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-mcp
 ```
 
-## 第二步：确认 remote debugging 已开启
+## Step 2: Verify Remote Debugging is Enabled
 
-浏览器访问：
+Visit in the browser:
 
 ```bash
 http://127.0.0.1:9222/json/version
 ```
 
-如果能看到 `webSocketDebuggerUrl`，说明 remote debugging 已经正常开启。
+If you can see `webSocketDebuggerUrl`, remote debugging is enabled and working.
 
-## 第三步：选择连接方式
+## Step 3: Choose a Connection Method
 
-### 方式 A：`--browserUrl`
+### Method A: `--browserUrl`
 
-最适合新手。
+Best for beginners.
 
 ```bash
 --browserUrl http://127.0.0.1:9222
 ```
 
-特点：
+Features:
 
-- 配置简单
-- 不需要自己解析 websocket 地址
+- Simple configuration
+- No need to parse the websocket address yourself
 
-### 方式 B：`--wsEndpoint`
+### Method B: `--wsEndpoint`
 
-更精确，适合你已经知道自己在接哪个浏览器实例。
+More precise, suitable when you already know which browser instance to connect to.
 
-先拿 websocket 地址：
+First, get the websocket address:
 
 ```bash
 curl http://127.0.0.1:9222/json/version
 ```
 
-然后读取 `webSocketDebuggerUrl`。
+Then read the `webSocketDebuggerUrl` value.
 
-### 方式 C：`--autoConnect`
+### Method C: `--autoConnect`
 
-如果你本机经常就是 `9222` 这种常见端口，可以直接让服务自动探测。
+If your machine typically uses a common port like `9222`, you can let the server auto-detect.
 
 ```bash
 --autoConnect
 ```
 
-## 第四步：如何确认 MCP 已真正接管浏览器
+## Step 4: How to Verify MCP Has Actually Taken Over the Browser
 
-推荐验证顺序：
+Recommended verification sequence:
 
-1. 手动打开一个目标页面
-2. 启动 MCP
-3. 调用 `list_pages`
-4. 看返回里是否出现你刚刚打开的页面
-5. 再调用 `list_network_requests` 或 `list_scripts`
+1. Manually open a target page
+2. Start MCP
+3. Call `list_pages`
+4. Check whether the page you just opened appears in the response
+5. Then call `list_network_requests` or `list_scripts`
 
-如果能看到你当前页面的请求和脚本，说明接管成功。
+If you can see the requests and scripts from your current page, the takeover was successful.
 
-## 常见误区
+## Common Mistakes
 
-- 能启动 MCP，不代表已经接管浏览器
-- 配了 `browserUrl`，但 Chrome 没开 remote debugging，连接不会成功
-- `--browserUrl` 和 `--wsEndpoint` 不要同时配置
-- 已经接管远程 Chrome 时，不要再强制 MCP 自己起一个新浏览器
+- Being able to start MCP does not mean it has taken over the browser
+- If `browserUrl` is configured but Chrome does not have remote debugging enabled, the connection will not succeed
+- Do not configure `--browserUrl` and `--wsEndpoint` at the same time
+- When already connected to a remote Chrome, do not force MCP to launch a new browser

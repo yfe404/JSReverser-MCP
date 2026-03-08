@@ -1,73 +1,73 @@
 # Task Template Contract
 
-这个模板不是为了把所有任务都长成一模一样，而是为了防止任务目录逐步长成“主线、实验、历史兼容、依赖、证据”混在一起的状态。
+This template is not meant to make all tasks look identical, but to prevent task directories from gradually devolving into a mixed state of mainline, experiments, legacy compatibility, dependencies, and evidence all tangled together.
 
-## 目标
+## Goals
 
-每个任务目录至少要回答 4 个问题：
+Each task directory should answer at least 4 questions:
 
-1. 当前主线入口是什么？
-2. 哪些文件是实验性产物？
-3. 哪些文件已经归档，不应继续叠新逻辑？
-4. 哪些依赖是运行时必需，哪些只是本地开发辅助？
+1. What is the current mainline entry point?
+2. Which files are experimental artifacts?
+3. Which files have been archived and should not have new logic added?
+4. Which dependencies are required at runtime, and which are only local development aids?
 
-## 推荐分层
+## Recommended Layering
 
 - `task.json`
-  - 任务元数据、目标、成功判定
+  - Task metadata, objectives, success criteria
 - `network.jsonl` / `scripts.jsonl` / `runtime-evidence.jsonl`
-  - 页面与运行时证据
+  - Page and runtime evidence
 - `env/`
-  - 补环境入口与最小宿主
+  - Environment rebuild entry and minimal host
 - `run/`
-  - 当前可执行主线、校验、纯算实现、夹具、trace
+  - Current executable mainline, verification, pure algorithm implementation, fixtures, trace
 - `replay/`
-  - 页面动作复放
+  - Page action replay
 - `report.md`
-  - 结果、首差异、升级边界
+  - Results, first differences, upgrade boundaries
 
-## run/ 继续细分时的建议
+## Recommendations for Further Subdividing run/
 
-如果 `run/` 文件开始明显增多，优先按职责拆成以下子目录：
+If files in `run/` start to grow significantly, prioritize splitting by responsibility into the following subdirectories:
 
 - `core/`
-  - 当前主线运行时、portable runtime、pure runtime
+  - Current mainline runtime, portable runtime, pure runtime
 - `verify/`
-  - 面向接口闭环的校验脚本
+  - Verification scripts for API closed-loop testing
 - `trace/`
-  - 提纯前后的逆向取证与插桩脚本
+  - Reverse engineering forensics and instrumentation scripts before and after extraction
 - `server/`
-  - 面向部署或直连调用的最小入口
+  - Minimal entry point for deployment or direct invocation
 - `evidence/`
-  - 由 trace/verify 产出的摘要、夹具、基线
+  - Summaries, fixtures, and baselines produced by trace/verify
 - `legacy/`
-  - 旧入口归档，只保留回溯价值，不继续叠新逻辑
+  - Archived old entry points, kept only for retrospective value, no new logic added
 - `vendor/`
-  - 页面原始脚本副本或固定外部脚本
+  - Copies of original page scripts or pinned external scripts
 
-不是每个任务都必须有这些目录；只有当文件量和职责开始混杂时再拆。
+Not every task needs all these directories; only split when file count and responsibilities start to become tangled.
 
-## 强约束
+## Hard Constraints
 
-- 每个任务必须有一个“当前主入口”，并写进 `run/README.md`
-- 每个任务必须区分“主线文件”和“归档文件”
-- `legacy/` 只归档，不接新逻辑
-- 可执行主线不要同时保留多个等价顶层入口
-- 纯算法实现与 portable runtime 要和 trace/实验脚本分开
-- 运行时必需依赖不要混入 `.venv/`、缓存、`__pycache__/` 这类本地环境垃圾
+- Every task must have a “current main entry point”, documented in `run/README.md`
+- Every task must distinguish between “mainline files” and “archived files”
+- `legacy/` is for archiving only, no new logic accepted
+- Do not keep multiple equivalent top-level entry points in the executable mainline
+- Pure algorithm implementations and portable runtimes must be separated from trace/experimental scripts
+- Runtime-required dependencies must not be mixed with `.venv/`, caches, `__pycache__/`, or other local environment artifacts
 
-## 对复杂任务的经验结论
+## Lessons Learned from Complex Tasks
 
-如果一个任务已经走到：
-- local rebuild 已通过
-- portable runtime 已可调用
-- pure algorithm 已开始提纯
-- Python port 或其他宿主迁移已存在
+If a task has progressed to the point where:
+- Local rebuild has passed
+- Portable runtime is callable
+- Pure algorithm extraction has begun
+- Python port or other host migration already exists
 
-那么最容易失控的点通常不是算法本身，而是：
-- 顶层入口越来越多
-- 旧 verify / trace / tool 脚本混在主线旁边
-- 基线、夹具、证据、工具输出没有分层
-- 本地虚拟环境和缓存被一起放进任务目录
+Then the most common point of loss of control is usually not the algorithm itself, but rather:
+- Too many top-level entry points accumulating
+- Old verify / trace / tool scripts mixed in alongside the mainline
+- Baselines, fixtures, evidence, and tool outputs lacking proper layering
+- Local virtual environments and caches placed inside the task directory
 
-所以模板更应该约束“文件职责和归档边界”，而不是只给一个最小 demo。
+Therefore, the template should primarily constrain “file responsibilities and archiving boundaries” rather than just providing a minimal demo.

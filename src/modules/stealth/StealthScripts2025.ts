@@ -1,16 +1,16 @@
 /**
- * StealthScripts2025 - 2024-2026 最新反检测脚本注入
+ * StealthScripts2025 - 2024-2026 Latest anti-detection script injection
  *
- * 基于 puppeteer-extra-plugin-stealth / undetected-chromedriver / playwright-stealth 最佳实践
- * 覆盖所有主流浏览器指纹检测维度
+ * Based on best practices from puppeteer-extra-plugin-stealth / undetected-chromedriver / playwright-stealth
+ * Covers all mainstream browser fingerprinting detection dimensions
  */
 
 import type { Page } from 'puppeteer';
 import { logger } from '../../logger.js';
 
-// ==================== 类型定义 ====================
+// ==================== Type Definitions ====================
 
-/** 插件配置 */
+/** Plugin configuration */
 export interface PluginConfig {
   name: string;
   filename: string;
@@ -18,7 +18,7 @@ export interface PluginConfig {
   mimeTypes: Array<{ type: string; description: string; suffixes?: string }>;
 }
 
-/** 平台预设名称 */
+/** Platform preset name */
 export type StealthPreset =
   | 'windows-chrome'
   | 'mac-chrome'
@@ -26,7 +26,7 @@ export type StealthPreset =
   | 'linux-chrome'
   | 'windows-edge';
 
-/** 屏幕分辨率配置 */
+/** Screen resolution configuration */
 export interface ScreenConfig {
   width: number;
   height: number;
@@ -36,7 +36,7 @@ export interface ScreenConfig {
   pixelDepth?: number;
 }
 
-/** 网络连接信息 */
+/** Network connection information */
 export interface ConnectionConfig {
   effectiveType: string; // '4g' | '3g' | '2g' | 'slow-2g'
   downlink: number;
@@ -44,9 +44,9 @@ export interface ConnectionConfig {
   saveData: boolean;
 }
 
-/** Stealth 完整选项 */
+/** Stealth full options */
 export interface StealthInjectionOptions {
-  /** 平台预设 - 自动配置全部一致性参数 */
+  /** Platform preset - automatically configures all consistency parameters */
   preset?: StealthPreset;
 
   // === Navigator ===
@@ -80,23 +80,23 @@ export interface StealthInjectionOptions {
   // === Timezone ===
   timezone?: string;
 
-  // === 功能开关（默认全部开启） ===
-  hideWebDriver?: boolean;       // 隐藏 webdriver 属性 (default: true)
-  mockChrome?: boolean;          // 模拟 chrome 对象 (default: true)
-  fixPermissions?: boolean;      // 修复 Permissions API (default: true)
-  canvasNoise?: boolean;         // Canvas 指纹噪声 (default: true)
-  webglOverride?: boolean;       // WebGL 厂商/渲染器覆盖 (default: true)
-  audioContextNoise?: boolean;   // AudioContext 指纹噪声 (default: true)
-  performanceNoise?: boolean;    // performance.now() 微量噪声 (default: false - 可能影响调试)
-  mockBatteryAPI?: boolean;      // 模拟 Battery API (default: true)
-  mockMediaDevicesAPI?: boolean; // 模拟 MediaDevices (default: true)
-  mockNotificationAPI?: boolean; // 模拟 Notification (default: true)
-  overrideScreen?: boolean;      // 覆盖 screen 属性 (default: false)
-  mockConnection?: boolean;      // 模拟 NetworkInformation (default: true)
-  focusOverride?: boolean;       // document.hasFocus() 覆盖 (default: true)
+  // === Feature toggles (all enabled by default) ===
+  hideWebDriver?: boolean;       // Hide webdriver property (default: true)
+  mockChrome?: boolean;          // Mock chrome object (default: true)
+  fixPermissions?: boolean;      // Fix Permissions API (default: true)
+  canvasNoise?: boolean;         // Canvas fingerprint noise (default: true)
+  webglOverride?: boolean;       // WebGL vendor/renderer override (default: true)
+  audioContextNoise?: boolean;   // AudioContext fingerprint noise (default: true)
+  performanceNoise?: boolean;    // performance.now() micro noise (default: false - may affect debugging)
+  mockBatteryAPI?: boolean;      // Mock Battery API (default: true)
+  mockMediaDevicesAPI?: boolean; // Mock MediaDevices (default: true)
+  mockNotificationAPI?: boolean; // Mock Notification (default: true)
+  overrideScreen?: boolean;      // Override screen properties (default: false)
+  mockConnection?: boolean;      // Mock NetworkInformation (default: true)
+  focusOverride?: boolean;       // document.hasFocus() override (default: true)
 }
 
-/** 注入后的状态报告 */
+/** Post-injection status report */
 export interface StealthReport {
   preset: string;
   injectedFeatures: string[];
@@ -105,9 +105,9 @@ export interface StealthReport {
   platform: string;
 }
 
-// ==================== 平台预设 ====================
+// ==================== Platform Presets ====================
 
-/** Chrome 131 (2025-2026) 系列 UA */
+/** Chrome 131 (2025-2026) series UA */
 const PRESETS: Record<StealthPreset, Omit<StealthInjectionOptions, 'preset'>> = {
   'windows-chrome': {
     userAgent:
@@ -146,12 +146,12 @@ const PRESETS: Record<StealthPreset, Omit<StealthInjectionOptions, 'preset'>> = 
     vendor: 'Apple Computer, Inc.',
     languages: ['zh-CN', 'zh', 'en-US', 'en'],
     hardwareConcurrency: 10,
-    deviceMemory: undefined, // Safari 不暴露此属性
+    deviceMemory: undefined, // Safari does not expose this property
     maxTouchPoints: 0,
     webglVendor: 'Apple Inc.',
     webglRenderer: 'Apple GPU',
     screen: { width: 1920, height: 1080, colorDepth: 30, pixelDepth: 30 },
-    connection: undefined, // Safari 不暴露 NetworkInformation
+    connection: undefined, // Safari does not expose NetworkInformation
   },
   'linux-chrome': {
     userAgent:
@@ -185,7 +185,7 @@ const PRESETS: Record<StealthPreset, Omit<StealthInjectionOptions, 'preset'>> = 
   },
 };
 
-// ==================== 默认插件 ====================
+// ==================== Default Plugins ====================
 
 const DEFAULT_PLUGINS: PluginConfig[] = [
   {
@@ -230,13 +230,13 @@ const DEFAULT_PLUGINS: PluginConfig[] = [
   },
 ];
 
-// ==================== 核心类 ====================
+// ==================== Core Class ====================
 
 export class StealthScripts2025 {
-  /** 当前生效的配置 */
+  /** Currently active configuration */
   private static currentOptions: StealthInjectionOptions | null = null;
 
-  /** 获取可用预设列表 */
+  /** Get list of available presets */
   static getPresets(): Array<{ name: StealthPreset; userAgent: string; platform: string }> {
     return (Object.entries(PRESETS) as Array<[StealthPreset, Omit<StealthInjectionOptions, 'preset'>]>).map(
       ([name, config]) => ({
@@ -247,12 +247,12 @@ export class StealthScripts2025 {
     );
   }
 
-  /** 获取当前注入的选项 */
+  /** Get currently injected options */
   static getCurrentOptions(): StealthInjectionOptions | null {
     return this.currentOptions;
   }
 
-  /** 解析选项：合并预设 + 用户覆盖 */
+  /** Resolve options: merge preset + user overrides */
   static resolveOptions(options: StealthInjectionOptions = {}): Required<
     Pick<StealthInjectionOptions, 'userAgent' | 'navigatorPlatform' | 'languages'>
   > & StealthInjectionOptions {
@@ -262,18 +262,18 @@ export class StealthScripts2025 {
     return {
       ...base,
       ...options,
-      // 保持预设中的值，除非用户显式覆盖
+      // Keep preset values unless explicitly overridden by user
       userAgent: options.userAgent ?? base.userAgent ?? '',
       navigatorPlatform: options.navigatorPlatform ?? base.navigatorPlatform ?? 'Win32',
       languages: options.languages ?? base.languages ?? ['en-US', 'en'],
     };
   }
 
-  // ==================== 主入口 ====================
+  // ==================== Main Entry ====================
 
   /**
-   * 注入全部反检测脚本
-   * @returns 注入报告
+   * Inject all anti-detection scripts
+   * @returns Injection report
    */
   static async injectAll(page: Page, options: StealthInjectionOptions = {}): Promise<StealthReport> {
     const resolved = this.resolveOptions(options);
@@ -361,7 +361,7 @@ export class StealthScripts2025 {
       },
       {
         name: 'performanceNoise',
-        enabled: resolved.performanceNoise === true, // 默认关闭
+        enabled: resolved.performanceNoise === true, // disabled by default
         inject: () => this.mockPerformanceNow(page),
       },
       {
@@ -371,7 +371,7 @@ export class StealthScripts2025 {
       },
     ];
 
-    // 并行注入
+    // Inject in parallel
     const tasks = featureMap.map(async (feature) => {
       if (feature.enabled) {
         try {
@@ -399,18 +399,18 @@ export class StealthScripts2025 {
     };
   }
 
-  // ==================== 各注入模块 ====================
+  // ==================== Injection Modules ====================
 
-  /** 1. 隐藏 webdriver 属性 */
+  /** 1. Hide webdriver property */
   static async hideWebDriver(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
-      // 删除 webdriver 属性
+      // Remove webdriver property
       Object.defineProperty(navigator, 'webdriver', {
         get: () => undefined,
         configurable: true,
       });
 
-      // 从 Object.getOwnPropertyNames 中隐藏
+      // Hide from Object.getOwnPropertyNames
       const _getOwnPropertyNames = Object.getOwnPropertyNames;
       Object.getOwnPropertyNames = function (obj: unknown) {
         const props = _getOwnPropertyNames(obj);
@@ -420,7 +420,7 @@ export class StealthScripts2025 {
         return props;
       };
 
-      // 从 Object.getOwnPropertyDescriptors 中隐藏
+      // Hide from Object.getOwnPropertyDescriptors
       const _getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors;
       (Object as any).getOwnPropertyDescriptors = function (obj: unknown) {
         const descs = _getOwnPropertyDescriptors(obj as any);
@@ -432,7 +432,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 2. 模拟 chrome 对象 */
+  /** 2. Mock chrome object */
   static async mockChrome(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
       /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -482,7 +482,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 3. 设置 UA + navigator 属性一致性 */
+  /** 3. Set UA + navigator property consistency */
   static async setUserAgentConsistent(page: Page, options: StealthInjectionOptions): Promise<void> {
     const ua = options.userAgent ?? '';
     const platform = options.navigatorPlatform ?? 'Win32';
@@ -501,12 +501,12 @@ export class StealthScripts2025 {
         Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => cores });
         Object.defineProperty(navigator, 'maxTouchPoints', { get: () => touch });
 
-        // appVersion 与 UA 一致
+        // appVersion consistent with UA
         Object.defineProperty(navigator, 'appVersion', {
           get: () => uaStr.replace('Mozilla/', ''),
         });
 
-        // deviceMemory 可能某些浏览器不暴露
+        // deviceMemory may not be exposed by some browsers
         if (mem !== undefined && mem !== null) {
           Object.defineProperty(navigator, 'deviceMemory', { get: () => mem });
         }
@@ -515,7 +515,7 @@ export class StealthScripts2025 {
     );
   }
 
-  /** 4. 修复 Permissions API */
+  /** 4. Fix Permissions API */
   static async fixPermissions(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
       const originalQuery = window.navigator.permissions.query;
@@ -536,7 +536,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 5. 模拟 Plugins */
+  /** 5. Mock Plugins */
   static async mockPlugins(page: Page, options: StealthInjectionOptions): Promise<void> {
     const plugins = options.plugins && options.plugins.length > 0 ? options.plugins : DEFAULT_PLUGINS;
 
@@ -574,17 +574,17 @@ export class StealthScripts2025 {
     }, plugins);
   }
 
-  /** 6. Canvas 指纹噪声（每个会话随机种子） */
+  /** 6. Canvas fingerprint noise (random seed per session) */
   static async mockCanvas(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
-      // 生成会话级随机种子
+      // Generate session-level random seed
       const seed = Math.floor(Math.random() * 256);
 
       const _toDataURL = HTMLCanvasElement.prototype.toDataURL;
       const _toBlob = HTMLCanvasElement.prototype.toBlob;
       const _getImageData = CanvasRenderingContext2D.prototype.getImageData;
 
-      // 简单确定性噪声函数（基于像素索引 + 种子）
+      // Simple deterministic noise function (based on pixel index + seed)
       const noise = (idx: number) => ((idx * 1103515245 + seed) >>> 16) & 3; // 0-3
 
       const addNoise = (imageData: ImageData): ImageData => {
@@ -629,7 +629,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 7. WebGL 厂商/渲染器覆盖（同时覆盖 WebGL2） */
+  /** 7. WebGL vendor/renderer override (also overrides WebGL2) */
   static async mockWebGL(page: Page, options: StealthInjectionOptions): Promise<void> {
     const vendor = options.webglVendor ?? 'Intel Inc.';
     const renderer = options.webglRenderer ?? 'Intel(R) UHD Graphics 770';
@@ -662,7 +662,7 @@ export class StealthScripts2025 {
     );
   }
 
-  /** 8. AudioContext 指纹噪声 */
+  /** 8. AudioContext fingerprint noise */
   static async mockAudioContext(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
       const noiseSeed = Math.random() * 0.0001;
@@ -728,7 +728,7 @@ export class StealthScripts2025 {
     );
   }
 
-  /** 11. MediaDevices 模拟 */
+  /** 11. MediaDevices mock */
   static async fixMediaDevices(page: Page, options: StealthInjectionOptions): Promise<void> {
     const counts = {
       audioInputs: options.mediaDevices?.audioInputs ?? 1,
@@ -799,7 +799,7 @@ export class StealthScripts2025 {
     }, conn);
   }
 
-  /** 14. document.hasFocus() 覆盖 */
+  /** 14. document.hasFocus() override */
   static async mockFocus(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
       Document.prototype.hasFocus = function () { return true; };
@@ -808,7 +808,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 15. performance.now() 微量噪声（默认关闭，开启可能影响调试精度） */
+  /** 15. performance.now() micro noise (disabled by default, enabling may affect debugging precision) */
   static async mockPerformanceNow(page: Page): Promise<void> {
     await page.evaluateOnNewDocument(() => {
       const _now = performance.now.bind(performance);
@@ -818,7 +818,7 @@ export class StealthScripts2025 {
     });
   }
 
-  /** 16. Screen 属性覆盖 */
+  /** 16. Screen property override */
   static async mockScreen(page: Page, options: StealthInjectionOptions): Promise<void> {
     const s = options.screen;
     if (!s) return;
@@ -843,11 +843,11 @@ export class StealthScripts2025 {
     }, screenData);
   }
 
-  // ==================== 便捷方法 ====================
+  // ==================== Convenience Methods ====================
 
   /**
-   * 快速设置 UA（确保 navigator 属性一致）
-   * @deprecated 使用 injectAll 的 preset 参数代替
+   * Quick UA setup (ensures navigator property consistency)
+   * @deprecated Use the preset parameter of injectAll instead
    */
   static async setRealisticUserAgent(
     page: Page,

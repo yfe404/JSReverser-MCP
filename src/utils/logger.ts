@@ -1,5 +1,5 @@
 /**
- * 日志工具
+ * Logger utility
  */
 
 import chalk from 'chalk';
@@ -10,7 +10,7 @@ export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 class Logger {
   private level: LogLevel;
 
-  // ✅ 修复：性能优化 - 使用静态常量避免重复创建数组
+  // Performance optimization - use static constant to avoid recreating the array
   private static readonly LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error'];
 
   constructor(level: LogLevel = 'info') {
@@ -24,21 +24,21 @@ class Logger {
   private formatMessage(level: LogLevel, message: string, ...args: unknown[]): string {
     const timestamp = new Date().toISOString();
     const prefix = `[${timestamp}] [${level.toUpperCase()}]`;
-    // ✅ 修复：使用 safeStringify 处理循环引用和特殊对象
+    // Use safeStringify to handle circular references and special objects
     const formattedArgs = args.length > 0 ? ' ' + safeStringify(args) : '';
     return `${prefix} ${message}${formattedArgs}`;
   }
 
   debug(message: string, ...args: unknown[]): void {
     if (this.shouldLog('debug')) {
-      // 使用 stderr 避免干扰 MCP 的 stdout 通信
+      // Use stderr to avoid interfering with MCP's stdout communication
       console.error(chalk.gray(this.formatMessage('debug', message, ...args)));
     }
   }
 
   info(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      // 使用 stderr 避免干扰 MCP 的 stdout 通信
+      // Use stderr to avoid interfering with MCP's stdout communication
       console.error(chalk.blue(this.formatMessage('info', message, ...args)));
     }
   }
@@ -57,7 +57,7 @@ class Logger {
 
   success(message: string, ...args: unknown[]): void {
     if (this.shouldLog('info')) {
-      // 使用 stderr 避免干扰 MCP 的 stdout 通信
+      // Use stderr to avoid interfering with MCP's stdout communication
       console.error(chalk.green(this.formatMessage('info', message, ...args)));
     }
   }
@@ -67,7 +67,7 @@ class Logger {
   }
 }
 
-// ✅ 修复：安全的环境变量解析
+// Safe environment variable parsing
 function parseLogLevel(value: string | undefined): LogLevel {
   const validLevels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
   if (value && validLevels.includes(value as LogLevel)) {
@@ -76,6 +76,6 @@ function parseLogLevel(value: string | undefined): LogLevel {
   return 'info';
 }
 
-// 导出单例
+// Export singleton
 export const logger = new Logger(parseLogLevel(process.env.LOG_LEVEL));
 

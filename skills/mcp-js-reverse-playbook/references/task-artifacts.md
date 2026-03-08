@@ -1,10 +1,10 @@
 # Task Artifacts
 
-每个逆向任务都应写入一个 task artifact 目录，例如：
+Each reverse engineering task should write to a task artifact directory, for example:
 
 `artifacts/tasks/<taskId>/`
 
-推荐最少包含：
+Recommended minimum contents:
 
 - `task.json`
 - `timeline.jsonl`
@@ -18,9 +18,9 @@
 - `env/capture.json`
 - `report.md`
 
-这些产物用于：
+These artifacts are used for:
 
-- 给 Codex / Claude / Gemini 续做同一个任务
-- 回看页面观察证据
-- 对齐本地补环境状态
-- 进入后续 AST 去混淆或 VMP 深挖
+- Allowing Codex / Claude / Gemini to continue the same task
+- Reviewing page observation evidence
+- Aligning local environment rebuild state
+- Proceeding to subsequent AST deobfuscation or VMP deep analysis

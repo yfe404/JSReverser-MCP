@@ -205,7 +205,7 @@ describe('JSVMPDeobfuscator', () => {
     const withLlm = new JSVMPDeobfuscator(llm as unknown as ConstructorParameters<typeof JSVMPDeobfuscator>[0]) as unknown as JSVMPHarness;
     const custom = await withLlm.restoreCustomVMBasic('code', false, [], []);
     assert.ok(custom.confidence >= 0.3);
-    assert.ok(custom.warnings.some((w: string) => w.includes('AI结构分析完成')));
+    assert.ok(custom.warnings.some((w: string) => w.includes('AI structural analysis completed')));
 
     withLlm.restoreObfuscatorIO = async () => ({ code: 'o', confidence: 0.8, warnings: [] });
     withLlm.restoreJSFuck = async () => ({ code: 'j', confidence: 0.7, warnings: [] });
@@ -229,7 +229,7 @@ describe('JSVMPDeobfuscator', () => {
     };
     const failed = await d.deobfuscate({ code: 'const y=1;' });
     assert.strictEqual(failed.isJSVMP, false);
-    assert.ok(failed.warnings?.some((w: string) => w.includes('反混淆失败')));
+    assert.ok(failed.warnings?.some((w: string) => w.includes('Deobfuscation failed')));
   });
 
   it('covers additional llm decode branches and custom VM fallback paths', async () => {
@@ -249,7 +249,7 @@ describe('JSVMPDeobfuscator', () => {
     const d2 = new JSVMPDeobfuscator(analysisOnlyLlm as unknown as ConstructorParameters<typeof JSVMPDeobfuscator>[0]) as unknown as JSVMPHarness;
     const analysisOnly = await d2.llmDecodeEncoding('orig', 'JJEncode', []);
     assert.strictEqual(analysisOnly.code, 'orig');
-    assert.ok(analysisOnly.warnings.some((w: string) => w.includes('未能完全解码')));
+    assert.ok(analysisOnly.warnings.some((w: string) => w.includes('Unable to fully decode')));
 
     const throwingLlm = {
       chat: async () => {
@@ -259,7 +259,7 @@ describe('JSVMPDeobfuscator', () => {
     const d3 = new JSVMPDeobfuscator(throwingLlm as unknown as ConstructorParameters<typeof JSVMPDeobfuscator>[0]) as unknown as JSVMPHarness;
     const llmFailed = await d3.llmDecodeEncoding('orig', 'JSFuck', []);
     assert.strictEqual(llmFailed.code, 'orig');
-    assert.ok(llmFailed.warnings.some((w: string) => w.includes('AI辅助分析失败')));
+    assert.ok(llmFailed.warnings.some((w: string) => w.includes('AI-assisted analysis failed')));
 
     const badJsonLlm = { chat: async () => ({ content: '{not-json' }) };
     const d4 = new JSVMPDeobfuscator(badJsonLlm as unknown as ConstructorParameters<typeof JSVMPDeobfuscator>[0]) as unknown as JSVMPHarness;
@@ -298,7 +298,7 @@ describe('JSVMPDeobfuscator', () => {
     `;
     const out = await d.restoreObfuscatorIO(code, false, warnings, unresolved);
     assert.ok(out.code.includes('"C"') || out.code.includes('_0xabc[2]'));
-    assert.ok(out.warnings.some((w: string) => w.includes('字符串数组')));
+    assert.ok(out.warnings.some((w: string) => w.includes('string array')));
     assert.ok(Array.isArray(out.unresolvedParts));
   });
 
@@ -317,7 +317,7 @@ describe('JSVMPDeobfuscator', () => {
     const unresolved: UnresolvedPart[] = [];
     const out = await d.restoreCustomVM('while(true){switch(x){case 1:break;}}', false, warnings, unresolved);
     assert.strictEqual(out.confidence >= 0.5, true);
-    assert.ok((out.warnings ?? []).some((w: string) => w.includes('VM类型')));
+    assert.ok((out.warnings ?? []).some((w: string) => w.includes('VM type')));
     assert.ok(Array.isArray(out.unresolvedParts));
   });
 });

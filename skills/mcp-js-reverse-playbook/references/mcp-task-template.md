@@ -1,39 +1,39 @@
-# JS Reverse MCP 专用任务模板
+# JS Reverse MCP Task Template
 
-按固定阶段执行：
+Execute in fixed phases:
 
-1. 页面观察
+1. Page Observation
    - `check_browser_health`
-   - `new_page` + 可选 `restore_session_state`
+   - `new_page` + optional `restore_session_state`
    - `analyze_target`
    - `search_in_scripts`
    - `list_network_requests` / `get_request_initiator`
-   - 设定目标边界：`targetKeywords`、`targetUrlPatterns`、`targetFunctionNames`、`targetActionDescription`
+   - Set target boundaries: `targetKeywords`, `targetUrlPatterns`, `targetFunctionNames`, `targetActionDescription`
 
-2. 运行时采样
-   - 如果目标在首屏初始化或首次请求前生成：先 `inject_preload_script`
+2. Runtime Sampling
+   - If the target is generated during initial page load or before the first request: use `inject_preload_script` first
    - `create_hook(fetch/xhr)` + `inject_hook`
-   - 触发动作
+   - Trigger the action
    - `get_hook_data(summary)`
-   - 命中后 `get_hook_data(raw)` + `record_reverse_evidence`
+   - On hit: `get_hook_data(raw)` + `record_reverse_evidence`
 
-3. 本地补环境
+3. Local Environment Rebuild
    - `export_rebuild_bundle`
-   - 本地执行 `env/entry.js`
-   - 优先读取代理 env log
-   - 记录当前 `first divergence`
-   - 按“最小因果单元”做一个补丁决策
-   - 必要时再用 `diff_env_requirements` 做辅助比对
-   - 复跑并确认 `first divergence` 是否前移
+   - Run `env/entry.js` locally
+   - Read proxy env log first
+   - Record the current `first divergence`
+   - Make one patch decision based on "minimal causal unit"
+   - Use `diff_env_requirements` for supplementary comparison if needed
+   - Re-run and confirm whether `first divergence` has moved forward
 
-4. 深挖
+4. Deep Analysis
    - `deobfuscate_code`
-   - 必要时插桩 / VMP 分析
+   - Instrumentation / VMP analysis if needed
 
-核心要求：
+Core Requirements:
 
-- 页面观察先于本地补环境
-- 本地补环境先于深度去混淆
-- 补环境默认遵循“代理日志 + `first divergence` + 最小因果单元”
-- 每一步都要写 task artifact
-- 参数名不明显时，优先靠请求、函数、时间窗和动作描述锁定目标
+- Page observation before local environment rebuild
+- Local environment rebuild before deep deobfuscation
+- Environment rebuild defaults to "proxy log + `first divergence` + minimal causal unit"
+- Write a task artifact at every step
+- When parameter names are unclear, prioritize using requests, functions, time windows, and action descriptions to identify the target

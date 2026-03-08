@@ -1,96 +1,96 @@
 # Reverse Update Prompt Template
 
-这份模板用于“已有逆向任务继续更新”的场景。
+This template is for the scenario of “continuing to update an existing reverse engineering task”.
 
-适用情况：
+Applicable situations:
 
-- 目标站点脚本升级
-- 签名参数行为变化
-- 本地 `env rebuild` 已有基础，但需要补新证据
-- 需要让 Codex / Claude / Gemini 在同一条任务链上继续做
+- Target site scripts have been upgraded
+- Signature parameter behavior has changed
+- Local `env rebuild` already has a foundation, but new evidence needs to be added
+- Need Codex / Claude / Gemini to continue working on the same task chain
 
-## 开场强制动作（先做，不能跳）
+## Mandatory Opening Actions (Do First, Cannot Skip)
 
-在开始任何分析、补环境、提纯、写 case、写脚本之前，先按顺序读取：
+Before starting any analysis, environment patching, pure extraction, case writing, or script writing, read the following in order:
 
 1. `docs/reference/reverse-bootstrap.md`
 2. `docs/reference/case-safety-policy.md`
 3. `docs/reference/reverse-workflow.md`
-4. 如果当前任务已经进入 `env-pass` 之后的纯算法阶段，或目标就是“补环境后提纯算法”，继续读 `docs/reference/pure-extraction.md`
+4. If the current task has already entered the pure algorithm phase after `env-pass`, or the goal is “extract pure algorithm after environment patching”, continue reading `docs/reference/pure-extraction.md`
 
-第一条正式工作回复必须显式说明：
+The first formal work reply must explicitly state:
 
-- 已读取上述规则文档
-- 当前所处阶段（Observe / Capture / Rebuild / Patch / PureExtraction / Port）
-- 本次产出是“仓库抽象模板”还是“task-local 可执行实现”
+- The above rule documents have been read
+- Current phase (Observe / Capture / Rebuild / Patch / PureExtraction / Port)
+- Whether this session's output is “repository abstract template” or “task-local executable implementation”
 
-强制边界：
+Mandatory boundaries:
 
-- `scripts/cases/*` 只能放抽象模板、输入契约、验证口径、风险边界
-- 可执行实现、完整链路、真实任务证据统一放 `artifacts/tasks/<task-id>/`
-- 如果用户要求“沉淀一个可运行版本”，默认解释为写入 `artifacts/tasks/<task-id>/run/`，而不是写进仓库 case
+- `scripts/cases/*` can only contain abstract templates, input contracts, validation criteria, and risk boundaries
+- Executable implementations, complete pipelines, and real task evidence all go in `artifacts/tasks/<task-id>/`
+- If the user requests “persist a runnable version”, interpret this by default as writing to `artifacts/tasks/<task-id>/run/`, not into repository cases
 
-如果开头没有先确认这些约束，视为还没进入正确工作流。
+If these constraints are not confirmed at the beginning, the correct workflow has not been entered.
 
-## 模板
+## Template
 
-你现在在一个已有的 JavaScript 逆向仓库里继续工作。目标不是从零开始猜，而是基于当前仓库结论、MCP 浏览器取证和 task artifact，更新本地复现链路与分析结论。
+You are continuing work in an existing JavaScript reverse engineering repository. The goal is not to guess from scratch, but to update the local reproduction pipeline and analysis conclusions based on current repository conclusions, MCP browser forensics, and task artifacts.
 
-开始前先读取并遵守：
+Before starting, read and comply with:
 
 - `docs/reference/reverse-bootstrap.md`
 - `docs/reference/case-safety-policy.md`
 - `docs/reference/reverse-workflow.md`
-- 若当前已处于 `env-pass` 后的提纯阶段，再读 `docs/reference/pure-extraction.md`
+- If currently in the extraction phase after `env-pass`, also read `docs/reference/pure-extraction.md`
 
-并在第一条正式工作回复中明确说明：
+And explicitly state in the first formal work reply:
 
-- 已完成上述必读文档读取
-- 当前阶段
-- 本次输出会写到仓库抽象层，还是 task-local 可执行层
+- The above required documents have been read
+- Current phase
+- Whether this session's output will be written to the repository abstract layer or the task-local executable layer
 
-### 任务目标
+### Task Objectives
 
-1. 优先在页面里确认目标请求、脚本、函数、cookie / storage / header 依赖。
-2. 把关键证据写入 task artifact，不要只留在对话里。
-3. 用 `export_rebuild_bundle` 导出或更新本地 `env rebuild` 工程。
-4. 本地执行 `env/entry.js`，优先读取代理 env log，并先记录 `first divergence`。
-5. 按“最小因果单元”补环境：一次只做一个补丁决策，可对应一个值、函数壳、返回对象或最小对象契约。
-6. `diff_env_requirements` 仅作为辅助比对，不要替代代理日志。
-7. 如果版本升级或行为不一致，按 `first divergence` 原则定位最早分叉点。
-8. 如果任务目标已进入纯算法提纯，必须在 `env-pass` 基础上推进，不要跳过补环境验收直接写“纯算法猜测版”。
+1. Prioritize confirming the target request, scripts, functions, and cookie / storage / header dependencies in the page.
+2. Write key evidence into the task artifact; do not leave it only in the conversation.
+3. Use `export_rebuild_bundle` to export or update the local `env rebuild` project.
+4. Run `env/entry.js` locally, prioritize reading proxy env logs, and first record `first divergence`.
+5. Patch the environment by “minimal causal unit”: make only one patch decision at a time, corresponding to a single value, function shell, return object, or minimal object contract.
+6. `diff_env_requirements` is only an auxiliary comparison; do not use it to replace proxy logs.
+7. If there is a version upgrade or behavior inconsistency, locate the earliest fork point using the `first divergence` principle.
+8. If the task goal has entered pure algorithm extraction, it must be advanced on the basis of `env-pass`; do not skip environment patching acceptance and directly write a “pure algorithm guess version”.
 
-### 目标边界
+### Target Boundaries
 
-- 目标 URL / 页面：
-- 目标接口或 URL pattern：
-- `targetKeywords`：
-- `targetUrlPatterns`：
-- `targetFunctionNames`：
-- `targetActionDescription`：
-- 成功判定：
+- Target URL / page:
+- Target API endpoint or URL pattern:
+- `targetKeywords`:
+- `targetUrlPatterns`:
+- `targetFunctionNames`:
+- `targetActionDescription`:
+- Success criteria:
 
-### 必须执行的规则
+### Mandatory Rules
 
-1. 先 Observe，再 Capture，再 Rebuild，不要跳过页面证据直接猜。
-2. 不要猜 cookie、storage、UA、header、时间戳来源；缺什么先从 MCP 拿。
-3. 页面请求很多时，只围绕当前目标做采样，不要全量记录整页噪音。
-4. 如果参数名很怪，不要依赖参数名猜测；优先用请求、函数、initiator、时间窗和动作关联锁定。
-5. 如果结果不一致，必须说明 first divergence 在哪一层先出现。
-6. 没有代理日志或没有 `first divergence` 记录时，不允许直接补宿主。
-7. 补丁必须能追溯到代理日志、页面证据和当前分叉点；补完后立刻复跑。
-8. 仓库 case 只允许保留抽象模板；完整可执行实现不得写入 `scripts/cases/*`。
-9. 如果要新增可运行脚本，统一放 `artifacts/tasks/<task-id>/run/`，并在仓库层只保留抽象索引与方法说明。
+1. First Observe, then Capture, then Rebuild; do not skip page evidence and guess directly.
+2. Do not guess cookies, storage, UA, headers, or timestamp sources; get what is missing from MCP first.
+3. When there are many page requests, only sample around the current target; do not record the entire page noise.
+4. If parameter names are unusual, do not rely on parameter name guessing; prioritize locking down using request, function, initiator, time window, and action correlation.
+5. If results are inconsistent, you must state at which layer the first divergence appeared.
+6. Without proxy logs or without a `first divergence` record, direct host patching is not allowed.
+7. Patches must be traceable to proxy logs, page evidence, and the current fork point; re-run immediately after patching.
+8. Repository cases can only retain abstract templates; complete executable implementations must not be written into `scripts/cases/*`.
+9. If adding runnable scripts, place them uniformly in `artifacts/tasks/<task-id>/run/`, and keep only abstract indexes and method descriptions at the repository level.
 
-### 建议输出
+### Suggested Output
 
-1. 修改结论
-2. 新增或更新的证据
-3. 当前代理日志与 `first divergence`
-4. 本地 `env rebuild` 当前状态
-5. 已验证命令和结果
-6. 剩余卡点与下一步
+1. Modified conclusions
+2. New or updated evidence
+3. Current proxy logs and `first divergence`
+4. Current state of local `env rebuild`
+5. Verified commands and results
+6. Remaining blockers and next steps
 
-## 最短版调用
+## Shortest Version Call
 
-请先读取 `docs/reference/reverse-bootstrap.md`，并按其中要求继续读取 `docs/reference/case-safety-policy.md` 与 `docs/reference/reverse-workflow.md`；如果当前任务已进入 `env-pass` 后的纯算法阶段，再读取 `docs/reference/pure-extraction.md`。然后基于当前仓库已有结论继续分析目标链路，先用 MCP 页面观察拿证据，再更新 task artifact 和本地 `env rebuild`。补环境时先读代理 env log，先记录 `first divergence`，再按“最小因果单元”补丁推进；`diff_env_requirements` 仅作辅助，不要替代代理日志。不要猜环境；如果结果不一致，请给出最早分叉点、当前代理日志结论、已确认部分、未确认部分和下一步补法。仓库 case 只保留抽象模板，可执行实现统一放 `artifacts/tasks/<task-id>/`。
+First read `docs/reference/reverse-bootstrap.md`, then follow its requirements to read `docs/reference/case-safety-policy.md` and `docs/reference/reverse-workflow.md`; if the current task has entered the pure algorithm phase after `env-pass`, also read `docs/reference/pure-extraction.md`. Then continue analyzing the target pipeline based on existing repository conclusions, first using MCP page observation to gather evidence, then updating the task artifact and local `env rebuild`. When patching the environment, first read proxy env logs, first record `first divergence`, then advance with “minimal causal unit” patches; `diff_env_requirements` is auxiliary only and should not replace proxy logs. Do not guess the environment; if results are inconsistent, provide the earliest fork point, current proxy log conclusions, confirmed parts, unconfirmed parts, and next patching approach. Repository cases retain only abstract templates; executable implementations go uniformly in `artifacts/tasks/<task-id>/`.

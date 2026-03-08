@@ -1,12 +1,12 @@
 /**
- * 反混淆模块公共导出
+ * Deobfuscation module public exports
  */
 
-// 主管线
+// Main pipeline
 export { Deobfuscator } from './Deobfuscator.js';
 export type { DeobfuscateFullOptions } from './Deobfuscator.js';
 
-// 子模块
+// Sub-modules
 export { AdvancedDeobfuscator } from './AdvancedDeobfuscator.js';
 export type { AdvancedDeobfuscateOptions, AdvancedDeobfuscateResult } from './AdvancedDeobfuscator.js';
 

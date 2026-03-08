@@ -1,18 +1,18 @@
 /**
- * 加密检测模块 - 优化版本
+ * Crypto Detection Module - Optimized Version
  *
- * 功能:
- * - 动态规则引擎 (支持自定义规则)
- * - 关键字匹配检测 (AES, RSA, SHA256等)
- * - 代码模式识别 (S-box, 大数运算, 位运算)
- * - AI深度分析 (LLM辅助识别自定义加密)
- * - 加密库检测 (CryptoJS, JSEncrypt, forge等)
- * - 常量检测 (魔数、初始化向量)
- * - 参数提取 (密钥长度、模式、填充)
- * - 安全性评估 (弱算法检测、不安全配置)
- * - 加密强度分析
- * - 使用场景分析
- * - 性能优化 (单次AST解析、结果缓存)
+ * Features:
+ * - Dynamic rule engine (supports custom rules)
+ * - Keyword matching detection (AES, RSA, SHA256, etc.)
+ * - Code pattern recognition (S-box, big number operations, bitwise operations)
+ * - AI deep analysis (LLM-assisted identification of custom encryption)
+ * - Crypto library detection (CryptoJS, JSEncrypt, forge, etc.)
+ * - Constant detection (magic numbers, initialization vectors)
+ * - Parameter extraction (key length, mode, padding)
+ * - Security assessment (weak algorithm detection, insecure configurations)
+ * - Encryption strength analysis
+ * - Usage scenario analysis
+ * - Performance optimization (single AST parse, result caching)
  */
 
 import type { DetectCryptoOptions, DetectCryptoResult, CryptoAlgorithm, CryptoLibrary } from '../../types/index.js';
@@ -38,21 +38,21 @@ export class CryptoDetector {
   }
 
   /**
-   * 加载自定义规则
+   * Load custom rules
    */
   loadCustomRules(json: string): void {
     this.rulesManager.loadFromJSON(json);
   }
 
   /**
-   * 导出当前规则
+   * Export current rules
    */
   exportRules(): string {
     return this.rulesManager.exportToJSON();
   }
 
   /**
-   * 检测加密算法（优化版本 - 单次AST解析）
+   * Detect crypto algorithms (optimized version - single AST parse)
    */
   async detect(options: DetectCryptoOptions): Promise<DetectCryptoResult & {
     securityIssues?: SecurityIssue[];
@@ -67,17 +67,17 @@ export class CryptoDetector {
       const libraries: CryptoLibrary[] = [];
       const securityIssues: SecurityIssue[] = [];
 
-      // 1. 关键字匹配（快速检测）
+      // 1. Keyword matching (fast detection)
       const keywordResults = this.detectByKeywords(code);
       algorithms.push(...keywordResults);
       logger.debug(`Found ${keywordResults.length} algorithms by keywords`);
 
-      // 2. 检测加密库（快速检测）
+      // 2. Detect crypto libraries (fast detection)
       const libraryResults = this.detectLibraries(code);
       libraries.push(...libraryResults);
       logger.debug(`Found ${libraryResults.length} libraries`);
 
-      // 3. 统一AST解析和检测（性能优化）
+      // 3. Unified AST parsing and detection (performance optimization)
       const astResults = detectByAST(code, this.rulesManager);
       algorithms.push(...astResults.algorithms);
       if (astResults.parameters) {
@@ -85,7 +85,7 @@ export class CryptoDetector {
       }
       logger.debug(`Found ${astResults.algorithms.length} algorithms by AST analysis`);
 
-      // 4. AI深度分析（默认关闭，需显式启用，避免不必要的 LLM 调用）
+      // 4. AI deep analysis (disabled by default, requires explicit opt-in to avoid unnecessary LLM calls)
       const useAI = (options as any).useAI === true;
       if (useAI) {
         const aiResults = await this.detectByAI(code);
@@ -93,18 +93,18 @@ export class CryptoDetector {
         logger.debug(`AI detected ${aiResults.length} algorithms`);
       }
 
-      // 5. 合并和去重
+      // 5. Merge and deduplicate
       const mergedAlgorithms = this.mergeResults(algorithms);
 
-      // 6. 安全性评估
+      // 6. Security assessment
       const securityResults = evaluateSecurity(mergedAlgorithms, code, this.rulesManager);
       securityIssues.push(...securityResults);
       logger.debug(`Found ${securityIssues.length} security issues`);
 
-      // 7. 加密强度分析
+      // 7. Encryption strength analysis
       const strength = analyzeStrength(mergedAlgorithms, securityIssues);
 
-      // 8. 计算总体置信度
+      // 8. Calculate overall confidence
       const confidence =
         mergedAlgorithms.length > 0
           ? mergedAlgorithms.reduce((sum, algo) => sum + algo.confidence, 0) / mergedAlgorithms.length
@@ -127,7 +127,7 @@ export class CryptoDetector {
   }
 
   /**
-   * 基于关键字检测（使用动态规则）
+   * Keyword-based detection (using dynamic rules)
    */
   private detectByKeywords(code: string): CryptoAlgorithm[] {
     const algorithms: CryptoAlgorithm[] = [];
@@ -135,12 +135,12 @@ export class CryptoDetector {
 
     keywordRules.forEach((rule) => {
       rule.keywords.forEach((keyword) => {
-        // 使用词边界匹配，避免误匹配
+        // Use word boundary matching to avoid false matches
         const regex = new RegExp(`\\b${this.escapeRegex(keyword)}\\b`, 'gi');
         const matches = code.match(regex);
 
         if (matches) {
-          // 跳过 mode 和 padding，它们不是独立的算法
+          // Skip mode and padding, they are not standalone algorithms
           if (rule.category === 'mode' || rule.category === 'padding') {
             return;
           }
@@ -163,24 +163,24 @@ export class CryptoDetector {
   }
 
   /**
-   * 转义正则表达式特殊字符
+   * Escape regex special characters
    */
   private escapeRegex(str: string): string {
     return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
-  // detectByPatterns 和 detectByConstants 已被统一的 detectByAST 替代
-  // 参见 CryptoDetectorEnhanced.ts
+  // detectByPatterns and detectByConstants have been replaced by the unified detectByAST
+  // See CryptoDetectorEnhanced.ts
 
   /**
-   * 基于AI检测
+   * AI-based detection
    */
   private async detectByAI(code: string): Promise<CryptoAlgorithm[]> {
     try {
       const messages = this.llm.generateCryptoDetectionPrompt(code);
       const response = await this.llm.chat(messages, { temperature: 0.2, maxTokens: 2000 });
 
-      // 解析JSON响应
+      // Parse JSON response
       const jsonMatch = response.content.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
         return [];
@@ -212,7 +212,7 @@ export class CryptoDetector {
   }
 
   /**
-   * 检测加密库（使用动态规则）
+   * Detect crypto libraries (using dynamic rules)
    */
   private detectLibraries(code: string): CryptoLibrary[] {
     const libraries: CryptoLibrary[] = [];
@@ -222,7 +222,7 @@ export class CryptoDetector {
       const found = rule.patterns.some((pattern) => code.includes(pattern));
 
       if (found) {
-        // 尝试提取版本号
+        // Try to extract version number
         let version: string | undefined;
         if (rule.versionPattern) {
           const versionMatch = code.match(rule.versionPattern);
@@ -233,7 +233,7 @@ export class CryptoDetector {
           name: rule.name,
           version,
           confidence: rule.confidence,
-          // features 存储在 rule 中，不需要添加到 library 对象
+          // features are stored in the rule, no need to add to the library object
         });
       }
     });
@@ -241,14 +241,14 @@ export class CryptoDetector {
     return libraries;
   }
 
-  // detectByConstants 已被统一的 detectByAST 替代
-  // 参见 CryptoDetectorEnhanced.ts
+  // detectByConstants has been replaced by the unified detectByAST
+  // See CryptoDetectorEnhanced.ts
 
-  // extractParameters 和 getCalleeFullName 已被 detectByAST 中的实现替代
-  // 参见 CryptoDetectorEnhanced.ts
+  // extractParameters and getCalleeFullName have been replaced by the implementation in detectByAST
+  // See CryptoDetectorEnhanced.ts
 
   /**
-   * 合并和去重检测结果
+   * Merge and deduplicate detection results
    */
   private mergeResults(algorithms: CryptoAlgorithm[]): CryptoAlgorithm[] {
     const merged = new Map<string, CryptoAlgorithm>();
@@ -266,7 +266,7 @@ export class CryptoDetector {
   }
 
   /**
-   * 查找关键字所在行号
+   * Find the line number where a keyword occurs
    */
   private findLineNumber(code: string, keyword: string): number {
     const lines = code.split('\n');

@@ -1,72 +1,72 @@
-# 参数站点映射模板（站点补充层）
+# Parameter Site Mapping Template (Site-Specific Supplement Layer)
 
-更新时间：2026-03-05
+Updated: 2026-03-05
 
-## 开场强制约束
+## Mandatory Constraints Before Starting
 
-开始填写站点映射前，先读：
+Read the following before filling out site mappings:
 
 1. `docs/reference/reverse-bootstrap.md`
 2. `docs/reference/case-safety-policy.md`
 3. `docs/reference/reverse-workflow.md`
-4. 若当前任务已通过 `env-pass`，或目标是“补环境后做纯算法提纯”，继续读 `docs/reference/pure-extraction.md`
+4. If the current task has already passed `env-pass`, or the goal is "purify to pure algorithm after environment patching", continue reading `docs/reference/pure-extraction.md`
 
-边界保持一致：
+Boundaries remain consistent:
 
-- 这里只补站点映射与判定口径，不写完整可执行实现
-- 仓库 case 只保留抽象映射，task-local 目录才放可运行代码
+- This section only supplements site mappings and determination criteria; it does not include complete executable implementations
+- Repository cases only retain abstract mappings; task-local directories hold runnable code
 
-## 目标
-- 在“站点无关方法论模板”基础上，补充某站点特有映射。
-- 只记录映射关系与判定标准，不记录可执行细节。
+## Objective
+- On top of the "site-agnostic methodology template", supplement site-specific mappings.
+- Only record mapping relationships and determination criteria, not executable details.
 
-## 1. 站点信息
-- 站点：`<site_name>`
-- 参数名：`<param_name>`
-- 常见入口：`<entry_function_or_class>`
-- 相关脚本：`<script_url_pattern>`
-- 入口页面 / host：`<entry_url_b64 | api_host_b64>`
+## 1. Site Information
+- Site: `<site_name>`
+- Parameter name: `<param_name>`
+- Common entry: `<entry_function_or_class>`
+- Related scripts: `<script_url_pattern>`
+- Entry page / host: `<entry_url_b64 | api_host_b64>`
 
-## 2. 请求映射
-- 目标接口模式：
+## 2. Request Mapping
+- Target endpoint pattern:
   - `method`: `<GET/POST/...>`
   - `urlPattern`: `<domain/path pattern>`
   - `functionId/operation`: `<optional>`
-- 参数所在位置：
+- Parameter location:
   - `query` / `body` / `header`
 
-## 3. 字段映射
-- 参数相关字段：
-  - 必填：`<field_a>`, `<field_b>`, ...
-  - 可选：`<field_x>`, `<field_y>`, ...
-- 依赖种子类型：
-  - cookie 键：`<k1,k2,...>`
-  - storage 键：`<k1,k2,...>`
-  - 指纹能力：`<canvas/webgl/...>`
+## 3. Field Mapping
+- Parameter-related fields:
+  - Required: `<field_a>`, `<field_b>`, ...
+  - Optional: `<field_x>`, `<field_y>`, ...
+- Dependency seed types:
+  - Cookie keys: `<k1,k2,...>`
+  - Storage keys: `<k1,k2,...>`
+  - Fingerprint capabilities: `<canvas/webgl/...>`
 
-## 4. 站点特有风险点
-- 初始化时机（首屏/异步脚本/懒加载）：
+## 4. Site-Specific Risk Points
+- Initialization timing (first screen / async script / lazy loading):
   - `<note>`
-- 高变更点（版本字段、动态算法、下发 token）：
+- High change points (version fields, dynamic algorithms, server-issued tokens):
   - `<note>`
-- 常见误判：
+- Common false positives:
   - `<note>`
 
-## 5. 验证口径（站点版）
-- 结构口径：
+## 5. Verification Criteria (Site Version)
+- Structure criteria:
   - `<segment_count / charset / length>`
-- 行为口径：
+- Behavior criteria:
   - `<status + business code>`
-- 差异容忍：
+- Divergence tolerance:
   - `<which part can differ but still pass>`
 
-## 6. 回归清单
-- 脚本版本变化后是否仍满足输出契约？
-- `requiredInputs` 是否新增/删除？
-- 代理 env log 的首个异常路径是否变化？
-- first divergence 是否变化或前移？
+## 6. Regression Checklist
+- After script version changes, does the output contract still hold?
+- Have `requiredInputs` been added or removed?
+- Has the first anomalous path in the proxy env log changed?
+- Has first divergence changed or moved forward?
 
-## 7. 关联文档
-- 方法论模板：`docs/reference/parameter-methodology-template.md`
-- 安全规范：`docs/reference/case-safety-policy.md`
-- 工具读写契约：`docs/reference/tool-io-contract.md`
+## 7. Related Documentation
+- Methodology template: `docs/reference/parameter-methodology-template.md`
+- Safety policy: `docs/reference/case-safety-policy.md`
+- Tool I/O contract: `docs/reference/tool-io-contract.md`

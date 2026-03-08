@@ -1,29 +1,29 @@
 /**
- * BlackboxManager - 黑盒化管理
- * 
- * 功能：
- * 1. 黑盒化脚本（按 URL 模式）
- * 2. 单步调试时自动跳过黑盒化的代码
- * 3. 调用栈中隐藏黑盒化的帧
- * 
- * 设计原则：
- * - 使用 CDP Debugger.setBlackboxPatterns
- * - 提供常用库的预定义黑盒化规则
- * - 支持自定义模式
+ * BlackboxManager - Blackbox management
+ *
+ * Features:
+ * 1. Blackbox scripts (by URL pattern)
+ * 2. Automatically skip blackboxed code during step debugging
+ * 3. Hide blackboxed frames in the call stack
+ *
+ * Design principles:
+ * - Uses CDP Debugger.setBlackboxPatterns
+ * - Provides predefined blackbox rules for common libraries
+ * - Supports custom patterns
  */
 
 import type { CDPSession } from 'puppeteer';
 import { logger } from '../../utils/logger.js';
 
 /**
- * 黑盒化管理器
+ * Blackbox manager
  *
- * 🔧 重构：使用共享的 CDP session，不再创建独立 session
+ * Refactored: uses shared CDP session instead of creating a separate session
  */
 export class BlackboxManager {
   private blackboxedPatterns: Set<string> = new Set();
 
-  // 预定义的常用库模式（CDP Debugger.setBlackboxPatterns 要求正则表达式）
+  // Predefined common library patterns (CDP Debugger.setBlackboxPatterns requires regular expressions)
   static readonly COMMON_LIBRARY_PATTERNS = [
     '.*jquery.*\\.js',
     '.*react.*\\.js',
@@ -41,22 +41,22 @@ export class BlackboxManager {
   ];
 
   /**
-   * @param cdpSession 共享的 CDP Session（由 DebuggerManager 提供）
+   * @param cdpSession Shared CDP Session (provided by DebuggerManager)
    */
   constructor(private cdpSession: CDPSession) {
     logger.info('BlackboxManager initialized with shared CDP session');
   }
 
   /**
-   * 黑盒化脚本（按 URL 模式）
+   * Blackbox a script (by URL pattern)
    *
-   * @param urlPattern URL 模式（支持通配符 *）
+   * @param urlPattern URL pattern (supports wildcard *)
    */
   async blackboxByPattern(urlPattern: string): Promise<void> {
     this.blackboxedPatterns.add(urlPattern);
 
     try {
-      // 调用 CDP API 设置黑盒化模式
+      // Call CDP API to set blackbox patterns
       await this.cdpSession.send('Debugger.setBlackboxPatterns', {
         patterns: Array.from(this.blackboxedPatterns),
       });
@@ -70,7 +70,7 @@ export class BlackboxManager {
   }
 
   /**
-   * 取消黑盒化
+   * Remove blackboxing for a pattern
    */
   async unblackboxByPattern(urlPattern: string): Promise<boolean> {
     const deleted = this.blackboxedPatterns.delete(urlPattern);
@@ -93,7 +93,7 @@ export class BlackboxManager {
   }
 
   /**
-   * 黑盒化所有常用库
+   * Blackbox all common libraries
    */
   async blackboxCommonLibraries(): Promise<void> {
     for (const pattern of BlackboxManager.COMMON_LIBRARY_PATTERNS) {
@@ -113,14 +113,14 @@ export class BlackboxManager {
   }
 
   /**
-   * 获取所有黑盒化模式
+   * Get all blackboxed patterns
    */
   getAllBlackboxedPatterns(): string[] {
     return Array.from(this.blackboxedPatterns);
   }
 
   /**
-   * 清除所有黑盒化模式
+   * Clear all blackboxed patterns
    */
   async clearAllBlackboxedPatterns(): Promise<void> {
     this.blackboxedPatterns.clear();
@@ -138,7 +138,7 @@ export class BlackboxManager {
   }
 
   /**
-   * 🆕 关闭并清理资源
+   * Close and clean up resources
    */
   async close(): Promise<void> {
     try {

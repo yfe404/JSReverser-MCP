@@ -1,35 +1,35 @@
 /**
- * HookManager — 统一的 Hook 管理器
+ * HookManager — Unified Hook Manager
  *
- * 作为 hook 模块的门面（Facade），对外提供：
- * - 创建/生成 hook 脚本（基于 HookCodeBuilder + HookTypeRegistry）
- * - 管理 hook 元数据（启用/禁用、统计）
- * - 数据回传和导出
- * - 反调试脚本生成
+ * Acts as a Facade for the hook module, providing:
+ * - Create/generate hook scripts (based on HookCodeBuilder + HookTypeRegistry)
+ * - Manage hook metadata (enable/disable, statistics)
+ * - Data callback and export
+ * - Anti-debug script generation
  *
- * 设计原则：
- * - 不硬编码任何 hook 类型逻辑（全部委托给 Registry 中的插件）
- * - 用户可以通过 Builder 直接构建，也可以通过声明式配置构建
- * - 可扩展：运行时注册新的 hook 类型
+ * Design principles:
+ * - No hard-coded hook type logic (all delegated to plugins in the Registry)
+ * - Users can build directly via the Builder or through declarative configuration
+ * - Extensible: register new hook types at runtime
  */
 
 import { HookCodeBuilder, type BuilderConfig } from './HookCodeBuilder.js';
 import { HookTypeRegistry, type HookTypePlugin } from './HookTypeRegistry.js';
 
-// ==================== 公共类型 ====================
+// ==================== Public Types ====================
 
 export interface HookCreateOptions {
-  /** hook 类型名称（对应 registry 中的插件名） */
+  /** Hook type name (corresponds to the plugin name in the registry) */
   type: string;
-  /** 类型特定参数（传给插件的 params） */
+  /** Type-specific parameters (passed to the plugin as params) */
   params?: Record<string, unknown>;
-  /** hook ID（可选，自动生成） */
+  /** Hook ID (optional, auto-generated) */
   hookId?: string;
-  /** 描述 */
+  /** Description */
   description?: string;
-  /** 行为: log(默认) / block / modify / passthrough */
+  /** Action: log (default) / block / modify / passthrough */
   action?: 'log' | 'block' | 'modify' | 'passthrough';
-  /** 捕获配置 */
+  /** Capture configuration */
   capture?: {
     args?: boolean;
     returnValue?: boolean;
@@ -37,14 +37,14 @@ export interface HookCreateOptions {
     timing?: boolean;
     thisContext?: boolean;
   };
-  /** 条件 */
+  /** Conditions */
   condition?: {
     expression?: string;
     maxCalls?: number;
     minInterval?: number;
     urlPattern?: string;
   };
-  /** 生命周期代码 */
+  /** Lifecycle code */
   lifecycle?: {
     before?: string;
     after?: string;
@@ -52,7 +52,7 @@ export interface HookCreateOptions {
     onFinally?: string;
     replace?: string;
   };
-  /** 存储配置 */
+  /** Storage configuration */
   store?: {
     globalKey?: string;
     maxRecords?: number;
@@ -60,7 +60,7 @@ export interface HookCreateOptions {
     consoleFormat?: 'full' | 'compact' | 'json';
     serializer?: string;
   };
-  /** 是否启用 async 感知 */
+  /** Whether to enable async awareness */
   asyncAware?: boolean;
 }
 
@@ -95,7 +95,7 @@ export interface HookManagerStats {
   }>;
 }
 
-// ==================== HookManager ====================
+// ==================== HookManager Class ====================
 
 export class HookManager {
   private registry: HookTypeRegistry;
@@ -108,33 +108,33 @@ export class HookManager {
     this.maxRecordsPerHook = maxRecordsPerHook;
   }
 
-  // ==================== Registry 代理 ====================
+  // ==================== Registry Proxy ====================
 
-  /** 注册自定义 hook 类型 */
+  /** Register a custom hook type */
   registerType(plugin: HookTypePlugin): void {
     this.registry.register(plugin);
   }
 
-  /** 获取所有已注册的类型 */
+  /** Get all registered types */
   getRegisteredTypes(): HookTypePlugin[] {
     return this.registry.list();
   }
 
-  /** 检查类型是否已注册 */
+  /** Check if a type is registered */
   hasType(name: string): boolean {
     return this.registry.has(name);
   }
 
-  // ==================== 创建 Hook ====================
+  // ==================== Create Hook ====================
 
   /**
-   * 通过声明式配置创建 hook
-   * 这是最常用的方式，传入配置对象即可生成脚本
+   * Create a hook via declarative configuration.
+   * This is the most common approach — pass in a config object to generate the script.
    */
   create(options: HookCreateOptions): { hookId: string; script: string } {
     const { type, params = {}, hookId: customId } = options;
 
-    // 查找插件
+    // Find plugin
     const plugin = this.registry.get(type);
     if (!plugin) {
       throw new Error(
@@ -142,17 +142,17 @@ export class HookManager {
       );
     }
 
-    // 创建 builder 并应用基础配置
+    // Create builder and apply base configuration
     const hookId = customId || `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
     const builder = new HookCodeBuilder(hookId);
 
-    // 应用通用配置
+    // Apply common configuration
     this.applyCommonConfig(builder, options);
 
-    // 让插件注入类型特定配置
+    // Let the plugin inject type-specific configuration
     plugin.apply(builder, params);
 
-    // 生成代码
+    // Generate code
     let script: string;
     if (plugin.customBuild) {
       const customScript = plugin.customBuild(builder, params);
@@ -161,7 +161,7 @@ export class HookManager {
       script = builder.build();
     }
 
-    // 保存元数据
+    // Save metadata
     const meta: HookMeta = {
       hookId,
       type,
@@ -179,8 +179,8 @@ export class HookManager {
   }
 
   /**
-   * 通过 Builder 模式创建 hook（高级用法）
-   * 给用户最大自由度，直接操作 builder
+   * Create a hook via the Builder pattern (advanced usage).
+   * Gives users maximum flexibility by directly operating on the builder.
    */
   createWithBuilder(
     builderFn: (builder: HookCodeBuilder) => HookCodeBuilder,
@@ -209,7 +209,7 @@ export class HookManager {
   }
 
   /**
-   * 从序列化的 BuilderConfig 恢复 hook
+   * Restore a hook from a serialized BuilderConfig.
    */
   createFromConfig(config: BuilderConfig): { hookId: string; script: string } {
     const builder = HookCodeBuilder.fromConfig(config);
@@ -232,24 +232,24 @@ export class HookManager {
     return { hookId: config.hookId, script };
   }
 
-  // ==================== Hook 管理 ====================
+  // ==================== Hook Management ====================
 
-  /** 获取 hook 元数据 */
+  /** Get hook metadata */
   getHook(hookId: string): HookMeta | undefined {
     return this.hooks.get(hookId);
   }
 
-  /** 获取所有 hook */
+  /** Get all hooks */
   getAllHooks(): HookMeta[] {
     return Array.from(this.hooks.values());
   }
 
-  /** 获取已有采集记录的 hookId 列表（含无元数据的 hook） */
+  /** Get the list of hookIds that have collected records (including hooks without metadata) */
   getRecordedHookIds(): string[] {
     return Array.from(this.hookData.keys());
   }
 
-  /** 获取所有已知 hookId（元数据 + 记录） */
+  /** Get all known hookIds (metadata + records) */
   getAllKnownHookIds(): string[] {
     const ids = new Set<string>([
       ...this.hooks.keys(),
@@ -258,7 +258,7 @@ export class HookManager {
     return Array.from(ids);
   }
 
-  /** 启用 hook */
+  /** Enable a hook */
   enable(hookId: string): boolean {
     const meta = this.hooks.get(hookId);
     if (!meta) return false;
@@ -266,7 +266,7 @@ export class HookManager {
     return true;
   }
 
-  /** 禁用 hook */
+  /** Disable a hook */
   disable(hookId: string): boolean {
     const meta = this.hooks.get(hookId);
     if (!meta) return false;
@@ -274,21 +274,21 @@ export class HookManager {
     return true;
   }
 
-  /** 删除 hook */
+  /** Remove a hook */
   remove(hookId: string): boolean {
     this.hookData.delete(hookId);
     return this.hooks.delete(hookId);
   }
 
-  /** 清除所有 hook */
+  /** Clear all hooks */
   clearAll(): void {
     this.hooks.clear();
     this.hookData.clear();
   }
 
-  // ==================== 数据管理 ====================
+  // ==================== Data Management ====================
 
-  /** 记录 hook 数据（从浏览器回传） */
+  /** Record hook data (received from the browser) */
   addRecord(hookId: string, record: HookDataRecord): void {
     const meta = this.hooks.get(hookId);
     if (meta) meta.callCount++;
@@ -305,19 +305,19 @@ export class HookManager {
     records.push(record);
   }
 
-  /** 获取 hook 的所有记录 */
+  /** Get all records for a hook */
   getRecords(hookId: string): HookDataRecord[] {
     return this.hookData.get(hookId) || [];
   }
 
-  /** 清除 hook 的记录 */
+  /** Clear records for a hook */
   clearRecords(hookId: string): void {
     this.hookData.set(hookId, []);
     const meta = this.hooks.get(hookId);
     if (meta) meta.callCount = 0;
   }
 
-  /** 导出所有 hook 数据 */
+  /** Export all hook data */
   exportData(format: 'json' | 'csv' = 'json'): string {
     const allData: Record<string, unknown> = {};
 
@@ -344,7 +344,7 @@ export class HookManager {
     return JSON.stringify(allData, null, 2);
   }
 
-  /** 获取统计信息 */
+  /** Get statistics */
   getStats(): HookManagerStats {
     const hooks = this.getAllHooks();
     return {
@@ -362,10 +362,10 @@ export class HookManager {
     };
   }
 
-  // ==================== 工具脚本 ====================
+  // ==================== Utility Scripts ====================
 
   /**
-   * 生成反调试绕过脚本
+   * Generate an anti-debug bypass script.
    */
   generateAntiDebugBypass(): string {
     return [
@@ -373,7 +373,7 @@ export class HookManager {
       `(function() {`,
       `  'use strict';`,
       ``,
-      `  // 1. 禁用 debugger 语句`,
+      `  // 1. Disable debugger statements`,
       `  const __origEval = window.eval;`,
       `  // Rewrite Function constructor to strip debugger`,
       `  const __origFunction = window.Function;`,
@@ -385,14 +385,14 @@ export class HookManager {
       `  };`,
       `  window.Function.prototype = __origFunction.prototype;`,
       ``,
-      `  // 2. 覆盖 console 检测`,
+      `  // 2. Override console detection`,
       `  const __noop = function() {};`,
       `  ['log', 'warn', 'error', 'info', 'debug', 'table', 'dir', 'trace'].forEach(function(m) {`,
       `    const orig = console[m];`,
       `    Object.defineProperty(console[m], 'toString', { value: function() { return 'function ' + m + '() { [native code] }'; } });`,
       `  });`,
       ``,
-      `  // 3. 阻止 setInterval debugger`,
+      `  // 3. Block setInterval debugger`,
       `  const __origSetInterval = window.setInterval;`,
       `  window.setInterval = function(fn, delay, ...rest) {`,
       `    const fnStr = typeof fn === 'function' ? fn.toString() : String(fn);`,
@@ -402,7 +402,7 @@ export class HookManager {
       `    return __origSetInterval.call(window, fn, delay, ...rest);`,
       `  };`,
       ``,
-      `  // 4. 阻止 setTimeout debugger`,
+      `  // 4. Block setTimeout debugger`,
       `  const __origSetTimeout = window.setTimeout;`,
       `  window.setTimeout = function(fn, delay, ...rest) {`,
       `    const fnStr = typeof fn === 'function' ? fn.toString() : String(fn);`,
@@ -412,7 +412,7 @@ export class HookManager {
       `    return __origSetTimeout.call(window, fn, delay, ...rest);`,
       `  };`,
       ``,
-      `  // 5. 覆盖 DevTools 检测方法`,
+      `  // 5. Override DevTools detection methods`,
       `  Object.defineProperty(window, 'outerHeight', { get() { return window.innerHeight; } });`,
       `  Object.defineProperty(window, 'outerWidth', { get() { return window.innerWidth; } });`,
       ``,
@@ -422,8 +422,8 @@ export class HookManager {
   }
 
   /**
-   * 生成浏览器端数据收集辅助脚本
-   * 用于在浏览器中提取 hook 数据
+   * Generate a browser-side data collection helper script.
+   * Used to extract hook data in the browser.
    */
   generateDataCollectorScript(storeKey = '__hookStore'): string {
     return [
@@ -453,14 +453,14 @@ export class HookManager {
     ].join('\n');
   }
 
-  // ==================== 内部方法 ====================
+  // ==================== Internal Methods ====================
 
   private applyCommonConfig(builder: HookCodeBuilder, options: HookCreateOptions): void {
     if (options.description) builder.describe(options.description);
     if (options.action) builder.action(options.action);
     if (options.asyncAware) builder.async(options.asyncAware);
 
-    // 捕获
+    // Capture
     const cap = options.capture;
     if (cap) {
       if (cap.args) builder.captureArgs();
@@ -470,7 +470,7 @@ export class HookManager {
       if (cap.thisContext) builder.captureThis();
     }
 
-    // 条件
+    // Conditions
     const cond = options.condition;
     if (cond) {
       if (cond.expression) builder.when(cond.expression);
@@ -479,7 +479,7 @@ export class HookManager {
       if (cond.urlPattern) builder.urlPattern(cond.urlPattern);
     }
 
-    // 生命周期
+    // Lifecycle
     const lc = options.lifecycle;
     if (lc) {
       if (lc.before) builder.before(lc.before);
@@ -489,7 +489,7 @@ export class HookManager {
       if (lc.replace) builder.replace(lc.replace);
     }
 
-    // 存储
+    // Storage
     const st = options.store;
     if (st) {
       if (st.globalKey || st.maxRecords) builder.storeTo(st.globalKey || '__hookStore', st.maxRecords);

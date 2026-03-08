@@ -1,90 +1,90 @@
-# 参数复现方法论模板（站点无关）
+# Parameter Reproduction Methodology Template (Site-Agnostic)
 
-更新时间：2026-03-05
+Updated: 2026-03-05
 
-## 开场强制约束
+## Mandatory Constraints Before Starting
 
-开始填写这个模板之前，先读：
+Read the following before filling out this template:
 
 1. `docs/reference/reverse-bootstrap.md`
 2. `docs/reference/case-safety-policy.md`
 3. `docs/reference/reverse-workflow.md`
-4. 若当前任务已通过 `env-pass`，或目标是“补环境后做纯算法提纯”，继续读 `docs/reference/pure-extraction.md`
+4. If the current task has already passed `env-pass`, or the goal is "purify to pure algorithm after environment patching", continue reading `docs/reference/pure-extraction.md`
 
-填写与实现边界：
+Scope and implementation boundaries:
 
-- 这个模板只描述方法、输入契约、验证口径、分叉记录，不承载完整可执行实现
-- 仓库内 `scripts/cases/*` 只能沉淀抽象模板，不得写入可直接复用的完整签名链路
-- 可执行脚本、任务证据、运行日志统一放 `artifacts/tasks/<task-id>/`
+- This template only describes methods, input contracts, verification criteria, and divergence records; it does not carry complete executable implementations
+- `scripts/cases/*` in the repository may only accumulate abstract templates; complete reusable signature pipelines must not be written there
+- Executable scripts, task evidence, and run logs go uniformly in `artifacts/tasks/<task-id>/`
 
-如果模型在开场没有先确认这些边界，就不应直接开始写 case 或写代码。
+If the model has not first confirmed these boundaries at the start, it should not directly begin writing cases or code.
 
-## 适用范围
-- 适用于任意“请求参数可复现”类任务（签名、令牌、时间戳衍生字段、混合指纹参数）。
-- 不绑定具体站点与参数名。
+## Applicable Scope
+- Applicable to any "request parameter reproduction" task (signatures, tokens, timestamp-derived fields, hybrid fingerprint parameters).
+- Not tied to any specific site or parameter name.
 
-## 0. 任务定义
-- 目标参数：`<param_name>`
-- 目标请求：`<method> <url_pattern>`
-- 成功标准：
-  - 参数结构校验通过（段数/长度/编码格式）
-  - 单次请求闭环满足预期（HTTP 状态 + 业务字段）
+## 0. Task Definition
+- Target parameter: `<param_name>`
+- Target request: `<method> <url_pattern>`
+- Success criteria:
+  - Parameter structure validation passes (segment count/length/encoding format)
+  - Single request round-trip meets expectations (HTTP status + business fields)
 
-## 1. 输入契约（必须先填）
+## 1. Input Contract (Must Be Filled First)
 - `requestSpec`
   - `url` / `method` / `headers schema` / `body schema`
 - `paramContract`
-  - 字段名、类型、编码方式、是否与时间相关
+  - Field name, type, encoding method, whether time-dependent
 - `runtimeSeedSchema`
-  - cookie 键名集合
-  - localStorage/sessionStorage 键名集合
-  - 仅记录格式与长度，不记录敏感原值
+  - Cookie key set
+  - localStorage/sessionStorage key set
+  - Only record format and length, not sensitive raw values
 - `clockPolicy`
-  - 是否固定时间戳、偏移容忍度
+  - Whether to fix timestamp, offset tolerance
 
-## 2. 标准流程（固定顺序）
+## 2. Standard Workflow (Fixed Order)
 1. Observe
-- 定位参数所在请求、触发动作、脚本来源、候选入口函数。
+- Locate the request containing the parameter, triggering action, script source, and candidate entry functions.
 2. Capture
-- 最小采样（优先 Hook，必要时断点），只保留字段结构证据。
+- Minimal sampling (prefer hooks, use breakpoints when necessary), only retain field structure evidence.
 3. Rebuild
-- 本地最小补环境：先读代理 env log，先记录 `first divergence`，再按最小因果单元补丁，禁止一次性脑补。
+- Local minimal environment patching: first read proxy env log, first record `first divergence`, then patch by minimal causal unit; bulk guessing is prohibited.
 4. Verify
-- 单次验签闭环，记录状态码、业务码、响应摘要。
+- Single signature verification round-trip, record status code, business code, and response summary.
 5. Divergence
-- 记录 first divergence（首个差异点）并给出下一步补丁方向。
+- Record first divergence (the first point of difference) and provide the next patch direction.
 
-## 3. 补环境策略（最小因果单元）
-- 每次只做一个补丁决策，而不是机械地一次改一个属性名。
-- 一个补丁决策可对应：
-  - 一个值 / 一个函数壳 / 一个返回对象 / 一个最小对象契约
-- 补丁前必须先确认：
-  - 当前代理 env log
-  - 当前 `first divergence`
-  - 对应页面证据
-- `diff_env_requirements` 仅作辅助，不替代代理日志。
-- 每次补丁后立刻复测并记录 `first divergence` 是否前移。
-- 失败时使用“上一版本可用快照”回退。
+## 3. Environment Patching Strategy (Minimal Causal Unit)
+- Each time, make only one patch decision, rather than mechanically changing one property name at a time.
+- One patch decision may correspond to:
+  - One value / one function shell / one return object / one minimal object contract
+- Before patching, must first confirm:
+  - Current proxy env log
+  - Current `first divergence`
+  - Corresponding page evidence
+- `diff_env_requirements` serves only as supplementary, not as a replacement for proxy logs.
+- After each patch, immediately retest and record whether `first divergence` has moved forward.
+- On failure, roll back using the "last known working snapshot".
 
-## 4. 验证口径
-- 结构验证：
-  - 参数段数/长度/字符集符合预期。
-- 行为验证：
-  - 单次目标请求返回可接受结果。
-- 差异验证：
-  - 允许值不同，但闭环必须通过。
+## 4. Verification Criteria
+- Structure verification:
+  - Parameter segment count/length/character set matches expectations.
+- Behavior verification:
+  - Single target request returns an acceptable result.
+- Divergence verification:
+  - Values may differ, but the round-trip must pass.
 
-## 5. 输出契约（统一）
-- `paramShape`: 段数、长度、编码规则
-- `requiredInputs`: 复现所需最小输入字段
-- `envDependencies`: 补环境依赖清单
-- `proxyLogSummary`: 当前代理日志摘要
-- `patchDecision`: 当前最小因果单元补丁决策
-- `verifyResult`: 状态码、业务摘要
-- `firstDivergence`: 首差异与后续动作
+## 5. Output Contract (Unified)
+- `paramShape`: segment count, length, encoding rules
+- `requiredInputs`: minimal input fields needed for reproduction
+- `envDependencies`: environment patching dependency list
+- `proxyLogSummary`: current proxy log summary
+- `patchDecision`: current minimal causal unit patch decision
+- `verifyResult`: status code, business summary
+- `firstDivergence`: first divergence and follow-up actions
 
-## 6. 安全边界
-- 仓库内只保留抽象方法与验收标准。
-- 不提交真实 cookie/token/storage 原文。
-- 不提交可直接复用的完整可执行脚本。
-- 可执行实现统一放 `artifacts/tasks/<task-id>/`。
+## 6. Safety Boundaries
+- The repository only retains abstract methods and acceptance criteria.
+- Do not commit real cookie/token/storage raw values.
+- Do not commit complete executable scripts that can be directly reused.
+- Executable implementations go uniformly in `artifacts/tasks/<task-id>/`.

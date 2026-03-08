@@ -1,22 +1,22 @@
 /**
- * WatchExpressionManager - 监视表达式管理
- * 
- * 功能：
- * 1. 添加/删除/启用/禁用监视表达式
- * 2. 在每次暂停时自动求值所有监视表达式
- * 3. 追踪表达式值的变化历史
- * 
- * 设计原则：
- * - 依赖 RuntimeInspector 进行表达式求值
- * - 自动在断点暂停时求值
- * - 提供值变化检测
+ * WatchExpressionManager - Watch expression management
+ *
+ * Features:
+ * 1. Add/remove/enable/disable watch expressions
+ * 2. Automatically evaluate all watch expressions on each pause
+ * 3. Track expression value change history
+ *
+ * Design principles:
+ * - Relies on RuntimeInspector for expression evaluation
+ * - Automatically evaluates on breakpoint pause
+ * - Provides value change detection
  */
 
 import type { RuntimeInspector } from './RuntimeInspector.js';
 import { logger } from '../../utils/logger.js';
 
 /**
- * 监视表达式
+ * Watch expression
  */
 export interface WatchExpression {
   id: string;
@@ -30,7 +30,7 @@ export interface WatchExpression {
 }
 
 /**
- * 监视表达式求值结果
+ * Watch expression evaluation result
  */
 export interface WatchResult {
   watchId: string;
@@ -43,7 +43,7 @@ export interface WatchResult {
 }
 
 /**
- * 监视表达式管理器
+ * Watch expression manager
  */
 export class WatchExpressionManager {
   private watches: Map<string, WatchExpression> = new Map();
@@ -52,7 +52,7 @@ export class WatchExpressionManager {
   constructor(private runtimeInspector: RuntimeInspector) {}
 
   /**
-   * 添加监视表达式
+   * Add a watch expression
    */
   addWatch(expression: string, name?: string): string {
     const watchId = `watch_${++this.watchCounter}`;
@@ -73,7 +73,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 删除监视表达式
+   * Remove a watch expression
    */
   removeWatch(watchId: string): boolean {
     const deleted = this.watches.delete(watchId);
@@ -84,7 +84,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 启用/禁用监视表达式
+   * Enable/disable a watch expression
    */
   setWatchEnabled(watchId: string, enabled: boolean): boolean {
     const watch = this.watches.get(watchId);
@@ -96,24 +96,24 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 获取所有监视表达式
+   * Get all watch expressions
    */
   getAllWatches(): WatchExpression[] {
     return Array.from(this.watches.values());
   }
 
   /**
-   * 获取特定监视表达式
+   * Get a specific watch expression
    */
   getWatch(watchId: string): WatchExpression | undefined {
     return this.watches.get(watchId);
   }
 
   /**
-   * 求值所有启用的监视表达式
+   * Evaluate all enabled watch expressions
    *
-   * @param callFrameId 可选的调用帧 ID（在断点暂停时使用）
-   * @param timeout 单个表达式的超时时间（毫秒，默认5000ms）
+   * @param callFrameId Optional call frame ID (used when paused at a breakpoint)
+   * @param timeout Timeout per expression in milliseconds (default 5000ms)
    */
   async evaluateAll(callFrameId?: string, timeout = 5000): Promise<WatchResult[]> {
     const results: WatchResult[] = [];
@@ -122,7 +122,7 @@ export class WatchExpressionManager {
       if (!watch.enabled) continue;
 
       try {
-        // ✅ 修复：添加超时控制，防止表达式求值卡死，并清理定时器
+        // Fix: add timeout control to prevent expression evaluation from hanging, and clean up timers
         let timeoutId: NodeJS.Timeout | null = null;
         const value = await Promise.race([
           this.runtimeInspector.evaluate(watch.expression, callFrameId),
@@ -130,27 +130,27 @@ export class WatchExpressionManager {
             timeoutId = setTimeout(() => reject(new Error(`Evaluation timeout after ${timeout}ms`)), timeout);
           }),
         ]).finally(() => {
-          // ✅ 清理定时器，防止内存泄漏
+          // Clean up timer to prevent memory leaks
           if (timeoutId) clearTimeout(timeoutId);
         });
 
-        // 检测值是否变化
+        // Detect if the value has changed
         const valueChanged = !this.deepEqual(value, watch.lastValue);
 
-        // 更新历史
+        // Update history
         if (valueChanged) {
           watch.valueHistory.push({
             value,
             timestamp: Date.now(),
           });
 
-          // 限制历史记录数量（最多保留 100 条）
+          // Limit history size (keep at most 100 entries)
           if (watch.valueHistory.length > 100) {
             watch.valueHistory.shift();
           }
         }
 
-        // 更新最后的值和错误
+        // Update last value and error
         watch.lastValue = value;
         watch.lastError = null;
 
@@ -182,7 +182,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 清除所有监视表达式
+   * Clear all watch expressions
    */
   clearAll(): void {
     this.watches.clear();
@@ -190,7 +190,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 获取监视表达式的值变化历史
+   * Get the value change history of a watch expression
    */
   getValueHistory(watchId: string): Array<{ value: any; timestamp: number }> | null {
     const watch = this.watches.get(watchId);
@@ -198,29 +198,29 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 深度比较两个值是否相等
+   * Deep equality comparison of two values
    *
-   * ✅ 修复：添加循环引用检测、深度限制、数组处理
+   * Fix: added circular reference detection, depth limit, array handling
    */
   private deepEqual(a: any, b: any, depth = 0, maxDepth = 10, seen = new WeakSet()): boolean {
-    // 基本类型和引用相等
+    // Primitive types and reference equality
     if (a === b) return true;
     if (a == null || b == null) return false;
     if (typeof a !== 'object' || typeof b !== 'object') return false;
 
-    // ✅ 深度限制（防止深层嵌套）
+    // Depth limit (prevent deeply nested structures)
     if (depth > maxDepth) {
       return false;
     }
 
-    // ✅ 循环引用检测
+    // Circular reference detection
     if (seen.has(a) || seen.has(b)) {
       return false;
     }
     seen.add(a);
     seen.add(b);
 
-    // ✅ 数组处理
+    // Array handling
     if (Array.isArray(a) && Array.isArray(b)) {
       if (a.length !== b.length) return false;
       for (let i = 0; i < a.length; i++) {
@@ -229,7 +229,7 @@ export class WatchExpressionManager {
       return true;
     }
 
-    // 对象处理
+    // Object handling
     const keysA = Object.keys(a);
     const keysB = Object.keys(b);
 
@@ -244,7 +244,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 导出监视表达式配置
+   * Export watch expression configuration
    */
   exportWatches(): Array<{ expression: string; name: string; enabled: boolean }> {
     return Array.from(this.watches.values()).map(watch => ({
@@ -255,7 +255,7 @@ export class WatchExpressionManager {
   }
 
   /**
-   * 导入监视表达式配置
+   * Import watch expression configuration
    */
   importWatches(watches: Array<{ expression: string; name?: string; enabled?: boolean }>): void {
     for (const watch of watches) {

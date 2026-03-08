@@ -1,254 +1,254 @@
-# 补环境落地规范
+# Environment Patching Specification
 
-这份文档约束本仓库里的本地 Node 补环境流程，目标不是“一次性模拟浏览器”，而是基于 MCP 页面证据，让目标参数链路先跑通，再逐项补缺口。
+This document defines the local Node environment patching workflow for this repository. The goal is not to “simulate a browser all at once”, but to make the target parameter chain work first based on MCP page evidence, then fill in gaps incrementally.
 
-## 目标原则
+## Core Principles
 
-- 先取证，再补环境
-- 最小宿主，逐项回填
-- 代理诊断优先，盲补禁止
-- 每次补丁都要能追溯到代理日志、first divergence 与页面证据
+- Gather evidence first, then patch the environment
+- Start with a minimal host, backfill incrementally
+- Proxy diagnostics first, blind patching is prohibited
+- Every patch must be traceable to proxy logs, first divergence, and page evidence
 
-## 两阶段目标（现扩展为三阶段落地）
+## Two-Stage Goals (Now Expanded to Three Stages)
 
-本仓库默认把“本地补环境”和“外部语言调用”拆成两个阶段：
+This repository separates “local environment patching” and “external language invocation” into two stages by default:
 
-### 阶段 1：Node 补环境复现
+### Stage 1: Node Environment Patching for Reproduction
 
-目标：
+Goal:
 
-- 在 Node 里跑通目标链路
-- 找出最小依赖集合
-- 确认 first divergence
-- 逐步删掉无关宿主和无关补丁
+- Run the target chain in Node
+- Identify the minimal dependency set
+- Confirm the first divergence
+- Gradually remove unrelated hosts and patches
 
-这一阶段的主产物是：
+The main artifacts from this stage are:
 
 - `env/env.js`
 - `env/polyfills.js`
 - `env/entry.js`
 
-### 阶段 2：可移植 JS 导出
+### Stage 2: Portable JS Export
 
-目标：
+Goal:
 
-- 把已经跑通的链路提纯成可调用的完整 JS
-- 减少对 Node 特有能力和调试脚手架的依赖
-- 为 Python `execjs`、`quickjs` 或其他宿主提供稳定函数入口
+- Purify the working chain into a callable complete JS bundle
+- Reduce dependency on Node-specific capabilities and debugging scaffolding
+- Provide a stable function entry point for Python `execjs`, `quickjs`, or other hosts
 
-这一阶段的目标产物通常是：
+The target artifacts from this stage are typically:
 
 - `run/exported-runtime.js`
-- 或其他单文件 / 少量文件的 bundle
+- Or other single-file / few-file bundles
 
-关键原则：
+Key principles:
 
-- 不要一开始就用 `Python + execjs` 做补环境
-- 应该先在 Node 里补环境跑通，再导出可移植 JS
-- `execjs` 更适合“调用提纯后的函数”，不适合“调试补环境过程”
+- Do not start environment patching with `Python + execjs`
+- You should first get the environment working in Node, then export portable JS
+- `execjs` is better suited for “calling purified functions”, not for “debugging the environment patching process”
 
-### 阶段 3：纯算法提纯
+### Stage 3: Pure Algorithm Extraction
 
-阶段协议与进入条件见：`docs/reference/pure-extraction.md`
+Stage protocol and entry conditions are in: `docs/reference/pure-extraction.md`
 
-目标：
+Goal:
 
-- 在 portable runtime 已可用后，继续提纯为可读纯算法
-- 明确输入契约、随机/时间因子、固定常量和版本边界
-- 为 Node / Python / 其他宿主提供可对齐的固定夹具
+- After the portable runtime is available, continue purifying into readable pure algorithms
+- Clearly define input contracts, random/time factors, fixed constants, and version boundaries
+- Provide alignable fixed fixtures for Node / Python / other hosts
 
-这一阶段的目标产物通常是：
+The target artifacts from this stage are typically:
 
 - `run/pure-*.js`
-- 可选 `run/pure_*.py`
-- task-local 固定夹具与验收记录
+- Optional `run/pure_*.py`
+- Task-local fixed fixtures and acceptance records
 
-关键原则：
+Key principles:
 
-- 只有在 `env rebuild` 跑通且服务端验收通过后，才进入纯算法提纯
-- pure runtime 必须支持固定 runtimeContext 或同等控制项，以便跨语言对齐
-- 可以保留少量版本绑定常量，但必须在 task artifact 里标出边界
-- 纯算法实现仍属于 task-local 产物，不进入 `scripts/cases/*` 或仓库公开实现层
+- Only enter pure algorithm extraction after `env rebuild` runs successfully and server-side acceptance passes
+- Pure runtime must support fixed runtimeContext or equivalent controls for cross-language alignment
+- Some version-bound constants may be retained, but their boundaries must be documented in the task artifact
+- Pure algorithm implementations remain task-local artifacts and do not enter `scripts/cases/*` or the public repository implementation layer
 
-## 固定阶段
+## Fixed Stages
 
-### 1. MCP 页面取证
+### 1. MCP Page Evidence Collection
 
-先从浏览器侧拿证据，不要直接在 Node 里猜。
+Gather evidence from the browser side first; do not guess in Node.
 
-优先记录到 `capture.json` 的内容：
+Content to prioritize recording in `capture.json`:
 
 - `page.url`
 - `page.title`
 - `cookies`
 - `localStorage`
 - `sessionStorage`
-- 目标请求样本
-- Hook 命中的函数名、参数摘要、返回值摘要
-- 目标脚本源码或脚本定位信息
+- Target request samples
+- Function names hit by hooks, argument summaries, return value summaries
+- Target script source code or script location information
 
-这些数据应来自 MCP 页面观察，不允许人工脑补敏感值或宿主状态。
+This data must come from MCP page observation; manually fabricating sensitive values or host state is not allowed.
 
-### 2. 本地最小环境启动
+### 2. Local Minimal Environment Bootstrap
 
-`env.js` 只负责提供基础宿主对象和最小 shim，让目标脚本可以开始执行。
+`env.js` is only responsible for providing basic host objects and minimal shims so the target script can begin executing.
 
-允许放在 `env.js` 的内容：
+Allowed in `env.js`:
 
 - `window/self/global`
 - `document/location/navigator`
 - `history/screen/canvas`
 - `localStorage/sessionStorage`
 - `atob/btoa`
-- 最小 `crypto` 外壳
+- Minimal `crypto` shell
 
-不允许在这里堆站点定制逻辑、访问日志或大段猜测式补丁。
+Do not pile site-specific custom logic, access logs, or large speculative patches here.
 
-### 3. 代理诊断层
+### 3. Proxy Diagnostics Layer
 
-`polyfills.js` 专门负责代理诊断层。
+`polyfills.js` is specifically responsible for the proxy diagnostics layer.
 
-推荐能力：
+Recommended capabilities:
 
 - `watch`
 - `safeFunction`
 - `makeFunction`
-- 对 `window/document/navigator/storage/location` 的代理包装
-- 统一的 `[env:get]` / `[env:set]` / `[env:has]` / `[env:ownKeys]` / `[env:call]` 诊断日志
+- Proxy wrappers for `window/document/navigator/storage/location`
+- Unified `[env:get]` / `[env:set]` / `[env:has]` / `[env:ownKeys]` / `[env:call]` diagnostic logging
 
-代理诊断层的职责是告诉你：
+The proxy diagnostics layer's responsibilities are to tell you:
 
-- 哪个对象路径被访问了
-- 缺的是值、函数，还是返回对象
-- first divergence 首次出现在什么位置
+- Which object path was accessed
+- Whether what's missing is a value, a function, or a return object
+- Where the first divergence first appeared
 
-代理诊断层不是用来直接伪造完整浏览器的。
+The proxy diagnostics layer is not meant to directly fake an entire browser.
 
-### 4. 按缺口逐项回填
+### 4. Incremental Backfilling by Gap
 
-回填时只允许补当前 `first divergence` 对应的最小因果单元，而不是机械地一项项打地鼠。
+When backfilling, only patch the minimal causal unit corresponding to the current `first divergence`, rather than mechanically playing whack-a-mole item by item.
 
-一个补丁决策允许覆盖以下四类最小因果单元：
+A single patch decision may cover one of four types of minimal causal units:
 
-- 缺基础值：直接补常量，如 `navigator.userAgent`
-- 缺函数壳：用 `makeFunction("createElement")`
-- 缺返回对象：补最小返回结构，如 `document.createElement()` 的返回对象
-- 缺最小对象契约：只补该对象当前链路不可分割的最小接口集，如 `localStorage.getItem/setItem/removeItem`
+- Missing basic value: patch with a constant directly, e.g., `navigator.userAgent`
+- Missing function shell: use `makeFunction(“createElement”)`
+- Missing return object: patch with a minimal return structure, e.g., the return object of `document.createElement()`
+- Missing minimal object contract: only patch the minimal inseparable interface set for the current chain on that object, e.g., `localStorage.getItem/setItem/removeItem`
 
-这里的“一次补一项”指的是“一次只做一个补丁决策”，而不是“永远只改一个属性名”。
-如果代理日志和 `first divergence` 已经证明当前缺口是同一个最小对象契约，可以一起补完该契约；
-如果只是看到多个零散访问，但还没有确认同属一个因果单元，就仍然只补当前最先阻塞执行的那一项。
+“One patch at a time” here refers to “making one patch decision at a time”, not “only ever changing one property name”.
+If proxy logs and `first divergence` have already proven the current gap belongs to a single minimal object contract, you can patch that entire contract together;
+if you only see multiple scattered accesses without confirming they belong to the same causal unit, then only patch the one that is currently blocking execution first.
 
-每次补丁都应该满足：
+Every patch should satisfy:
 
-- 能指出来源于哪条代理日志、哪条 `first divergence` 记录，以及哪条页面证据
-- 能说明为什么只补这一项或这一个最小对象契约
-- 补完后立刻复测
-- 如果没有代理日志或没有 `first divergence` 记录，则不允许补丁
+- It can point to which proxy log entry, which `first divergence` record, and which page evidence it originates from
+- It can explain why only this item or this minimal object contract is being patched
+- Re-test immediately after patching
+- If there are no proxy logs or no `first divergence` records, patching is not allowed
 
-## 补丁判定表
+## Patch Decision Table
 
-| 观测现象 | 常见缺口类型 | 推荐补法 | 不该做什么 |
+| Observed Symptom | Common Gap Type | Recommended Fix | What NOT to Do |
 |---|---|---|---|
-| `navigator.userAgent`、`location.href` 这类读取返回 `undefined` | 基础值缺失 | 直接补最小常量值 | 不要顺手补整套 `navigator` / `location` 伪实现 |
-| `document.createElement is not a function` | 函数壳缺失 | 先用 `makeFunction("createElement")` 挂函数壳 | 不要直接补完整 DOM 实现 |
-| `Cannot read properties of undefined (reading 'style')` 且前一步刚调用了 `createElement()` | 返回对象结构缺失 | 给该函数补最小返回对象 | 不要把无关字段一并补全 |
-| `localStorage.getItem is not a function` | 宿主对象方法缺失 | 补 storage shim 的最小方法集 | 不要引入站点私有缓存值 |
-| 同一对象连续出现多个接口缺失，且都指向同一 first divergence | 最小对象契约缺失 | 一次补该对象的最小接口集 | 不要顺手扩成完整浏览器对象 |
-| `Illegal invocation` / brand check 失败 | 宿主建模方式错误 | 先修对象形态或 this 绑定，再决定是否补值 | 不要把 brand-sensitive 对象直接套 Proxy 乱包 |
-| `crypto.subtle` / `TextEncoder` 缺失 | 平台 API 缺失 | 补最小平台 API 外壳或 polyfill | 不要臆造算法结果 |
+| `navigator.userAgent`, `location.href` reads return `undefined` | Missing basic value | Patch with minimal constant value | Don't patch an entire `navigator` / `location` fake implementation |
+| `document.createElement is not a function` | Missing function shell | Use `makeFunction(“createElement”)` to add a function shell | Don't patch a complete DOM implementation |
+| `Cannot read properties of undefined (reading 'style')` and the previous step just called `createElement()` | Missing return object structure | Add a minimal return object for that function | Don't fill in unrelated fields |
+| `localStorage.getItem is not a function` | Missing host object method | Patch the storage shim's minimal method set | Don't introduce site-specific private cache values |
+| Multiple interface gaps appear consecutively on the same object, all pointing to the same first divergence | Missing minimal object contract | Patch the object's minimal interface set at once | Don't expand into a complete browser object |
+| `Illegal invocation` / brand check failure | Incorrect host modeling approach | Fix object shape or this binding first, then decide whether to patch values | Don't blindly wrap brand-sensitive objects with Proxy |
+| `crypto.subtle` / `TextEncoder` missing | Missing platform API | Patch with minimal platform API shell or polyfill | Don't fabricate algorithm results |
 
-## 负面示例
+## Anti-Patterns
 
-以下做法都属于盲补，不应出现：
+The following practices are all blind patching and should not occur:
 
-- 页面里还没确认依赖来源，就一次性补完整 `window/document/navigator/crypto`
-- 看到某个请求需要 Cookie，就手写真实 Cookie 原值进 `env.js`
-- `createElement` 缺失时，直接复制一整套第三方 DOM 模拟库
-- 只因为别的站点用过某个字段，就把相同字段硬塞到当前任务里
-- 没有 first divergence 记录，只凭“脚本大概会读这个”去补宿主
+- Patching the complete `window/document/navigator/crypto` all at once before confirming dependencies on the page
+- Seeing that a request needs a Cookie and hardcoding the real Cookie value into `env.js`
+- When `createElement` is missing, directly copying an entire third-party DOM simulation library
+- Stuffing a field into the current task just because another site used that same field
+- Patching the host without a first divergence record, based only on “the script probably reads this”
 
-## 文件职责边界
+## File Responsibility Boundaries
 
 ### `env/env.js`
 
-职责：
+Responsibilities:
 
-- 提供基础宿主
-- 提供最小 storage shim
-- 提供最小编码/加密壳
+- Provide the basic host
+- Provide minimal storage shims
+- Provide minimal encoding/crypto shells
 
-禁止：
+Prohibited:
 
-- 访问日志
-- 大量站点定制分支
-- 直接内联目标业务脚本
+- Access logs
+- Large amounts of site-specific custom branches
+- Directly inlining target business scripts
 
 ### `env/polyfills.js`
 
-职责：
+Responsibilities:
 
-- 放代理诊断层
-- 放可复用的函数伪装能力
-- 放“缺函数壳”和“访问日志”的辅助逻辑
+- Host the proxy diagnostics layer
+- Host reusable function disguise capabilities
+- Host “missing function shell” and “access log” helper logic
 
-禁止：
+Prohibited:
 
-- 大量业务值硬编码
-- 直接替代 `env.js` 作为基础宿主
+- Large amounts of hardcoded business values
+- Directly replacing `env.js` as the base host
 
 ### `env/entry.js`
 
-职责：
+Responsibilities:
 
-- 先加载 `env.js`
-- 再加载 `polyfills.js`
-- 读 `capture.json` 对应数据
-- 加载目标脚本
-- 输出 first divergence 和当前可调用状态
+- Load `env.js` first
+- Then load `polyfills.js`
+- Read corresponding data from `capture.json`
+- Load the target script
+- Output first divergence and current callable state
 
-## 推荐判断顺序
+## Recommended Diagnostic Order
 
-1. 先跑一次 `env/entry.js`
-2. 先看本地报错
-3. 再读代理诊断日志，定位首个异常访问
-4. 记录并确认当前 `first divergence`
-5. 回到页面证据确认真实来源
-6. 只补当前 `first divergence` 对应的最小因果单元
-7. 必要时再用 `diff_env_requirements` 做辅助比对，而不是替代代理日志
-8. 立即重跑 `env/entry.js`
+1. Run `env/entry.js` once
+2. Check local errors first
+3. Then read proxy diagnostic logs to locate the first abnormal access
+4. Record and confirm the current `first divergence`
+5. Go back to page evidence to confirm the real source
+6. Only patch the minimal causal unit corresponding to the current `first divergence`
+7. Use `diff_env_requirements` for supplementary comparison when needed, rather than replacing proxy logs
+8. Immediately re-run `env/entry.js`
 
-## 禁止事项
+## Prohibited Practices
 
-- 不要猜环境
-- 不要一次性全量模拟浏览器
-- 不要没有页面证据就补 cookie / storage / header / UA
-- 不要没有代理日志和 `first divergence` 记录就补宿主
-- 不要把 `diff_env_requirements` 当成第一依据，跳过代理日志直接补
-- 不要把补环境逻辑直接塞进 MCP 核心运行时
+- Do not guess the environment
+- Do not simulate the entire browser all at once
+- Do not patch cookie / storage / header / UA without page evidence
+- Do not patch the host without proxy logs and a `first divergence` record
+- Do not treat `diff_env_requirements` as the primary source of truth, skipping proxy logs to patch directly
+- Do not put environment patching logic directly into the MCP core runtime
 
-## 产物要求
+## Artifact Requirements
 
-每个任务目录至少应保持以下文件可复用：
+Each task directory should maintain at least the following reusable files:
 
 - `env/env.js`
 - `env/polyfills.js`
 - `env/entry.js`
 - `env/capture.json`
 
-这四个文件共同构成最小 local rebuild 骨架。
+These four files together form the minimal local rebuild skeleton.
 
-如果后续要给 Python `execjs` 或其他宿主使用，建议额外导出：
+If the goal is to later use Python `execjs` or other hosts, it is recommended to also export:
 
 - `run/exported-runtime.js`
 
-如果后续要继续提纯为可读纯算法，建议再补：
+If the goal is to further purify into readable pure algorithms, additionally include:
 
 - `run/pure-*.js`
-- 可选 `run/pure_*.py`
-- 固定夹具与服务端验收记录
+- Optional `run/pure_*.py`
+- Fixed fixtures and server-side acceptance records
 
-这些文件的目标不是继续调试补环境，而是暴露稳定函数入口并保留可对齐的纯算结果，例如：
+The goal of these files is not to continue debugging environment patching, but to expose stable function entry points and preserve alignable pure algorithm results, for example:
 
 - `genSign(...)`
 - `getToken(...)`
