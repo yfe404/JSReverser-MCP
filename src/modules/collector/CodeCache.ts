@@ -7,6 +7,7 @@ import path from 'path';
 import crypto from 'crypto';
 import { logger } from '../../utils/logger.js';
 import type { CodeFile, CollectCodeResult } from '../../types/index.js';
+import { resolveDefaultCodeCacheDir } from '../../utils/projectPaths.js';
 
 export interface CacheEntry {
   url: string;
@@ -33,7 +34,7 @@ export class CodeCache {
   private readonly MAX_MEMORY_CACHE_SIZE = 100; // Maximum 100 entries
 
   constructor(options: CacheOptions = {}) {
-    this.cacheDir = options.cacheDir || path.join(process.cwd(), '.cache', 'code');
+    this.cacheDir = options.cacheDir || resolveDefaultCodeCacheDir(import.meta.url);
     this.maxAge = options.maxAge || 24 * 60 * 60 * 1000; // Default 24 hours
     this.maxSize = options.maxSize || 100 * 1024 * 1024; // Default 100MB
   }

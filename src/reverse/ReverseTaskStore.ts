@@ -15,6 +15,7 @@ import type {
   ReverseTaskReadApi,
   ReverseTaskStoreOptions,
 } from '../types/index.js';
+import {resolveDefaultArtifactsTasksDir} from '../utils/projectPaths.js';
 
 function nowTimestamp(): number {
   return Date.now();
@@ -77,7 +78,7 @@ export class ReverseTaskStore implements ReverseTaskReadApi {
   readonly rootDir: string;
 
   constructor(options: ReverseTaskStoreOptions = {}) {
-    this.rootDir = options.rootDir ?? path.join(process.cwd(), 'artifacts', 'tasks');
+    this.rootDir = options.rootDir ?? resolveDefaultArtifactsTasksDir(import.meta.url);
   }
 
   async openTask(input: ReverseTaskOpenInput): Promise<ReverseTaskHandle> {

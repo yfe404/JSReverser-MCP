@@ -5,14 +5,49 @@
  */
 
 import assert from 'node:assert';
+import {existsSync} from 'node:fs';
 import {mkdtemp, readFile, rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {describe, it} from 'node:test';
+import {fileURLToPath} from 'node:url';
 
 import {ReverseTaskStore} from '../../../src/reverse/ReverseTaskStore.js';
 
+function findPackageRoot(fromDir: string): string {
+  let currentDir = fromDir;
+
+  while (true) {
+    if (existsSync(path.join(currentDir, 'package.json'))) {
+      return currentDir;
+    }
+
+    const parentDir = path.dirname(currentDir);
+    if (parentDir === currentDir) {
+      throw new Error(`Unable to find package.json from ${fromDir}`);
+    }
+    currentDir = parentDir;
+  }
+}
+
 describe('ReverseTaskStore', () => {
+  it('resolves the default task root from the package root instead of process cwd', () => {
+    const originalCwd = process.cwd;
+    const fakeCwd = path.join(path.parse(process.cwd()).root, 'Windows', 'system32');
+    const repoRoot = findPackageRoot(path.dirname(fileURLToPath(import.meta.url)));
+
+    process.cwd = () => fakeCwd;
+
+    try {
+      const store = new ReverseTaskStore();
+
+      assert.strictEqual(store.rootDir, path.join(repoRoot, 'artifacts', 'tasks'));
+      assert.notStrictEqual(store.rootDir, path.join(fakeCwd, 'artifacts', 'tasks'));
+    } finally {
+      process.cwd = originalCwd;
+    }
+  });
+
   it('creates and reopens a reverse task with durable JSON and JSONL artifacts', async () => {
     const rootDir = await mkdtemp(path.join(tmpdir(), 'js-reverse-task-store-'));
 

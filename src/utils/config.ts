@@ -5,14 +5,14 @@
 
 import { config as dotenvConfig } from 'dotenv';
 import { existsSync } from 'fs';
-import { resolve } from 'path';
 import { AIService } from '../services/AIService.js';
 import { OpenAIProvider } from '../services/OpenAIProvider.js';
 import { AnthropicProvider } from '../services/AnthropicProvider.js';
 import { GeminiProvider } from '../services/GeminiProvider.js';
+import { resolveDefaultEnvPath } from './projectPaths.js';
 
 // Load .env file if it exists
-const envPath = resolve(process.cwd(), '.env');
+const envPath = resolveDefaultEnvPath(import.meta.url);
 if (existsSync(envPath)) {
   dotenvConfig({ path: envPath });
 }

@@ -1,4 +1,3 @@
-
 /**
  * @license
  * Copyright 2026 Google LLC
@@ -6,6 +5,7 @@
  */
 import assert from 'node:assert';
 import {describe, it} from 'node:test';
+import path from 'node:path';
 
 import {CodeCache} from '../../../src/modules/collector/CodeCache.js';
 import {CodeCompressor} from '../../../src/modules/collector/CodeCompressor.js';
@@ -17,6 +17,23 @@ interface MutableCodeCache {
 }
 
 describe('Code cache and compressor', () => {
+  it('resolves the default cache directory from the package root instead of process cwd', () => {
+    const originalCwd = process.cwd;
+    const fakeCwd = path.join(path.parse(process.cwd()).root, 'Windows', 'system32');
+
+    process.cwd = () => fakeCwd;
+
+    try {
+      const cache = new CodeCache();
+      const cacheDir = (cache as unknown as {cacheDir: string}).cacheDir;
+
+      assert.ok(cacheDir.endsWith(path.join('.cache', 'code')));
+      assert.ok(!cacheDir.startsWith(fakeCwd));
+    } finally {
+      process.cwd = originalCwd;
+    }
+  });
+
   it('stores and retrieves cache entries', async () => {
     const cache = new CodeCache({cacheDir: '/tmp/js-reverse-mcp-cache-test'});
     await cache.init();

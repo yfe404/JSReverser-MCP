@@ -29,6 +29,7 @@ import { WatchExpressionManager } from './WatchExpressionManager.js';
 import { XHRBreakpointManager } from './XHRBreakpointManager.js';
 import { EventBreakpointManager } from './EventBreakpointManager.js';
 import { BlackboxManager } from './BlackboxManager.js';
+import { resolveDefaultDebuggerSessionsDir } from '../../utils/projectPaths.js';
 
 /**
  * Breakpoint information
@@ -122,6 +123,10 @@ export class DebuggerManager {
   private breakpointResolvedListener: ((params: any) => void) | null = null;
 
   constructor(private collector: CodeCollector) {}
+
+  private getDefaultSessionsDir(): string {
+    return resolveDefaultDebuggerSessionsDir(import.meta.url);
+  }
 
   /**
    * Get the shared CDP Session (for use by sub-managers)
@@ -1068,7 +1073,7 @@ export class DebuggerManager {
 
     // If no path specified, use default path
     if (!filePath) {
-      const sessionsDir = path.join(process.cwd(), 'debugger-sessions');
+      const sessionsDir = this.getDefaultSessionsDir();
       await fs.mkdir(sessionsDir, { recursive: true });
       filePath = path.join(sessionsDir, `session-${Date.now()}.json`);
     } else {
@@ -1182,7 +1187,7 @@ export class DebuggerManager {
    * List all saved session files
    */
   async listSavedSessions(): Promise<Array<{ path: string; timestamp: number; metadata?: any }>> {
-    const sessionsDir = path.join(process.cwd(), 'debugger-sessions');
+    const sessionsDir = this.getDefaultSessionsDir();
 
     try {
       await fs.access(sessionsDir);
